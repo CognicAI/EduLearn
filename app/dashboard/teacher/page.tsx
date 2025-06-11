@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { AuthGuard } from '@/lib/auth/auth-guard';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
@@ -7,9 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BookOpenIcon, Users, FileText, Clock, TrendingUp, Plus, Eye } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BookOpenIcon, Users, FileText, Clock, TrendingUp, Plus, Eye, Edit, BarChart3 } from 'lucide-react';
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data';
 import { useUserProfile } from '@/lib/hooks/use-user';
+import { CourseManagement } from '@/components/teacher/course-management';
+import { AssignmentManagement } from '@/components/teacher/assignment-management';
+import { GradeSubmissions } from '@/components/teacher/grade-submissions';
+import { EventManagement } from '@/components/teacher/event-management';
+import { TeacherAnalytics } from '@/components/teacher/teacher-analytics';
 
 function DashboardSkeleton() {
   return (
@@ -43,6 +50,7 @@ export default function TeacherDashboard() {
   const { user } = useAuth();
   const { data: profileData, isLoading: profileLoading } = useUserProfile();
   const { data: dashboardData, isLoading: dashboardLoading, error } = useDashboardData('teacher');
+  const [activeTab, setActiveTab] = useState('overview');
 
   const isLoading = profileLoading || dashboardLoading;
 
@@ -81,12 +89,12 @@ export default function TeacherDashboard() {
                     Welcome back, Prof. {profileData?.firstName || user?.firstName}!
                   </h1>
                   <p className="text-muted-foreground mt-2">
-                    Manage your courses and track student progress.
+                    Manage your courses, assignments, and track student progress.
                   </p>
                 </div>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Course
+                  Quick Actions
                 </Button>
               </div>
 
@@ -145,112 +153,141 @@ export default function TeacherDashboard() {
                 </Card>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* My Courses */}
-                <div className="lg:col-span-2">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>My Courses</CardTitle>
-                      <CardDescription>
-                        Manage your active courses
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {dashboardData?.courses?.map((course) => (
-                        <div key={course.id} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="font-semibold">{course.title}</h3>
-                              <Badge variant={course.status === 'active' ? 'default' : 'secondary'}>
-                                {course.status}
+              {/* Management Tabs */}
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid w-full grid-cols-5">
+                  <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="courses">Courses</TabsTrigger>
+                  <TabsTrigger value="assignments">Assignments</TabsTrigger>
+                  <TabsTrigger value="grading">Grading</TabsTrigger>
+                  <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="overview" className="mt-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* My Courses */}
+                    <div className="lg:col-span-2">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>My Courses</CardTitle>
+                          <CardDescription>
+                            Manage your active courses
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {dashboardData?.courses?.map((course) => (
+                            <div key={course.id} className="flex items-center justify-between p-4 border rounded-lg">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h3 className="font-semibold">{course.title}</h3>
+                                  <Badge variant={course.status === 'active' ? 'default' : 'secondary'}>
+                                    {course.status}
+                                  </Badge>
+                                </div>
+                                <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    {course.students} students
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <FileText className="h-3 w-3" />
+                                    {course.assignments} assignments
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {course.pendingGrades} pending
+                                  </div>
+                                </div>
+                              </div>
+                              <Button size="sm" variant="outline" className="ml-4">
+                                <Eye className="h-3 w-3 mr-1" />
+                                View
+                              </Button>
+                            </div>
+                          )) || (
+                            <div className="text-center py-8">
+                              <p className="text-muted-foreground">No courses created yet.</p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    <div className="space-y-6">
+                      {/* Recent Activity */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Recent Activity</CardTitle>
+                          <CardDescription>
+                            Latest student interactions
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {dashboardData?.recentActivity?.map((activity) => (
+                            <div key={activity.id} className="flex items-start space-x-3">
+                              <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">{activity.title}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {activity.user && `${activity.user} • `}{activity.course}
+                                </p>
+                                <p className="text-xs text-muted-foreground">{activity.time}</p>
+                              </div>
+                            </div>
+                          )) || (
+                            <div className="text-center py-4">
+                              <p className="text-sm text-muted-foreground">No recent activity.</p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Upcoming Deadlines */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Upcoming Deadlines</CardTitle>
+                          <CardDescription>
+                            Important dates to remember
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {dashboardData?.upcomingDeadlines?.map((deadline, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                              <div>
+                                <p className="text-sm font-medium">{deadline.title}</p>
+                                <p className="text-xs text-muted-foreground">{deadline.course}</p>
+                              </div>
+                              <Badge variant="outline" className="text-xs">
+                                {deadline.date}
                               </Badge>
                             </div>
-                            <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Users className="h-3 w-3" />
-                                {course.students} students
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <FileText className="h-3 w-3" />
-                                {course.assignments} assignments
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {course.pendingGrades} pending
-                              </div>
+                          )) || (
+                            <div className="text-center py-4">
+                              <p className="text-sm text-muted-foreground">No upcoming deadlines.</p>
                             </div>
-                          </div>
-                          <Button size="sm" variant="outline" className="ml-4">
-                            <Eye className="h-3 w-3 mr-1" />
-                            View
-                          </Button>
-                        </div>
-                      )) || (
-                        <div className="text-center py-8">
-                          <p className="text-muted-foreground">No courses created yet.</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </TabsContent>
 
-                <div className="space-y-6">
-                  {/* Recent Activity */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Recent Activity</CardTitle>
-                      <CardDescription>
-                        Latest student interactions
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {dashboardData?.recentActivity?.map((activity) => (
-                        <div key={activity.id} className="flex items-start space-x-3">
-                          <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{activity.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {activity.user && `${activity.user} • `}{activity.course}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{activity.time}</p>
-                          </div>
-                        </div>
-                      )) || (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-muted-foreground">No recent activity.</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                <TabsContent value="courses" className="mt-6">
+                  <CourseManagement />
+                </TabsContent>
 
-                  {/* Upcoming Deadlines */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Upcoming Deadlines</CardTitle>
-                      <CardDescription>
-                        Important dates to remember
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {dashboardData?.upcomingDeadlines?.map((deadline, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                          <div>
-                            <p className="text-sm font-medium">{deadline.title}</p>
-                            <p className="text-xs text-muted-foreground">{deadline.course}</p>
-                          </div>
-                          <Badge variant="outline" className="text-xs">
-                            {deadline.date}
-                          </Badge>
-                        </div>
-                      )) || (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-muted-foreground">No upcoming deadlines.</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+                <TabsContent value="assignments" className="mt-6">
+                  <AssignmentManagement />
+                </TabsContent>
+
+                <TabsContent value="grading" className="mt-6">
+                  <GradeSubmissions />
+                </TabsContent>
+
+                <TabsContent value="analytics" className="mt-6">
+                  <TeacherAnalytics />
+                </TabsContent>
+              </Tabs>
             </div>
           )}
         </main>
