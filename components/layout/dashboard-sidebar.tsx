@@ -18,7 +18,8 @@ import {
   GraduationCap,
   UserCheck,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  LogOut
 } from 'lucide-react';
 
 const sidebarItems = {
@@ -53,12 +54,16 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ className }: DashboardSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const pathname = usePathname();
 
   if (!user) return null;
 
   const items = sidebarItems[user.role] || [];
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <div className={cn(
@@ -112,8 +117,9 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
         </nav>
       </ScrollArea>
 
-      {!isCollapsed && (
-        <div className="p-4 border-t">
+      {/* User Info and Logout */}
+      <div className="p-4 border-t space-y-3">
+        {!isCollapsed && (
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
             <UserCheck className="h-4 w-4" />
             <div>
@@ -123,8 +129,23 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
               <p className="capitalize">{user.role}</p>
             </div>
           </div>
-        </div>
-      )}
+        )}
+        
+        {/* Logout Button */}
+        <Button
+          variant="outline"
+          size={isCollapsed ? "icon" : "sm"}
+          onClick={handleLogout}
+          className={cn(
+            "w-full",
+            isCollapsed ? "h-8 w-8" : "justify-start",
+            "text-destructive hover:text-destructive hover:bg-destructive/10"
+          )}
+        >
+          <LogOut className={cn("h-4 w-4", !isCollapsed && "mr-2")} />
+          {!isCollapsed && <span>Logout</span>}
+        </Button>
+      </div>
     </div>
   );
 }
