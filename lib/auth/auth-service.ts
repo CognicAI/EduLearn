@@ -1,78 +1,132 @@
 import { User, AuthResponse, LoginCredentials, RegisterCredentials, AuthTokens } from '@/lib/types/auth';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// Mock user database
+const mockUsers = {
+  'student@demo.com': {
+    id: '550e8400-e29b-41d4-a716-446655440001',
+    email: 'student@demo.com',
+    firstName: 'John',
+    lastName: 'Student',
+    role: 'student' as const,
+    avatar: undefined,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    lastLogin: undefined,
+    password: 'password123'
+  },
+  'teacher@demo.com': {
+    id: '550e8400-e29b-41d4-a716-446655440002',
+    email: 'teacher@demo.com',
+    firstName: 'Jane',
+    lastName: 'Teacher',
+    role: 'teacher' as const,
+    avatar: undefined,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    lastLogin: undefined,
+    password: 'password123'
+  },
+  'admin@demo.com': {
+    id: '550e8400-e29b-41d4-a716-446655440003',
+    email: 'admin@demo.com',
+    firstName: 'Admin',
+    lastName: 'User',
+    role: 'admin' as const,
+    avatar: undefined,
+    createdAt: '2024-01-01T00:00:00.000Z',
+    lastLogin: undefined,
+    password: 'password123'
+  }
+};
 
 class AuthService {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
+  private currentUser: User | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
       this.accessToken = localStorage.getItem('accessToken');
       this.refreshToken = localStorage.getItem('refreshToken');
+      const userData = localStorage.getItem('currentUser');
+      if (userData) {
+        try {
+          this.currentUser = JSON.parse(userData);
+        } catch (error) {
+          console.error('Failed to parse stored user data:', error);
+        }
+      }
     }
   }
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      if (data.success && data.data) {
-        this.setTokens(data.data.tokens);
-        return {
-          user: data.data.user,
-          tokens: data.data.tokens
-        };
-      }
-
-      throw new Error('Invalid response format');
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
+    const mockUser = mockUsers[credentials.email as keyof typeof mockUsers];
+    
+    if (!mockUser || mockUser.password !== credentials.password) {
+      throw new Error('Invalid email or password');
     }
+
+    // Create user object without password
+    const { password, ...userWithoutPassword } = mockUser;
+    const user: User = {
+      ...userWithoutPassword,
+      lastLogin: new Date().toISOString()
+    };
+
+    // Generate mock tokens
+    const tokens: AuthTokens = {
+      accessToken: `mock-access-token-${user.id}`,
+      refreshToken: `mock-refresh-token-${user.id}`
+    };
+
+    this.setTokens(tokens);
+    this.currentUser = user;
+
+    // Store user data
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('currentUser', JSON.stringify(user));
+    }
+
+    return { user, tokens };
   }
 
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      if (data.success && data.data) {
-        this.setTokens(data.data.tokens);
-        return {
-          user: data.data.user,
-          tokens: data.data.tokens
-        };
-      }
-
-      throw new Error('Invalid response format');
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
+    // Check if user already exists
+    if (mockUsers[credentials.email as keyof typeof mockUsers]) {
+      throw new Error('User already exists with this email');
     }
+
+    // Create new user
+    const user: User = {
+      id: `mock-user-${Date.now()}`,
+      email: credentials.email,
+      firstName: credentials.firstName,
+      lastName: credentials.lastName,
+      role: credentials.role,
+      avatar: undefined,
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString()
+    };
+
+    // Generate mock tokens
+    const tokens: AuthTokens = {
+      accessToken: `mock-access-token-${user.id}`,
+      refreshToken: `mock-refresh-token-${user.id}`
+    };
+
+    this.setTokens(tokens);
+    this.currentUser = user;
+
+    // Store user data
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('currentUser', JSON.stringify(user));
+    }
+
+    return { user, tokens };
   }
 
   async getCurrentUser(): Promise<User | null> {
@@ -80,79 +134,34 @@ class AuthService {
       return null;
     }
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          // Token expired, try to refresh
-          const refreshed = await this.refreshAccessToken();
-          if (refreshed) {
-            return this.getCurrentUser();
-          }
-        }
-        throw new Error('Failed to get current user');
-      }
-
-      const data = await response.json();
-      
-      if (data.success && data.data) {
-        return data.data;
-      }
-
-      throw new Error('Invalid response format');
-    } catch (error) {
-      console.error('Get current user error:', error);
-      return null;
-    }
+    // Return stored user data
+    return this.currentUser;
   }
 
   async refreshAccessToken(): Promise<boolean> {
-    if (!this.refreshToken) {
+    if (!this.refreshToken || !this.currentUser) {
       return false;
     }
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken: this.refreshToken }),
-      });
+    // Simulate token refresh
+    const tokens: AuthTokens = {
+      accessToken: `mock-access-token-refreshed-${this.currentUser.id}`,
+      refreshToken: this.refreshToken
+    };
 
-      if (!response.ok) {
-        this.logout();
-        return false;
-      }
-
-      const data = await response.json();
-      
-      if (data.success && data.data && data.data.tokens) {
-        this.setTokens(data.data.tokens);
-        return true;
-      }
-
-      this.logout();
-      return false;
-    } catch (error) {
-      console.error('Token refresh error:', error);
-      this.logout();
-      return false;
-    }
+    this.setTokens(tokens);
+    return true;
   }
 
   logout(): void {
     this.accessToken = null;
     this.refreshToken = null;
+    this.currentUser = null;
     
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('currentUser');
     }
   }
 
