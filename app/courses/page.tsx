@@ -1,130 +1,135 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { AuthGuard } from '@/lib/auth/auth-guard';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { BookOpenIcon, Search, Plus, Users, Clock, Star } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CourseCard } from '@/components/courses/course-card';
+import { CourseForm } from '@/components/courses/course-form';
+import { useCourses, useDeleteCourse } from '@/lib/hooks/use-courses';
+import { CourseWithEnrollment, Course } from '@/lib/types/course';
+import { BookOpenIcon, Search, Plus, Filter } from 'lucide-react';
 
-const mockCourses = [
-  {
-    id: '1',
-    title: 'Introduction to Computer Science',
-    instructor: 'Prof. Johnson',
-    description: 'Learn the fundamentals of computer science including algorithms, data structures, and programming concepts.',
-    students: 45,
-    duration: '12 weeks',
-    rating: 4.8,
-    progress: 75,
-    status: 'enrolled',
-    thumbnail: 'https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&w=400',
-  },
-  {
-    id: '2',
-    title: 'Advanced Web Development',
-    instructor: 'Dr. Smith',
-    description: 'Master modern web development with React, Node.js, and advanced JavaScript concepts.',
-    students: 32,
-    duration: '10 weeks',
-    rating: 4.9,
-    progress: 60,
-    status: 'enrolled',
-    thumbnail: 'https://images.pexels.com/photos/11035380/pexels-photo-11035380.jpeg?auto=compress&cs=tinysrgb&w=400',
-  },
-  {
-    id: '3',
-    title: 'Database Design Fundamentals',
-    instructor: 'Ms. Davis',
-    description: 'Learn database design principles, SQL, and modern database management systems.',
-    students: 28,
-    duration: '8 weeks',
-    rating: 4.7,
-    progress: 90,
-    status: 'nearly-complete',
-    thumbnail: 'https://images.pexels.com/photos/1181677/pexels-photo-1181677.jpeg?auto=compress&cs=tinysrgb&w=400',
-  },
-  {
-    id: '4',
-    title: 'Machine Learning Basics',
-    instructor: 'Prof. Wilson',
-    description: 'Introduction to machine learning algorithms, data analysis, and AI fundamentals.',
-    students: 67,
-    duration: '14 weeks',
-    rating: 4.6,
-    progress: 0,
-    status: 'available',
-    thumbnail: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=400',
-  },
-  {
-    id: '5',
-    title: 'Digital Marketing Strategy',
-    instructor: 'Ms. Brown',
-    description: 'Learn modern digital marketing techniques, social media strategy, and analytics.',
-    students: 89,
-    duration: '6 weeks',
-    rating: 4.5,
-    progress: 0,
-    status: 'available',
-    thumbnail: 'https://images.pexels.com/photos/265087/pexels-photo-265087.jpeg?auto=compress&cs=tinysrgb&w=400',
-  },
-  {
-    id: '6',
-    title: 'Mobile App Development',
-    instructor: 'Dr. Lee',
-    description: 'Build native and cross-platform mobile applications using modern frameworks.',
-    students: 41,
-    duration: '16 weeks',
-    rating: 4.8,
-    progress: 0,
-    status: 'available',
-    thumbnail: 'https://images.pexels.com/photos/607812/pexels-photo-607812.jpeg?auto=compress&cs=tinysrgb&w=400',
-  },
-];
+function CoursesSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Card key={i} className="overflow-hidden">
+          <Skeleton className="aspect-video w-full" />
+          <CardHeader className="pb-3">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </CardHeader>
+          <CardContent className="pt-0 space-y-3">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+            <div className="flex justify-between">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+            <Skeleton className="h-10 w-full" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
 
 export default function CoursesPage() {
   const { user } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showCourseForm, setShowCourseForm] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | undefined>();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'enrolled':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'nearly-complete':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'available':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+  const deleteMutation = useDeleteCourse();
+
+  // Build query parameters
+  const queryParams = {
+    page: currentPage,
+    limit: 12,
+    search: searchTerm,
+    status: statusFilter,
+    ...(user?.role === 'teacher' && { instructorId: user.id }),
+  };
+
+  const { data: coursesData, isLoading, error } = useCourses(queryParams);
+
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handleStatusFilter = (value: string) => {
+    setStatusFilter(value === 'all' ? '' : value);
+    setCurrentPage(1);
+  };
+
+  const handleCreateCourse = () => {
+    setEditingCourse(undefined);
+    setShowCourseForm(true);
+  };
+
+  const handleEditCourse = (course: CourseWithEnrollment) => {
+    setEditingCourse(course);
+    setShowCourseForm(true);
+  };
+
+  const handleDeleteCourse = async (courseId: string) => {
+    if (window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
+      deleteMutation.mutate(courseId);
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'enrolled':
-        return 'Enrolled';
-      case 'nearly-complete':
-        return 'Nearly Complete';
-      case 'available':
-        return 'Available';
+  const getPageTitle = () => {
+    switch (user?.role) {
+      case 'teacher':
+        return 'My Courses';
+      case 'student':
+        return 'Courses';
+      case 'admin':
+        return 'All Courses';
       default:
-        return 'Available';
+        return 'Courses';
     }
   };
 
-  const getButtonText = (status: string) => {
-    switch (status) {
-      case 'enrolled':
-        return 'Continue';
-      case 'nearly-complete':
-        return 'Finish';
-      case 'available':
-        return 'Enroll';
+  const getPageDescription = () => {
+    switch (user?.role) {
+      case 'teacher':
+        return 'Manage and create your courses';
+      case 'student':
+        return 'Discover and enroll in courses to advance your learning';
+      case 'admin':
+        return 'Manage all courses on the platform';
       default:
-        return 'View';
+        return 'Browse available courses';
     }
   };
+
+  if (error) {
+    return (
+      <AuthGuard>
+        <div className="flex h-screen bg-background">
+          <DashboardSidebar />
+          <main className="flex-1 overflow-y-auto">
+            <div className="p-6">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold text-destructive mb-2">Error Loading Courses</h1>
+                <p className="text-muted-foreground">Please try refreshing the page.</p>
+              </div>
+            </div>
+          </main>
+        </div>
+      </AuthGuard>
+    );
+  }
 
   return (
     <AuthGuard>
@@ -137,17 +142,14 @@ export default function CoursesPage() {
             <div className="flex justify-between items-center mb-8">
               <div>
                 <h1 className="text-3xl font-bold text-foreground">
-                  {user?.role === 'teacher' ? 'My Courses' : 'Courses'}
+                  {getPageTitle()}
                 </h1>
                 <p className="text-muted-foreground mt-2">
-                  {user?.role === 'teacher' 
-                    ? 'Manage and create your courses' 
-                    : 'Discover and enroll in courses to advance your learning'
-                  }
+                  {getPageDescription()}
                 </p>
               </div>
               {user?.role === 'teacher' && (
-                <Button>
+                <Button onClick={handleCreateCourse}>
                   <Plus className="h-4 w-4 mr-2" />
                   Create Course
                 </Button>
@@ -160,99 +162,109 @@ export default function CoursesPage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Search courses..."
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
               <div className="flex gap-2">
-                <Button variant="outline">All Categories</Button>
-                <Button variant="outline">My Courses</Button>
-                <Button variant="outline">Available</Button>
+                <Select value={statusFilter || 'all'} onValueChange={handleStatusFilter}>
+                  <SelectTrigger className="w-40">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Courses</SelectItem>
+                    {user?.role === 'student' && (
+                      <>
+                        <SelectItem value="enrolled">My Courses</SelectItem>
+                        <SelectItem value="available">Available</SelectItem>
+                      </>
+                    )}
+                    {user?.role === 'teacher' && (
+                      <>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             {/* Courses Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockCourses.map((course) => (
-                <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="aspect-video relative overflow-hidden">
-                    <img
-                      src={course.thumbnail}
-                      alt={course.title}
-                      className="w-full h-full object-cover"
+            {isLoading ? (
+              <CoursesSkeleton />
+            ) : coursesData?.courses.length === 0 ? (
+              <div className="text-center py-12">
+                <BookOpenIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No courses found</h3>
+                <p className="text-muted-foreground mb-4">
+                  {searchTerm || statusFilter
+                    ? 'Try adjusting your search or filters.'
+                    : user?.role === 'teacher'
+                    ? 'Create your first course to get started.'
+                    : 'No courses are available at the moment.'
+                  }
+                </p>
+                {user?.role === 'teacher' && !searchTerm && !statusFilter && (
+                  <Button onClick={handleCreateCourse}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Your First Course
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {coursesData?.courses.map((course) => (
+                    <CourseCard
+                      key={course.id}
+                      course={course}
+                      onEdit={user?.role === 'teacher' ? handleEditCourse : undefined}
+                      onDelete={user?.role === 'teacher' ? handleDeleteCourse : undefined}
                     />
-                    <div className="absolute top-4 right-4">
-                      <Badge className={getStatusColor(course.status)}>
-                        {getStatusText(course.status)}
-                      </Badge>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {coursesData && coursesData.totalPages > 1 && (
+                  <div className="flex justify-center mt-12">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        Previous
+                      </Button>
+                      <span className="flex items-center px-4 text-sm text-muted-foreground">
+                        Page {currentPage} of {coursesData.totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentPage(prev => Math.min(coursesData.totalPages, prev + 1))}
+                        disabled={currentPage === coursesData.totalPages}
+                      >
+                        Next
+                      </Button>
                     </div>
                   </div>
-                  
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg line-clamp-2 mb-1">
-                          {course.title}
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {course.instructor}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 ml-2">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium">{course.rating}</span>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="pt-0">
-                    <CardDescription className="line-clamp-2 mb-4">
-                      {course.description}
-                    </CardDescription>
-                    
-                    <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span>{course.students} students</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        <span>{course.duration}</span>
-                      </div>
-                    </div>
-
-                    {course.status !== 'available' && (
-                      <div className="mb-4">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Progress</span>
-                          <span>{course.progress}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-primary h-2 rounded-full transition-all"
-                            style={{ width: `${course.progress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <Button className="w-full">
-                      <BookOpenIcon className="h-4 w-4 mr-2" />
-                      {getButtonText(course.status)}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Load More */}
-            <div className="text-center mt-12">
-              <Button variant="outline" size="lg">
-                Load More Courses
-              </Button>
-            </div>
+                )}
+              </>
+            )}
           </div>
         </main>
       </div>
+
+      {/* Course Form Modal */}
+      <CourseForm
+        open={showCourseForm}
+        onOpenChange={setShowCourseForm}
+        course={editingCourse}
+        mode={editingCourse ? 'edit' : 'create'}
+      />
     </AuthGuard>
   );
 }
