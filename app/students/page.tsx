@@ -131,6 +131,10 @@ export default function StudentsPage() {
   const [courseFilter, setCourseFilter] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<typeof mockStudents[0] | null>(null);
 
+  const handleStatusFilter = (value: string) => {
+    setStatusFilter(value === 'all' ? '' : value);
+  };
+
   const filteredStudents = mockStudents.filter(student => {
     const matchesSearch = 
       student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -448,13 +452,13 @@ export default function StudentsPage() {
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <Select value={statusFilter || 'all'} onValueChange={handleStatusFilter}>
                       <SelectTrigger className="w-40">
                         <Filter className="h-4 w-4 mr-2" />
                         <SelectValue placeholder="All Status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Status</SelectItem>
+                        <SelectItem value="all">All Status</SelectItem>
                         <SelectItem value="active">Active</SelectItem>
                         <SelectItem value="inactive">Inactive</SelectItem>
                         <SelectItem value="pending">Pending</SelectItem>
