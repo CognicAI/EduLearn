@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -15,16 +15,25 @@ import Link from 'next/link';
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'student' | 'teacher' | 'admin'>('student');
   const { login, isLoading } = useAuth();
   
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
+
+  // Auto-fill with student credentials by default
+  useEffect(() => {
+    const credentials = getDemoCredentials()[selectedRole];
+    setValue('email', credentials.email);
+    setValue('password', credentials.password);
+  }, [selectedRole, setValue]);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -34,58 +43,62 @@ export function LoginForm() {
     }
   };
 
-  const fillDemoCredentials = (role: 'student' | 'teacher' | 'admin') => {
+  const switchRole = (role: 'student' | 'teacher' | 'admin') => {
+    setSelectedRole(role);
     const credentials = getDemoCredentials()[role];
     setValue('email', credentials.email);
     setValue('password', credentials.password);
   };
+
+  const currentEmail = watch('email');
+  const currentPassword = watch('password');
 
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
         <CardDescription className="text-center">
-          Sign in to your EduLearn account
+          Choose your role to login with demo credentials
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {/* Demo Credentials Section */}
+        {/* Role Selection */}
         <div className="mb-6 p-4 bg-muted/50 rounded-lg">
-          <p className="text-sm font-medium mb-3 text-center">Demo Credentials</p>
+          <p className="text-sm font-medium mb-3 text-center">Select Demo Role</p>
           <div className="grid grid-cols-3 gap-2">
             <Button
               type="button"
-              variant="outline"
+              variant={selectedRole === 'student' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => fillDemoCredentials('student')}
-              className="flex flex-col items-center gap-1 h-auto py-2"
+              onClick={() => switchRole('student')}
+              className="flex flex-col items-center gap-1 h-auto py-3"
             >
               <GraduationCap className="h-4 w-4" />
               <span className="text-xs">Student</span>
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant={selectedRole === 'teacher' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => fillDemoCredentials('teacher')}
-              className="flex flex-col items-center gap-1 h-auto py-2"
+              onClick={() => switchRole('teacher')}
+              className="flex flex-col items-center gap-1 h-auto py-3"
             >
               <User className="h-4 w-4" />
               <span className="text-xs">Teacher</span>
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant={selectedRole === 'admin' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => fillDemoCredentials('admin')}
-              className="flex flex-col items-center gap-1 h-auto py-2"
+              onClick={() => switchRole('admin')}
+              className="flex flex-col items-center gap-1 h-auto py-3"
             >
               <Shield className="h-4 w-4" />
               <span className="text-xs">Admin</span>
             </Button>
           </div>
           <p className="text-xs text-muted-foreground text-center mt-2">
-            Click any role to auto-fill credentials
+            Credentials are automatically filled for the selected role
           </p>
         </div>
 
@@ -98,6 +111,8 @@ export function LoginForm() {
               placeholder="Enter your email"
               {...register('email')}
               className={errors.email ? 'border-destructive' : ''}
+              value={currentEmail || ''}
+              readOnly
             />
             {errors.email && (
               <p className="text-sm text-destructive">{errors.email.message}</p>
@@ -113,6 +128,8 @@ export function LoginForm() {
                 placeholder="Enter your password"
                 {...register('password')}
                 className={errors.password ? 'border-destructive pr-10' : 'pr-10'}
+                value={currentPassword || ''}
+                readOnly
               />
               <Button
                 type="button"
@@ -137,10 +154,10 @@ export function LoginForm() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing In...
+                Signing In as {selectedRole}...
               </>
             ) : (
-              'Sign In'
+              `Sign In as ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}`
             )}
           </Button>
         </form>
