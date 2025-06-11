@@ -134,8 +134,28 @@ class AuthService {
       return null;
     }
 
+    // Simulate API call delay for realistic behavior
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     // Return stored user data
     return this.currentUser;
+  }
+
+  // Mock implementation of /users/me endpoint
+  async getUserProfile(): Promise<User | null> {
+    if (!this.accessToken || !this.currentUser) {
+      return null;
+    }
+
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // Return enhanced user profile data
+    return {
+      ...this.currentUser,
+      // Add any additional profile fields here
+      lastLogin: this.currentUser.lastLogin || new Date().toISOString()
+    };
   }
 
   async refreshAccessToken(): Promise<boolean> {
