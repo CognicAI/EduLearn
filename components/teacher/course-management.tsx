@@ -70,7 +70,7 @@ export function CourseManagement() {
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || course.status === statusFilter;
+    const matchesStatus = !statusFilter || statusFilter === 'all' || course.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -281,7 +281,7 @@ export function CourseManagement() {
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Status</SelectItem>
+            <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="published">Published</SelectItem>
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="archived">Archived</SelectItem>

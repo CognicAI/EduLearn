@@ -108,8 +108,8 @@ export function GradeSubmissions() {
   const filteredSubmissions = submissions.filter(submission => {
     const matchesSearch = submission.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          submission.assignmentTitle.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesAssignment = !assignmentFilter || submission.assignmentId === assignmentFilter;
-    const matchesStatus = !statusFilter || submission.status === statusFilter;
+    const matchesAssignment = !assignmentFilter || assignmentFilter === 'all' || submission.assignmentId === assignmentFilter;
+    const matchesStatus = !statusFilter || statusFilter === 'all' || submission.status === statusFilter;
     return matchesSearch && matchesAssignment && matchesStatus;
   });
 
@@ -210,7 +210,7 @@ export function GradeSubmissions() {
             <SelectValue placeholder="All Assignments" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Assignments</SelectItem>
+            <SelectItem value="all">All Assignments</SelectItem>
             {mockAssignments.map((assignment) => (
               <SelectItem key={assignment.id} value={assignment.id}>
                 {assignment.title}
@@ -224,7 +224,7 @@ export function GradeSubmissions() {
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Status</SelectItem>
+            <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="submitted">Submitted</SelectItem>
             <SelectItem value="graded">Graded</SelectItem>
             <SelectItem value="late">Late</SelectItem>

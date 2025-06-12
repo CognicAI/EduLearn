@@ -86,8 +86,8 @@ export function AssignmentManagement() {
   const filteredAssignments = assignments.filter(assignment => {
     const matchesSearch = assignment.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          assignment.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCourse = !courseFilter || assignment.courseId === courseFilter;
-    const matchesStatus = !statusFilter || assignment.status === statusFilter;
+    const matchesCourse = !courseFilter || courseFilter === 'all' || assignment.courseId === courseFilter;
+    const matchesStatus = !statusFilter || statusFilter === 'all' || assignment.status === statusFilter;
     return matchesSearch && matchesCourse && matchesStatus;
   });
 
@@ -319,7 +319,7 @@ export function AssignmentManagement() {
             <SelectValue placeholder="All Courses" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Courses</SelectItem>
+            <SelectItem value="all">All Courses</SelectItem>
             {mockCourses.map((course) => (
               <SelectItem key={course.id} value={course.id}>
                 {course.title}
@@ -333,7 +333,7 @@ export function AssignmentManagement() {
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Status</SelectItem>
+            <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="closed">Closed</SelectItem>

@@ -280,7 +280,7 @@ export function EventManagement() {
                     <SelectValue placeholder="Select course (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No specific course</SelectItem>
+                    <SelectItem value="none">No specific course</SelectItem>
                     {mockCourses.map((course) => (
                       <SelectItem key={course.id} value={course.id}>
                         {course.title}

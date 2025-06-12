@@ -19,7 +19,10 @@ import {
   UserCheck,
   PanelLeftClose,
   PanelLeftOpen,
-  LogOut
+  LogOut,
+  Megaphone,
+  CalendarDays,
+  Shield
 } from 'lucide-react';
 
 const sidebarItems = {
@@ -40,10 +43,11 @@ const sidebarItems = {
   ],
   admin: [
     { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
-    { name: 'Users', href: '/users', icon: Users },
+    { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Courses', href: '/courses', icon: BookOpenIcon },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-    { name: 'Calendar', href: '/calendar', icon: Calendar },
+    { name: 'Announcements', href: '/admin/announcements', icon: Megaphone },
+    { name: 'Events', href: '/admin/events', icon: CalendarDays },
+    { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Settings', href: '/settings', icon: Settings },
   ],
 };
@@ -126,7 +130,12 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
               <p className="font-medium text-foreground">
                 {user.firstName} {user.lastName}
               </p>
-              <p className="capitalize">{user.role}</p>
+              <p className="capitalize flex items-center gap-1">
+                {user.role === 'admin' && <Shield className="h-3 w-3" />}
+                {user.role === 'teacher' && <BookOpenIcon className="h-3 w-3" />}
+                {user.role === 'student' && <GraduationCap className="h-3 w-3" />}
+                {user.role}
+              </p>
             </div>
           </div>
         )}
