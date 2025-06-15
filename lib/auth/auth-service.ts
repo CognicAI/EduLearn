@@ -1,40 +1,33 @@
 import { User, AuthResponse, LoginCredentials, RegisterCredentials, AuthTokens } from '@/lib/types/auth';
 
-// Mock user database
-const mockUsers = {
-  'student@demo.com': {
-    id: '550e8400-e29b-41d4-a716-446655440001',
-    email: 'student@demo.com',
-    firstName: 'John',
-    lastName: 'Student',
-    role: 'student' as const,
-    avatar: undefined,
-    createdAt: '2024-01-01T00:00:00.000Z',
-    lastLogin: undefined,
-    password: 'password123'
-  },
-  'teacher@demo.com': {
-    id: '550e8400-e29b-41d4-a716-446655440002',
-    email: 'teacher@demo.com',
-    firstName: 'Jane',
-    lastName: 'Teacher',
-    role: 'teacher' as const,
-    avatar: undefined,
-    createdAt: '2024-01-01T00:00:00.000Z',
-    lastLogin: undefined,
-    password: 'password123'
-  },
-  'admin@demo.com': {
-    id: '550e8400-e29b-41d4-a716-446655440003',
-    email: 'admin@demo.com',
-    firstName: 'Admin',
-    lastName: 'User',
-    role: 'admin' as const,
-    avatar: undefined,
-    createdAt: '2024-01-01T00:00:00.000Z',
-    lastLogin: undefined,
-    password: 'password123'
-  }
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const DEBUG_AUTH_SERVICE = true; // Set to false to disable auth-service logs
+
+// Helper type for backend user structure (snake_case)
+interface BackendUser {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: 'student' | 'teacher' | 'admin';
+  created_at: string;
+  updated_at?: string;
+}
+
+// Helper function to map backend user to frontend user
+const mapBackendUserToFrontendUser = (backendUser: BackendUser): User => {
+  if (DEBUG_AUTH_SERVICE) console.log('[AuthService] mapBackendUserToFrontendUser - Input:', backendUser);
+  const frontendUser: User = {
+    id: backendUser.id,
+    email: backendUser.email,
+    firstName: backendUser.first_name,
+    lastName: backendUser.last_name,
+    role: backendUser.role,
+    createdAt: backendUser.created_at,
+    updatedAt: backendUser.updated_at,
+  };
+  if (DEBUG_AUTH_SERVICE) console.log('[AuthService] mapBackendUserToFrontendUser - Output:', frontendUser);
+  return frontendUser;
 };
 
 class AuthService {
@@ -43,137 +36,254 @@ class AuthService {
   private currentUser: User | null = null;
 
   constructor() {
+    if (DEBUG_AUTH_SERVICE) console.log('[AuthService] Constructor called');
     if (typeof window !== 'undefined') {
       this.accessToken = localStorage.getItem('accessToken');
       this.refreshToken = localStorage.getItem('refreshToken');
       const userData = localStorage.getItem('currentUser');
+      if (DEBUG_AUTH_SERVICE) {
+        console.log('[AuthService] Initial accessToken:', this.accessToken ? 'Loaded' : 'Empty');
+        console.log('[AuthService] Initial refreshToken:', this.refreshToken ? 'Loaded' : 'Empty');
+        console.log('[AuthService] Initial currentUser data from localStorage:', userData ? 'Exists' : 'Empty');
+      }
       if (userData) {
         try {
           this.currentUser = JSON.parse(userData);
+          if (DEBUG_AUTH_SERVICE) console.log('[AuthService] Parsed currentUser from localStorage:', this.currentUser);
         } catch (error) {
-          console.error('Failed to parse stored user data:', error);
+          console.error('[AuthService] Failed to parse stored user data:', error);
+          localStorage.removeItem('currentUser');
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          if (DEBUG_AUTH_SERVICE) console.log('[AuthService] Cleared corrupted auth data from localStorage');
         }
       }
     }
   }
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    if (DEBUG_AUTH_SERVICE) console.log('[AuthService] login called with:', credentials.email);
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+      if (DEBUG_AUTH_SERVICE) console.log(`[AuthService] POST ${API_BASE_URL}/auth/login - Status: ${response.status}`);
 
-    const mockUser = mockUsers[credentials.email as keyof typeof mockUsers];
-    
-    if (!mockUser || mockUser.password !== credentials.password) {
-      throw new Error('Invalid email or password');
+      const data = await response.json();
+
+      if (!response.ok) {
+        const errorMessage = data.message || 'Login failed';
+        if (DEBUG_AUTH_SERVICE) console.error('[AuthService] Login API error:', errorMessage, 'Data:', data);
+        throw new Error(errorMessage);
+      }
+
+      if (DEBUG_AUTH_SERVICE) console.log('[AuthService] Login API success. User data from backend:', data.user, 'Tokens:', data.tokens ? 'Received' : 'Not Received');
+      const { user: backendUser, tokens } = data;
+
+      const mappedUser = mapBackendUserToFrontendUser(backendUser);
+      if (DEBUG_AUTH_SERVICE) console.log('[AuthService] Login - Mapped user:', mappedUser);
+
+      this.setTokens(tokens);
+      this.currentUser = mappedUser;
+      this.storeCurrentUser(mappedUser);
+
+      return { user: mappedUser, tokens, message: data.message };
+    } catch (error) {
+      if (DEBUG_AUTH_SERVICE) console.error('[AuthService] login - Exception:', error);
+      throw error; // Re-throw the error to be caught by the caller
     }
-
-    // Create user object without password
-    const { password, ...userWithoutPassword } = mockUser;
-    const user: User = {
-      ...userWithoutPassword,
-      lastLogin: new Date().toISOString()
-    };
-
-    // Generate mock tokens
-    const tokens: AuthTokens = {
-      accessToken: `mock-access-token-${user.id}`,
-      refreshToken: `mock-refresh-token-${user.id}`
-    };
-
-    this.setTokens(tokens);
-    this.currentUser = user;
-
-    // Store user data
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('currentUser', JSON.stringify(user));
-    }
-
-    return { user, tokens };
   }
 
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    if (DEBUG_AUTH_SERVICE) console.log('[AuthService] register called with:', credentials.email, 'Role:', credentials.role);
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+      if (DEBUG_AUTH_SERVICE) console.log(`[AuthService] POST ${API_BASE_URL}/auth/register - Status: ${response.status}`);
+      
+      const data = await response.json();
 
-    // Check if user already exists
-    if (mockUsers[credentials.email as keyof typeof mockUsers]) {
-      throw new Error('User already exists with this email');
+      if (!response.ok) {
+        const errorMessage = data.message || 'Registration failed';
+        if (DEBUG_AUTH_SERVICE) console.error('[AuthService] Register API error:', errorMessage, 'Data:', data);
+        throw new Error(errorMessage);
+      }
+      
+      if (DEBUG_AUTH_SERVICE) console.log('[AuthService] Register API success. User data from backend:', data.user, 'Tokens:', data.tokens ? 'Received' : 'Not Received');
+      const { user: backendUser, tokens } = data;
+
+      const mappedUser = mapBackendUserToFrontendUser(backendUser);
+      if (DEBUG_AUTH_SERVICE) console.log('[AuthService] Register - Mapped user:', mappedUser);
+
+      this.setTokens(tokens);
+      this.currentUser = mappedUser;
+      this.storeCurrentUser(mappedUser);
+
+      return { user: mappedUser, tokens, message: data.message };
+    } catch (error) {
+      if (DEBUG_AUTH_SERVICE) console.error('[AuthService] register - Exception:', error);
+      throw error;
     }
-
-    // Create new user
-    const user: User = {
-      id: `mock-user-${Date.now()}`,
-      email: credentials.email,
-      firstName: credentials.firstName,
-      lastName: credentials.lastName,
-      role: credentials.role,
-      avatar: undefined,
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString()
-    };
-
-    // Generate mock tokens
-    const tokens: AuthTokens = {
-      accessToken: `mock-access-token-${user.id}`,
-      refreshToken: `mock-refresh-token-${user.id}`
-    };
-
-    this.setTokens(tokens);
-    this.currentUser = user;
-
-    // Store user data
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('currentUser', JSON.stringify(user));
-    }
-
-    return { user, tokens };
   }
 
   async getCurrentUser(): Promise<User | null> {
+    if (DEBUG_AUTH_SERVICE) console.log('[AuthService] getCurrentUser called. Current accessToken:', this.accessToken ? 'Exists' : 'Empty');
     if (!this.accessToken) {
+      if (DEBUG_AUTH_SERVICE) console.log('[AuthService] getCurrentUser - No access token, returning null.');
       return null;
     }
+    try {
+      // Attempt to use existing currentUser if available and not forced to refresh
+      // For a more robust check, always fetch or verify token with backend here.
+      // This implementation relies on getUserProfile for actual fetching if needed.
+      if (this.currentUser) {
+         if (DEBUG_AUTH_SERVICE) console.log('[AuthService] getCurrentUser - Returning cached currentUser:', this.currentUser);
+         // Optionally add token expiration check here before returning cached user
+         // For now, we assume if token exists, cached user might be valid, getUserProfile will verify.
+      }
+      
+      // The AuthContext will typically call getUserProfile if it needs to confirm with the backend.
+      // This method can be simplified or enhanced based on strategy for fetching vs. caching user.
+      // For now, it primarily checks token and relies on getUserProfile for actual fetch.
+      // Let's ensure it tries to fetch if currentUser is null but token exists.
+      if (!this.currentUser && this.accessToken) {
+        if (DEBUG_AUTH_SERVICE) console.log('[AuthService] getCurrentUser - No cached user, but token exists. Attempting to fetch profile.');
+        // getUserProfile will handle mapping
+        return await this.getUserProfile();
+      }
+      return this.currentUser;
 
-    // Simulate API call delay for realistic behavior
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // Return stored user data
-    return this.currentUser;
+    } catch (error) {
+      if (DEBUG_AUTH_SERVICE) console.error('[AuthService] getCurrentUser - Exception:', error);
+      return null; // Or handle error more specifically
+    }
   }
 
-  // Mock implementation of /users/me endpoint
   async getUserProfile(): Promise<User | null> {
-    if (!this.accessToken || !this.currentUser) {
+    if (DEBUG_AUTH_SERVICE) console.log('[AuthService] getUserProfile called. Current accessToken:', this.accessToken ? 'Exists' : 'Empty');
+    if (!this.accessToken) {
+      if (DEBUG_AUTH_SERVICE) console.log('[AuthService] getUserProfile - No access token, returning null.');
       return null;
     }
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 200));
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+        },
+      });
+      if (DEBUG_AUTH_SERVICE) console.log(`[AuthService] GET ${API_BASE_URL}/auth/me - Status: ${response.status}`);
 
-    // Return enhanced user profile data
-    return {
-      ...this.currentUser,
-      // Add any additional profile fields here
-      lastLogin: this.currentUser.lastLogin || new Date().toISOString()
-    };
+      if (response.status === 401) {
+        if (DEBUG_AUTH_SERVICE) console.log('[AuthService] getUserProfile - Received 401. Attempting token refresh.');
+        const refreshed = await this.refreshAccessToken();
+        if (refreshed) {
+          if (DEBUG_AUTH_SERVICE) console.log('[AuthService] getUserProfile - Token refreshed. Retrying fetch profile.');
+          const retryResponse = await fetch(`${API_BASE_URL}/auth/me`, {
+            headers: {
+              'Authorization': `Bearer ${this.accessToken}`,
+            },
+          });
+          if (DEBUG_AUTH_SERVICE) console.log(`[AuthService] GET ${API_BASE_URL}/auth/me (retry) - Status: ${retryResponse.status}`);
+          if (!retryResponse.ok) {
+            const errorData = await retryResponse.json().catch(() => ({ message: 'Failed to fetch profile after refresh' }));
+            const errorMessage = errorData.message;
+            if (DEBUG_AUTH_SERVICE) console.error('[AuthService] getUserProfile (retry) API error:', errorMessage, 'Data:', errorData);
+            this.logout(); // Logout if retry fails
+            throw new Error(errorMessage);
+          }
+          const backendUserData = await retryResponse.json();
+          if (DEBUG_AUTH_SERVICE) console.log('[AuthService] getUserProfile (retry) API success. Backend user data:', backendUserData);
+          const mappedUser = mapBackendUserToFrontendUser(backendUserData as BackendUser);
+          if (DEBUG_AUTH_SERVICE) console.log('[AuthService] getUserProfile (retry) - Mapped user:', mappedUser);
+          this.currentUser = mappedUser;
+          this.storeCurrentUser(this.currentUser);
+          return this.currentUser;
+        }
+        if (DEBUG_AUTH_SERVICE) console.log('[AuthService] getUserProfile - Token refresh failed. Logging out.');
+        this.logout(); 
+        throw new Error('Session expired. Please login again.');
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch user profile' }));
+        const errorMessage = errorData.message;
+        if (DEBUG_AUTH_SERVICE) console.error('[AuthService] getUserProfile API error:', errorMessage, 'Data:', errorData);
+        // Consider logging out if profile fetch fails for reasons other than 401
+        // this.logout(); 
+        throw new Error(errorMessage);
+      }
+
+      const backendUserData = await response.json();
+      if (DEBUG_AUTH_SERVICE) console.log('[AuthService] getUserProfile API success. Backend user data:', backendUserData);
+      const mappedUser = mapBackendUserToFrontendUser(backendUserData as BackendUser);
+      if (DEBUG_AUTH_SERVICE) console.log('[AuthService] getUserProfile - Mapped user:', mappedUser);
+      this.currentUser = mappedUser;
+      this.storeCurrentUser(this.currentUser);
+      return this.currentUser;
+    } catch (error) {
+      if (DEBUG_AUTH_SERVICE) console.error('[AuthService] getUserProfile - Exception:', error);
+      // If any error occurs during profile fetch, it might indicate an invalid session
+      // this.logout(); // Consider if logout is appropriate here for all errors
+      throw error;
+    }
   }
 
   async refreshAccessToken(): Promise<boolean> {
-    if (!this.refreshToken || !this.currentUser) {
+    if (DEBUG_AUTH_SERVICE) console.log('[AuthService] refreshAccessToken called. Current refreshToken:', this.refreshToken ? 'Exists' : 'Empty');
+    if (!this.refreshToken) {
+      if (DEBUG_AUTH_SERVICE) console.log('[AuthService] refreshAccessToken - No refresh token, returning false.');
       return false;
     }
 
-    // Simulate token refresh
-    const tokens: AuthTokens = {
-      accessToken: `mock-access-token-refreshed-${this.currentUser.id}`,
-      refreshToken: this.refreshToken
-    };
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: this.refreshToken }),
+      });
+      if (DEBUG_AUTH_SERVICE) console.log(`[AuthService] POST ${API_BASE_URL}/auth/refresh-token - Status: ${response.status}`);
 
-    this.setTokens(tokens);
-    return true;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to refresh access token' }));
+        if (DEBUG_AUTH_SERVICE) console.error('[AuthService] Refresh token API error:', errorData.message, 'Data:', errorData);
+        this.logout(); 
+        return false;
+      }
+
+      const { accessToken } = await response.json(); 
+      if (accessToken) {
+        if (DEBUG_AUTH_SERVICE) console.log('[AuthService] Refresh token API success. New accessToken received.');
+        this.accessToken = accessToken;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('accessToken', accessToken);
+          if (DEBUG_AUTH_SERVICE) console.log('[AuthService] New accessToken stored in localStorage.');
+        }
+        return true;
+      }
+      if (DEBUG_AUTH_SERVICE) console.warn('[AuthService] Refresh token API success but no accessToken in response.');
+      this.logout(); // If no new token, treat as failure
+      return false;
+    } catch (error) {
+      if (DEBUG_AUTH_SERVICE) console.error('[AuthService] refreshAccessToken - Exception:', error);
+      this.logout(); 
+      return false;
+    }
   }
 
   logout(): void {
+    if (DEBUG_AUTH_SERVICE) console.log('[AuthService] logout called.');
     this.accessToken = null;
     this.refreshToken = null;
     this.currentUser = null;
@@ -182,31 +292,57 @@ class AuthService {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('currentUser');
+      if (DEBUG_AUTH_SERVICE) console.log('[AuthService] Cleared auth data from localStorage.');
     }
+    // window.location.href = '/auth/login'; // Consider navigation in AuthContext instead
   }
 
-  private setTokens(tokens: AuthTokens): void {
+  private setTokens(tokens: AuthTokens | undefined): void {
+    if (DEBUG_AUTH_SERVICE) console.log('[AuthService] setTokens called. Tokens:', tokens ? 'Provided' : 'Undefined/Null');
+    if (!tokens) {
+      if (DEBUG_AUTH_SERVICE) console.warn('[AuthService] setTokens called with undefined tokens.');
+      // Decide if to clear existing tokens or do nothing
+      // this.accessToken = null;
+      // this.refreshToken = null;
+      // localStorage.removeItem('accessToken');
+      // localStorage.removeItem('refreshToken');
+      return;
+    }
     this.accessToken = tokens.accessToken;
     this.refreshToken = tokens.refreshToken;
+    if (DEBUG_AUTH_SERVICE) console.log('[AuthService] setTokens: accessToken set, refreshToken set.');
     
     if (typeof window !== 'undefined') {
       localStorage.setItem('accessToken', tokens.accessToken);
       localStorage.setItem('refreshToken', tokens.refreshToken);
+      if (DEBUG_AUTH_SERVICE) console.log('[AuthService] Tokens stored in localStorage.');
+    }
+  }
+
+  private storeCurrentUser(user: User | null): void {
+    if (DEBUG_AUTH_SERVICE) console.log('[AuthService] storeCurrentUser called. User:', user);
+    if (!user) {
+      if (DEBUG_AUTH_SERVICE) console.warn('[AuthService] storeCurrentUser called with null user.');
+      // localStorage.removeItem('currentUser'); // Already handled by logout
+      return;
+    }
+    if (DEBUG_AUTH_SERVICE) console.log('[AuthService] storeCurrentUser:', user);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      if (DEBUG_AUTH_SERVICE) console.log('[AuthService] Current user stored in localStorage.');
     }
   }
 
   getAccessToken(): string | null {
+    if (DEBUG_AUTH_SERVICE) console.log('[AuthService] getAccessToken called. Token:', this.accessToken ? 'Exists' : 'Empty');
     return this.accessToken;
+  }
+
+  isAuthenticated(): boolean {
+    const authenticated = !!this.accessToken;
+    if (DEBUG_AUTH_SERVICE) console.log('[AuthService] isAuthenticated called. Result:', authenticated, 'Token present:', !!this.accessToken);
+    return authenticated;
   }
 }
 
-// Demo credentials for testing
-export function getDemoCredentials() {
-  return {
-    student: { email: 'student@demo.com', password: 'password123' },
-    teacher: { email: 'teacher@demo.com', password: 'password123' },
-    admin: { email: 'admin@demo.com', password: 'password123' }
-  };
-}
-
-export const authService = new AuthService();
+export default new AuthService();
