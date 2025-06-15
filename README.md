@@ -6,7 +6,7 @@ A modern, full-stack Learning Management System built with Next.js, Node.js, Exp
 
 - **Frontend**: Next.js 13+ with App Router, TypeScript, Tailwind CSS, shadcn/ui
 - **Backend**: Node.js + Express with TypeScript
-- **Database**: PostgreSQL with connection pooling
+- **Database**: PostgreSQL with connection 
 - **Authentication**: JWT-based with role-based access control
 
 ## Quick Start
@@ -60,6 +60,35 @@ The application comes with pre-configured demo accounts:
 - **Student**: `student@demo.com` / `password123`
 - **Teacher**: `teacher@demo.com` / `password123`
 - **Admin**: `admin@demo.com` / `password123`
+
+
+
+## 🎯 User Roles & Permissions
+
+### 👨‍🎓 **Students**
+- ✅ Browse and enroll in courses
+- ✅ View course materials and resources
+- ✅ Submit assignments and track progress
+- ✅ View grades and teacher feedback
+- ✅ Access personal dashboard and analytics
+- ✅ Manage profile and settings
+
+### 👨‍🏫 **Teachers**
+- ✅ Create and manage courses
+- ✅ Upload course materials and resources
+- ✅ Create assignments and assessments
+- ✅ Grade submissions and provide feedback
+- ✅ View student analytics and progress
+- ✅ Manage student enrollments
+- ✅ Schedule events and announcements
+
+### 👨‍💼 **Administrators**
+- ✅ Full system access and management
+- ✅ User account management (create, edit, delete)
+- ✅ Course oversight and management
+- ✅ System-wide analytics and reporting
+- ✅ Platform configuration and settings
+- ✅ Event and announcement management
 
 ## Features
 

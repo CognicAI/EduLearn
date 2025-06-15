@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { authService } from '@/lib/auth/auth-service';
+import authService from '@/lib/auth/auth-service';
 import { User } from '@/lib/types/auth';
 
 export function useUser() {

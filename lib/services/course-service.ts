@@ -1,5 +1,6 @@
 import { Course, CreateCourseData, UpdateCourseData, CourseWithEnrollment, PaginatedCourses, Enrollment } from '@/lib/types/course';
-import { authService } from '@/lib/auth/auth-service';
+import authService from '@/lib/auth/auth-service';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // Mock course database
 let mockCourses: Course[] = [
@@ -133,69 +134,29 @@ class CourseService {
     instructorId?: string;
     status?: string;
   } = {}): Promise<PaginatedCourses> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    const currentUser = await authService.getCurrentUser();
-    const {
-      page = 1,
-      limit = 12,
-      search = '',
-      category = '',
-      instructorId = '',
-      status = ''
-    } = params;
-
-    let filteredCourses = [...mockCourses];
-
-    // Apply filters
-    if (search) {
-      filteredCourses = filteredCourses.filter(course =>
-        course.title.toLowerCase().includes(search.toLowerCase()) ||
-        course.description.toLowerCase().includes(search.toLowerCase()) ||
-        course.instructorName.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-
-    if (instructorId) {
-      filteredCourses = filteredCourses.filter(course => course.instructorId === instructorId);
-    }
-
-    if (status) {
-      filteredCourses = filteredCourses.filter(course => course.status === status);
-    }
-
-    // For students, only show published courses
-    if (currentUser?.role === 'student') {
-      filteredCourses = filteredCourses.filter(course => course.status === 'published');
-    }
-
-    // Calculate pagination
-    const total = filteredCourses.length;
-    const totalPages = Math.ceil(total / limit);
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedCourses = filteredCourses.slice(startIndex, endIndex);
-
-    // Add enrollment information for students
-    const coursesWithEnrollment: CourseWithEnrollment[] = paginatedCourses.map(course => {
-      const enrollment = currentUser?.role === 'student' 
-        ? mockEnrollments.find(e => e.courseId === course.id && e.studentId === currentUser.id)
-        : undefined;
-
-      return {
-        ...course,
-        enrollment,
-        isEnrolled: !!enrollment,
-      };
+    const { page = 1, limit = 12, search = '', category = '', instructorId = '', status = '' } = params;
+    // Build query URL
+    const url = new URL(`${API_BASE_URL}/courses`);
+    url.searchParams.append('page', page.toString());
+    url.searchParams.append('limit', limit.toString());
+    if (search) url.searchParams.append('search', search);
+    if (category) url.searchParams.append('category', category);
+    if (instructorId) url.searchParams.append('instructorId', instructorId);
+    if (status) url.searchParams.append('status', status);
+    // Fetch from backend
+    const token = authService.getAccessToken();
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
     });
-
-    return {
-      courses: coursesWithEnrollment,
-      total,
-      page,
-      limit,
-      totalPages,
-    };
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(errorData.message || 'Failed to fetch courses');
+    }
+    const data = await response.json();
+    return data as PaginatedCourses;
   }
 
   // Get a single course by ID
