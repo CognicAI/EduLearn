@@ -112,21 +112,6 @@ The backend API is available at `http://localhost:3001/api`
 
 ### Project Structure
 
-```
-edulearn-lms/
-├── app/                 # Next.js app directory
-├── components/          # React components
-├── lib/                # Utilities and configurations
-├── backend/            # Express API server
-│   ├── src/
-│   │   ├── controllers/
-│   │   ├── middleware/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   └── types/
-│   └── database/
-└── supabase/migrations/ # Database schema
-```
 
 ### Available Scripts
 

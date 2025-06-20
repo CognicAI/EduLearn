@@ -23,7 +23,7 @@ export const authenticateToken = (
   try {
     const decoded = verifyAccessToken(token);
     req.user = decoded;
-    next();
+    return next();
   } catch (error) {
     return res.status(403).json({ 
       success: false, 
@@ -48,6 +48,6 @@ export const requireRole = (roles: string[]) => {
       });
     }
 
-    next();
+    return next();
   };
 };

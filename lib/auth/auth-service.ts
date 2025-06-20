@@ -1,41 +1,6 @@
 import { User, AuthResponse, LoginCredentials, RegisterCredentials, AuthTokens } from '@/lib/types/auth';
 
-// Mock user database
-const mockUsers = {
-  'student@demo.com': {
-    id: '550e8400-e29b-41d4-a716-446655440001',
-    email: 'student@demo.com',
-    firstName: 'John',
-    lastName: 'Student',
-    role: 'student' as const,
-    avatar: undefined,
-    createdAt: '2024-01-01T00:00:00.000Z',
-    lastLogin: undefined,
-    password: 'password123'
-  },
-  'teacher@demo.com': {
-    id: '550e8400-e29b-41d4-a716-446655440002',
-    email: 'teacher@demo.com',
-    firstName: 'Jane',
-    lastName: 'Teacher',
-    role: 'teacher' as const,
-    avatar: undefined,
-    createdAt: '2024-01-01T00:00:00.000Z',
-    lastLogin: undefined,
-    password: 'password123'
-  },
-  'admin@demo.com': {
-    id: '550e8400-e29b-41d4-a716-446655440003',
-    email: 'admin@demo.com',
-    firstName: 'Admin',
-    lastName: 'User',
-    role: 'admin' as const,
-    avatar: undefined,
-    createdAt: '2024-01-01T00:00:00.000Z',
-    lastLogin: undefined,
-    password: 'password123'
-  }
-};
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 class AuthService {
   private accessToken: string | null = null;
@@ -48,128 +13,80 @@ class AuthService {
       this.refreshToken = localStorage.getItem('refreshToken');
       const userData = localStorage.getItem('currentUser');
       if (userData) {
-        try {
-          this.currentUser = JSON.parse(userData);
-        } catch (error) {
-          console.error('Failed to parse stored user data:', error);
-        }
+        this.currentUser = JSON.parse(userData);
       }
     }
   }
 
+  private async request<T>(endpoint: string, options: RequestInit): Promise<T> {
+    const res = await fetch(`${API_URL}${endpoint}`, options);
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      throw new Error(json.message || 'Request failed');
+    }
+    return json.data;
+  }
+
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const data = await this.request<{ user: User; tokens: AuthTokens }>(
+      '/auth/login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials),
+      }
+    );
 
-    const mockUser = mockUsers[credentials.email as keyof typeof mockUsers];
-    
-    if (!mockUser || mockUser.password !== credentials.password) {
-      throw new Error('Invalid email or password');
-    }
-
-    // Create user object without password
-    const { password, ...userWithoutPassword } = mockUser;
-    const user: User = {
-      ...userWithoutPassword,
-      lastLogin: new Date().toISOString()
-    };
-
-    // Generate mock tokens
-    const tokens: AuthTokens = {
-      accessToken: `mock-access-token-${user.id}`,
-      refreshToken: `mock-refresh-token-${user.id}`
-    };
-
-    this.setTokens(tokens);
-    this.currentUser = user;
-
-    // Store user data
+    this.setTokens(data.tokens);
+    this.currentUser = data.user;
     if (typeof window !== 'undefined') {
-      localStorage.setItem('currentUser', JSON.stringify(user));
+      localStorage.setItem('currentUser', JSON.stringify(data.user));
     }
 
-    return { user, tokens };
+    return { user: data.user, tokens: data.tokens };
   }
 
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const data = await this.request<{ user: User; tokens: AuthTokens }>(
+      '/auth/register',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials),
+      }
+    );
 
-    // Check if user already exists
-    if (mockUsers[credentials.email as keyof typeof mockUsers]) {
-      throw new Error('User already exists with this email');
-    }
-
-    // Create new user
-    const user: User = {
-      id: `mock-user-${Date.now()}`,
-      email: credentials.email,
-      firstName: credentials.firstName,
-      lastName: credentials.lastName,
-      role: credentials.role,
-      avatar: undefined,
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString()
-    };
-
-    // Generate mock tokens
-    const tokens: AuthTokens = {
-      accessToken: `mock-access-token-${user.id}`,
-      refreshToken: `mock-refresh-token-${user.id}`
-    };
-
-    this.setTokens(tokens);
-    this.currentUser = user;
-
-    // Store user data
+    this.setTokens(data.tokens);
+    this.currentUser = data.user;
     if (typeof window !== 'undefined') {
-      localStorage.setItem('currentUser', JSON.stringify(user));
+      localStorage.setItem('currentUser', JSON.stringify(data.user));
     }
 
-    return { user, tokens };
+    return { user: data.user, tokens: data.tokens };
   }
 
   async getCurrentUser(): Promise<User | null> {
-    if (!this.accessToken) {
-      return null;
-    }
-
-    // Simulate API call delay for realistic behavior
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // Return stored user data
-    return this.currentUser;
-  }
-
-  // Mock implementation of /users/me endpoint
-  async getUserProfile(): Promise<User | null> {
-    if (!this.accessToken || !this.currentUser) {
-      return null;
-    }
-
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    // Return enhanced user profile data
-    return {
-      ...this.currentUser,
-      // Add any additional profile fields here
-      lastLogin: this.currentUser.lastLogin || new Date().toISOString()
-    };
+    if (!this.accessToken) return null;
+    const data = await this.request<User>('/auth/me', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${this.accessToken}` },
+    });
+    this.currentUser = data;
+    return data;
   }
 
   async refreshAccessToken(): Promise<boolean> {
-    if (!this.refreshToken || !this.currentUser) {
-      return false;
-    }
+    if (!this.refreshToken) return false;
+    const data = await this.request<{ tokens: AuthTokens }>(
+      '/auth/refresh',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: this.refreshToken }),
+      }
+    );
 
-    // Simulate token refresh
-    const tokens: AuthTokens = {
-      accessToken: `mock-access-token-refreshed-${this.currentUser.id}`,
-      refreshToken: this.refreshToken
-    };
-
-    this.setTokens(tokens);
+    this.setTokens(data.tokens);
     return true;
   }
 
@@ -177,7 +94,6 @@ class AuthService {
     this.accessToken = null;
     this.refreshToken = null;
     this.currentUser = null;
-    
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
@@ -188,7 +104,6 @@ class AuthService {
   private setTokens(tokens: AuthTokens): void {
     this.accessToken = tokens.accessToken;
     this.refreshToken = tokens.refreshToken;
-    
     if (typeof window !== 'undefined') {
       localStorage.setItem('accessToken', tokens.accessToken);
       localStorage.setItem('refreshToken', tokens.refreshToken);
@@ -198,15 +113,6 @@ class AuthService {
   getAccessToken(): string | null {
     return this.accessToken;
   }
-}
-
-// Demo credentials for testing
-export function getDemoCredentials() {
-  return {
-    student: { email: 'student@demo.com', password: 'password123' },
-    teacher: { email: 'teacher@demo.com', password: 'password123' },
-    admin: { email: 'admin@demo.com', password: 'password123' }
-  };
 }
 
 export const authService = new AuthService();

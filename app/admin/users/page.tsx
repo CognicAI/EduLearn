@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { AuthGuard } from '@/lib/auth/auth-guard';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
@@ -29,83 +29,16 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-// Mock users data
-const mockUsers = [
-  {
-    id: '1',
-    email: 'alice.johnson@email.com',
-    firstName: 'Alice',
-    lastName: 'Johnson',
-    role: 'student',
-    status: 'active',
-    avatar: undefined,
-    createdAt: '2024-01-15',
-    lastLogin: '2 hours ago',
-    coursesEnrolled: 3,
-    coursesCompleted: 1
-  },
-  {
-    id: '2',
-    email: 'bob.smith@email.com',
-    firstName: 'Bob',
-    lastName: 'Smith',
-    role: 'student',
-    status: 'active',
-    avatar: undefined,
-    createdAt: '2024-01-20',
-    lastLogin: '1 day ago',
-    coursesEnrolled: 2,
-    coursesCompleted: 0
-  },
-  {
-    id: '3',
-    email: 'prof.johnson@email.com',
-    firstName: 'Prof.',
-    lastName: 'Johnson',
-    role: 'teacher',
-    status: 'active',
-    avatar: undefined,
-    createdAt: '2024-01-10',
-    lastLogin: '30 minutes ago',
-    coursesCreated: 3,
-    studentsTotal: 105
-  },
-  {
-    id: '4',
-    email: 'dr.smith@email.com',
-    firstName: 'Dr.',
-    lastName: 'Smith',
-    role: 'teacher',
-    status: 'inactive',
-    avatar: undefined,
-    createdAt: '2024-01-05',
-    lastLogin: '1 week ago',
-    coursesCreated: 2,
-    studentsTotal: 67
-  },
-  {
-    id: '5',
-    email: 'admin@edulearn.com',
-    firstName: 'System',
-    lastName: 'Admin',
-    role: 'admin',
-    status: 'active',
-    avatar: undefined,
-    createdAt: '2024-01-01',
-    lastLogin: '5 minutes ago',
-    systemAccess: 'Full'
-  }
-];
+import { authService } from '@/lib/auth/auth-service';
 
 export default function AdminUsersPage() {
   const { user } = useAuth();
-  const [users, setUsers] = useState(mockUsers);
+  const [users, setUsers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<typeof mockUsers[0] | null>(null);
+  const [editingUser, setEditingUser] = useState<typeof users[0] | null>(null);
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -113,6 +46,33 @@ export default function AdminUsersPage() {
     role: 'student',
     status: 'active'
   });
+
+  // Load users from API
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const token = authService.getAccessToken();
+        if (!token) {
+          throw new Error('Access token required');
+        }
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          }
+        });
+        const json = await res.json();
+        if (json.success) {
+          setUsers(json.data);
+        } else {
+          console.error('Failed to fetch users:', json.message);
+        }
+      } catch (err) {
+        console.error('Error fetching users:', err);
+      }
+    }
+    fetchUsers();
+  }, []);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
@@ -154,7 +114,7 @@ export default function AdminUsersPage() {
     setIsCreateDialogOpen(true);
   };
 
-  const handleEditUser = (user: typeof mockUsers[0]) => {
+  const handleEditUser = (user: typeof users[0]) => {
     setEditingUser(user);
     setFormData({
       email: user.email,

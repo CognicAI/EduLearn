@@ -1,0 +1,66 @@
+🔍 LMS Database Schema Summary
+This schema represents a comprehensive Educational Learning Management System (LMS) backend structure with the following core modules:
+
+🎓 User Management
+Users table stores base user data with role references.
+
+Roles defines roles like admin, instructor, student, etc.
+
+UserProfiles and UserDetails extend user info.
+
+UserAuth manages login credentials.
+
+UserSettings for notifications, preferences, etc.
+
+📚 Courses & Content
+Courses includes title, code, description, and metadata.
+
+Modules, Lessons, and Topics break down course structure.
+
+CourseResources, LessonMaterials, and Attachments support multimedia.
+
+CourseCategories and Tags organize content.
+
+📝 Assessments
+Quizzes, Questions, Options form the quiz engine.
+
+Assignments, Submissions, and Grades track student performance.
+
+ExamResults and EvaluationCriteria define exam handling.
+
+📅 Scheduling & Sessions
+LiveSessions and SessionAttendees support video/live classes.
+
+Calendars, Schedules, and Events manage time-based activities.
+
+👨‍🏫 Instructor & Enrollment
+InstructorProfiles, CourseInstructors, and InstructorRatings.
+
+Enrollments links users to courses.
+
+Waitlists and CourseRequests manage pre-enrollment.
+
+💬 Communication & Collaboration
+Announcements, Notifications, and Feedback tables.
+
+Messages, Chats, DiscussionForums, and Comments for interaction.
+
+🧾 Payments & Subscriptions
+Orders, Invoices, Payments, and Coupons.
+
+Subscriptions, Plans, and BillingDetails for premium access.
+
+📊 Reports & Analytics
+ActivityLogs, ProgressTracking, and EngagementStats.
+
+Certificates issued post course completion.
+
+🔐 Security & Access
+Permissions, RolePermissions, AccessControls.
+
+AuditLogs for tracking changes/actions.
+
+📦 Miscellaneous
+Institutions, Departments, and Locations.
+
+FAQs, SupportTickets, and AppSettings.

@@ -16,7 +16,7 @@ export class AuthController {
         role: user.role
       });
 
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         message: 'User registered successfully',
         data: {
@@ -34,7 +34,7 @@ export class AuthController {
         });
       }
 
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Internal server error'
       });
@@ -81,7 +81,7 @@ export class AuthController {
         lastLogin: new Date().toISOString()
       };
 
-      res.json({
+      return res.json({
         success: true,
         message: 'Login successful',
         data: {
@@ -91,7 +91,7 @@ export class AuthController {
       });
     } catch (error) {
       console.error('Login error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Internal server error'
       });
@@ -115,13 +115,13 @@ export class AuthController {
         });
       }
 
-      res.json({
+      return res.json({
         success: true,
         data: user
       });
     } catch (error) {
       console.error('Get current user error:', error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Internal server error'
       });
@@ -147,13 +147,13 @@ export class AuthController {
         role: req.body.role
       });
 
-      res.json({
+      return res.json({
         success: true,
         data: { tokens }
       });
     } catch (error) {
       console.error('Token refresh error:', error);
-      res.status(401).json({
+      return res.status(401).json({
         success: false,
         message: 'Invalid refresh token'
       });

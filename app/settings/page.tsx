@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { AuthGuard } from '@/lib/auth/auth-guard';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
@@ -28,6 +28,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { authService } from '@/lib/auth/auth-service';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -41,6 +42,7 @@ export default function SettingsPage() {
     bio: '',
     timezone: 'UTC',
     language: 'en'
+    ,website: '', linkedin: '', github: '', skills: '', interests: '', academicBackground: '', experienceLevel: 'beginner'
   });
 
   // Notification settings state
@@ -67,8 +69,12 @@ export default function SettingsPage() {
   const handleSaveProfile = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const token = authService.getAccessToken();
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type':'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(profileData)
+      });
       toast.success('Profile updated successfully!');
     } catch (error) {
       toast.error('Failed to update profile');
@@ -80,8 +86,18 @@ export default function SettingsPage() {
   const handleSaveNotifications = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const token = authService.getAccessToken();
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type':'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          notificationEmail: notificationSettings.emailNotifications,
+          notificationPush: notificationSettings.pushNotifications,
+          notificationSms: notificationSettings.assignmentReminders, // map appropriately
+          theme: notificationSettings.systemAnnouncements ? 'light' : 'dark',
+          dashboardLayout: {}, privacySettings: {}, languagePreference: profileData.language, timezonePreference: profileData.timezone
+        })
+      });
       toast.success('Notification preferences updated!');
     } catch (error) {
       toast.error('Failed to update notifications');
@@ -102,6 +118,35 @@ export default function SettingsPage() {
       setIsLoading(false);
     }
   };
+
+  // load profile, settings, sessions, activity
+  const [sessions, setSessions] = useState([]);
+  const [activity, setActivity] = useState([]);
+  useEffect(() => {
+    async function loadAll() {
+      const token = authService.getAccessToken();
+      if (!token) return;
+      const headers = { Authorization: `Bearer ${token}`, 'Content-Type':'application/json' };
+      // profile
+      const pf = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/profile`,{ headers });
+      const pjson = await pf.json(); if(pjson.success) setProfileData(prev=>({...prev,...pjson.data}));
+      // settings
+      const st = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/settings`,{ headers });
+      const sjson = await st.json(); if(sjson.success) setNotificationSettings({
+        emailNotifications: sjson.data.notification_email,
+        pushNotifications: sjson.data.notification_push,
+        assignmentReminders: sjson.data.notification_sms,
+        gradeNotifications: false, courseUpdates:false, systemAnnouncements:false
+      });
+      // sessions
+      const se = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/sessions`,{ headers });
+      const seJ = await se.json(); if(seJ.success) setSessions(seJ.data);
+      // activity
+      const act = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/activity`,{ headers });
+      const actJ = await act.json(); if(actJ.success) setActivity(actJ.data);
+    }
+    loadAll();
+  }, []);
 
   return (
     <AuthGuard>
@@ -143,6 +188,14 @@ export default function SettingsPage() {
                     System
                   </TabsTrigger>
                 )}
+                <TabsTrigger value="sessions" className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  Sessions
+                </TabsTrigger>
+                <TabsTrigger value="activity" className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  Activity
+                </TabsTrigger>
               </TabsList>
 
               {/* Profile Settings */}
@@ -559,6 +612,34 @@ export default function SettingsPage() {
                   </div>
                 </TabsContent>
               )}
+               {/* Sessions Tab */}
+               <TabsContent value="sessions">
+                <Card>
+                  <CardHeader><CardTitle>Sessions</CardTitle></CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader><TableRow><TableHead>ID</TableHead><TableHead>Device</TableHead><TableHead>IP</TableHead><TableHead>Expires</TableHead><TableHead>Active</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {sessions.map((s:any)=>(<TableRow key={s.id}><TableCell>{s.id}</TableCell><TableCell>{s.device_type}</TableCell><TableCell>{s.ip_address}</TableCell><TableCell>{new Date(s.expires_at).toLocaleString()}</TableCell><TableCell>{s.is_active.toString()}</TableCell></TableRow>))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              {/* Activity Tab */}
+              <TabsContent value="activity">
+                <Card>
+                  <CardHeader><CardTitle>Activity Logs</CardTitle></CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>Description</TableHead><TableHead>At</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {activity.map((a:any,i)=>(<TableRow key={i}><TableCell>{a.activity_type}</TableCell><TableCell>{a.description}</TableCell><TableCell>{new Date(a.created_at).toLocaleString()}</TableCell></TableRow>))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
           </div>
         </main>

@@ -1,37 +1,31 @@
 import bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
-import pool from '@/config/database';
+import { query } from '@/config/db';
 import { User, CreateUserData, UserResponse } from '@/types/user';
 
 export class UserService {
   async createUser(userData: CreateUserData): Promise<UserResponse> {
     const { email, firstName, lastName, password, role } = userData;
-    
-    // Check if user already exists
-    const existingUser = await this.findUserByEmail(email);
-    if (existingUser) {
+
+    const existingUserResult = await query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existingUserResult.rows.length > 0) {
       throw new Error('User already exists with this email');
     }
 
-    // Hash password
     const saltRounds = 12;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    // Create user
-    const userId = uuidv4();
-    const query = `
-      INSERT INTO users (id, email, first_name, last_name, password_hash, role, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+    const insertQuery = `
+      INSERT INTO users (email, first_name, last_name, password_hash, role)
+      VALUES ($1, $2, $3, $4, $5)
       RETURNING id, email, first_name, last_name, role, created_at
     `;
 
-    const result = await pool.query(query, [
-      userId,
+    const result = await query(insertQuery, [
       email,
       firstName,
       lastName,
       passwordHash,
-      role
+      role || 'student'
     ]);
 
     const user = result.rows[0];
@@ -46,13 +40,13 @@ export class UserService {
   }
 
   async findUserByEmail(email: string): Promise<User | null> {
-    const query = `
-      SELECT id, email, first_name, last_name, password_hash, role, avatar, created_at, updated_at, last_login
+    const selectQuery = `
+      SELECT id, email, first_name, last_name, password_hash, role, profile_image, created_at, updated_at, last_login
       FROM users 
       WHERE email = $1
     `;
 
-    const result = await pool.query(query, [email]);
+    const result = await query(selectQuery, [email]);
     
     if (result.rows.length === 0) {
       return null;
@@ -66,7 +60,7 @@ export class UserService {
       lastName: user.last_name,
       passwordHash: user.password_hash,
       role: user.role,
-      avatar: user.avatar,
+      avatar: user.profile_image,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
       lastLogin: user.last_login
@@ -74,13 +68,13 @@ export class UserService {
   }
 
   async findUserById(id: string): Promise<UserResponse | null> {
-    const query = `
-      SELECT id, email, first_name, last_name, role, avatar, created_at, last_login
+    const selectQuery = `
+      SELECT id, email, first_name, last_name, role, profile_image, created_at, last_login
       FROM users 
       WHERE id = $1
     `;
 
-    const result = await pool.query(query, [id]);
+    const result = await query(selectQuery, [id]);
     
     if (result.rows.length === 0) {
       return null;
@@ -93,24 +87,18 @@ export class UserService {
       firstName: user.first_name,
       lastName: user.last_name,
       role: user.role,
-      avatar: user.avatar,
+      avatar: user.profile_image,
       createdAt: user.created_at.toISOString(),
       lastLogin: user.last_login?.toISOString()
     };
   }
 
-  async validatePassword(password: string, hash: string): Promise<boolean> {
-    return bcrypt.compare(password, hash);
+  async validatePassword(password: string, passwordHash: string): Promise<boolean> {
+    return bcrypt.compare(password, passwordHash);
   }
 
-  async updateLastLogin(userId: string): Promise<void> {
-    const query = `
-      UPDATE users 
-      SET last_login = NOW(), updated_at = NOW()
-      WHERE id = $1
-    `;
-
-    await pool.query(query, [userId]);
+  async updateLastLogin(id: string): Promise<void> {
+    await query('UPDATE users SET last_login = NOW() WHERE id = $1', [id]);
   }
 }
 
