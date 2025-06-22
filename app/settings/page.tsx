@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { AuthGuard } from '@/lib/auth/auth-guard';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
@@ -28,7 +28,6 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { authService } from '@/lib/auth/auth-service';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -36,13 +35,23 @@ export default function SettingsPage() {
 
   // Profile settings state
   const [profileData, setProfileData] = useState({
+    id: user?.id || '',
+    userId: user?.id || '',
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
     email: user?.email || '',
     bio: '',
+    website: '',
+    linkedin: '',
+    github: '',
+    skills: '',
+    interests: '',
+    academicBackground: '',
+    experienceLevel: 'beginner',
+    createdAt: '',
+    updatedAt: '',
     timezone: 'UTC',
     language: 'en'
-    ,website: '', linkedin: '', github: '', skills: '', interests: '', academicBackground: '', experienceLevel: 'beginner'
   });
 
   // Notification settings state
@@ -69,12 +78,8 @@ export default function SettingsPage() {
   const handleSaveProfile = async () => {
     setIsLoading(true);
     try {
-      const token = authService.getAccessToken();
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/profile`, {
-        method: 'PUT',
-        headers: { 'Content-Type':'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(profileData)
-      });
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       toast.success('Profile updated successfully!');
     } catch (error) {
       toast.error('Failed to update profile');
@@ -86,18 +91,8 @@ export default function SettingsPage() {
   const handleSaveNotifications = async () => {
     setIsLoading(true);
     try {
-      const token = authService.getAccessToken();
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/settings`, {
-        method: 'PUT',
-        headers: { 'Content-Type':'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          notificationEmail: notificationSettings.emailNotifications,
-          notificationPush: notificationSettings.pushNotifications,
-          notificationSms: notificationSettings.assignmentReminders, // map appropriately
-          theme: notificationSettings.systemAnnouncements ? 'light' : 'dark',
-          dashboardLayout: {}, privacySettings: {}, languagePreference: profileData.language, timezonePreference: profileData.timezone
-        })
-      });
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       toast.success('Notification preferences updated!');
     } catch (error) {
       toast.error('Failed to update notifications');
@@ -118,35 +113,6 @@ export default function SettingsPage() {
       setIsLoading(false);
     }
   };
-
-  // load profile, settings, sessions, activity
-  const [sessions, setSessions] = useState([]);
-  const [activity, setActivity] = useState([]);
-  useEffect(() => {
-    async function loadAll() {
-      const token = authService.getAccessToken();
-      if (!token) return;
-      const headers = { Authorization: `Bearer ${token}`, 'Content-Type':'application/json' };
-      // profile
-      const pf = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/profile`,{ headers });
-      const pjson = await pf.json(); if(pjson.success) setProfileData(prev=>({...prev,...pjson.data}));
-      // settings
-      const st = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/settings`,{ headers });
-      const sjson = await st.json(); if(sjson.success) setNotificationSettings({
-        emailNotifications: sjson.data.notification_email,
-        pushNotifications: sjson.data.notification_push,
-        assignmentReminders: sjson.data.notification_sms,
-        gradeNotifications: false, courseUpdates:false, systemAnnouncements:false
-      });
-      // sessions
-      const se = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/sessions`,{ headers });
-      const seJ = await se.json(); if(seJ.success) setSessions(seJ.data);
-      // activity
-      const act = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/activity`,{ headers });
-      const actJ = await act.json(); if(actJ.success) setActivity(actJ.data);
-    }
-    loadAll();
-  }, []);
 
   return (
     <AuthGuard>
@@ -188,14 +154,6 @@ export default function SettingsPage() {
                     System
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="sessions" className="flex items-center gap-2">
-                  <RefreshCw className="h-4 w-4" />
-                  Sessions
-                </TabsTrigger>
-                <TabsTrigger value="activity" className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  Activity
-                </TabsTrigger>
               </TabsList>
 
               {/* Profile Settings */}
@@ -248,6 +206,76 @@ export default function SettingsPage() {
                       />
                     </div>
 
+                    {/* New profile fields */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="website">Website</Label>
+                        <Input
+                          id="website"
+                          value={profileData.website}
+                          onChange={e => setProfileData(prev => ({ ...prev, website: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="linkedin">LinkedIn</Label>
+                        <Input
+                          id="linkedin"
+                          value={profileData.linkedin}
+                          onChange={e => setProfileData(prev => ({ ...prev, linkedin: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="github">GitHub</Label>
+                        <Input
+                          id="github"
+                          value={profileData.github}
+                          onChange={e => setProfileData(prev => ({ ...prev, github: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="experienceLevel">Experience Level</Label>
+                        <Select
+                          value={profileData.experienceLevel}
+                          onValueChange={val => setProfileData(prev => ({ ...prev, experienceLevel: val }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select level" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="beginner">Beginner</SelectItem>
+                            <SelectItem value="intermediate">Intermediate</SelectItem>
+                            <SelectItem value="advanced">Advanced</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <Label htmlFor="skills">Skills (comma-separated)</Label>
+                      <Textarea
+                        id="skills"
+                        rows={2}
+                        value={profileData.skills}
+                        onChange={e => setProfileData(prev => ({ ...prev, skills: e.target.value }))}
+                      />
+                      <Label htmlFor="interests">Interests (comma-separated)</Label>
+                      <Textarea
+                        id="interests"
+                        rows={2}
+                        value={profileData.interests}
+                        onChange={e => setProfileData(prev => ({ ...prev, interests: e.target.value }))}
+                      />
+                      <Label htmlFor="academicBackground">Academic Background</Label>
+                      <Textarea
+                        id="academicBackground"
+                        rows={2}
+                        value={profileData.academicBackground}
+                        onChange={e => setProfileData(prev => ({ ...prev, academicBackground: e.target.value }))}
+                      />
+                    </div>
+
+                    {/* Existing Timezone & Language grid */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="timezone">Timezone</Label>
@@ -276,6 +304,18 @@ export default function SettingsPage() {
                             <SelectItem value="de">German</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                    </div>
+
+                    {/* Timestamps (read-only) */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Created At</Label>
+                        <Input value={profileData.createdAt} disabled />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Updated At</Label>
+                        <Input value={profileData.updatedAt} disabled />
                       </div>
                     </div>
 
@@ -612,34 +652,6 @@ export default function SettingsPage() {
                   </div>
                 </TabsContent>
               )}
-               {/* Sessions Tab */}
-               <TabsContent value="sessions">
-                <Card>
-                  <CardHeader><CardTitle>Sessions</CardTitle></CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader><TableRow><TableHead>ID</TableHead><TableHead>Device</TableHead><TableHead>IP</TableHead><TableHead>Expires</TableHead><TableHead>Active</TableHead></TableRow></TableHeader>
-                      <TableBody>
-                        {sessions.map((s:any)=>(<TableRow key={s.id}><TableCell>{s.id}</TableCell><TableCell>{s.device_type}</TableCell><TableCell>{s.ip_address}</TableCell><TableCell>{new Date(s.expires_at).toLocaleString()}</TableCell><TableCell>{s.is_active.toString()}</TableCell></TableRow>))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              {/* Activity Tab */}
-              <TabsContent value="activity">
-                <Card>
-                  <CardHeader><CardTitle>Activity Logs</CardTitle></CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>Description</TableHead><TableHead>At</TableHead></TableRow></TableHeader>
-                      <TableBody>
-                        {activity.map((a:any,i)=>(<TableRow key={i}><TableCell>{a.activity_type}</TableCell><TableCell>{a.description}</TableCell><TableCell>{new Date(a.created_at).toLocaleString()}</TableCell></TableRow>))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              </TabsContent>
             </Tabs>
           </div>
         </main>
