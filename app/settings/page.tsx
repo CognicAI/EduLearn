@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { AuthGuard } from '@/lib/auth/auth-guard';
+import { fetchUserProfile, updateUserProfile, fetchUserSettings, updateUserSettings } from '@/lib/services/settingsService';
+import type { ProfileData, NotificationSettings } from '@/lib/types/settings';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,90 +31,210 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Extended interface for ProfileData with UI-specific fields
+interface ExtendedProfileData extends Omit<ProfileData, 'skills' | 'interests' | 'academicBackground'> {
+  email: string;
+  timezone: string;
+  language: string;
+  skills: string;
+  interests: string;
+  academicBackground: string;
+}
+
+// Extended interface for NotificationSettings with UI-specific fields
+interface ExtendedNotificationSettings extends NotificationSettings {
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  assignmentReminders: boolean;
+  gradeNotifications: boolean;
+  courseUpdates: boolean;
+  systemAnnouncements: boolean;
+}
+
+// System Settings interface
+interface SystemSettings {
+  siteName: string;
+  siteDescription: string;
+  maxFileSize: string;
+  maintenanceMode: boolean;
+  registrationEnabled: boolean;
+  sessionTimeout: string;
+  backupFrequency: string;
+}
+
 export default function SettingsPage() {
   const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-
   // Profile settings state
-  const [profileData, setProfileData] = useState({
-    id: user?.id || '',
-    userId: user?.id || '',
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    bio: '',
-    website: '',
-    linkedin: '',
-    github: '',
-    skills: '',
-    interests: '',
-    academicBackground: '',
-    experienceLevel: 'beginner',
-    createdAt: '',
-    updatedAt: '',
-    timezone: 'UTC',
-    language: 'en'
-  });
+  const [profileData, setProfileData] = useState<ExtendedProfileData | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // Notification settings state
-  const [notificationSettings, setNotificationSettings] = useState({
-    emailNotifications: true,
-    pushNotifications: true,
-    assignmentReminders: true,
-    gradeNotifications: true,
-    courseUpdates: true,
-    systemAnnouncements: true
-  });
-
+  const [notificationSettings, setNotificationSettings] = useState<ExtendedNotificationSettings | null>(null);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false);
+  
   // System settings state (admin only)
-  const [systemSettings, setSystemSettings] = useState({
-    siteName: 'EduLearn',
-    siteDescription: 'Advanced Learning Management System',
+  const [systemSettings, setSystemSettings] = useState<SystemSettings>({
+    siteName: 'EduLearn Bolt',
+    siteDescription: 'An advanced learning management system',
+    maxFileSize: '10',
     maintenanceMode: false,
     registrationEnabled: true,
-    maxFileSize: '10',
-    sessionTimeout: '30',
+    sessionTimeout: '60',
     backupFrequency: 'daily'
   });
+  const [isLoading, setIsLoading] = useState(false);  // Safe update function that handles null checks
+  const safeProfileUpdate = (prev: ExtendedProfileData | null, updates: Partial<ExtendedProfileData>): ExtendedProfileData => {
+    if (!prev) {
+      // If prev is null, create a default object with required fields
+      return {
+        id: '',
+        userId: '',
+        firstName: '',
+        lastName: '',
+        experienceLevel: 'beginner',
+        email: '',
+        timezone: '',
+        language: '',
+        skills: '',
+        interests: '',
+        academicBackground: '',
+        createdAt: '',
+        updatedAt: '',
+        ...updates
+      };
+    }
+    return { ...prev, ...updates };
+  };
+  
+  // Safe update function for notification settings
+  const safeNotificationUpdate = (prev: ExtendedNotificationSettings | null, updates: Partial<ExtendedNotificationSettings>): ExtendedNotificationSettings => {
+    if (!prev) {
+      // If prev is null, create a default object with required fields
+      return {
+        id: '',
+        userId: '',
+        notificationEmail: false,
+        notificationPush: false,
+        notificationSms: false,
+        theme: 'light',
+        languagePreference: 'en',
+        timezonePreference: 'UTC',
+        emailNotifications: false,
+        pushNotifications: false,
+        assignmentReminders: false,
+        gradeNotifications: false,
+        courseUpdates: false,
+        systemAnnouncements: false,
+        createdAt: '',
+        updatedAt: '',
+        ...updates
+      };
+    }
+    return { ...prev, ...updates };
+  };
 
+  // Load profile and settings from backend
+  useEffect(() => {
+    fetchUserProfile()
+      .then(data => {
+        // Transform to ExtendedProfileData
+        const extendedData: ExtendedProfileData = {
+          ...data,
+          email: user?.email || '',
+          timezone: 'UTC',
+          language: 'en',
+          skills: Array.isArray(data.skills) ? data.skills.join(', ') : '',
+          interests: Array.isArray(data.interests) ? data.interests.join(', ') : '',
+          academicBackground: Array.isArray(data.academicBackground) ? data.academicBackground.join(', ') : ''
+        };
+        setProfileData(extendedData);
+      })
+      .catch(err => toast.error(err.message))
+      .finally(() => setIsLoadingProfile(false));
+      
+    fetchUserSettings()
+      .then(data => {
+        // Transform to ExtendedNotificationSettings
+        const extendedSettings: ExtendedNotificationSettings = {
+          ...data,
+          emailNotifications: data.notificationEmail,
+          pushNotifications: data.notificationPush,
+          assignmentReminders: true, // Default values
+          gradeNotifications: true,
+          courseUpdates: true,
+          systemAnnouncements: true
+        };
+        setNotificationSettings(extendedSettings);
+      })
+      .catch(err => toast.error(err.message))
+      .finally(() => setIsLoadingNotifications(false));
+  }, [user?.email]);
   const handleSaveProfile = async () => {
-    setIsLoading(true);
+    if (!profileData) return;
+    setIsSavingProfile(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Transform back to ProfileData
+      const apiProfileData: ProfileData = {
+        ...profileData,
+        skills: profileData.skills ? profileData.skills.split(',').map(item => item.trim()) : [],
+        interests: profileData.interests ? profileData.interests.split(',').map(item => item.trim()) : [],
+        academicBackground: profileData.academicBackground ? profileData.academicBackground.split(',').map(item => item.trim()) : []
+      };
+      
+      await updateUserProfile(apiProfileData);
       toast.success('Profile updated successfully!');
-    } catch (error) {
-      toast.error('Failed to update profile');
+    } catch (err: any) {
+      toast.error(err.message);
     } finally {
-      setIsLoading(false);
+      setIsSavingProfile(false);
     }
-  };
-
-  const handleSaveNotifications = async () => {
-    setIsLoading(true);
+  };  const handleSaveNotifications = async () => {
+    if (!notificationSettings) return;
+    setIsSavingNotifications(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Transform back to NotificationSettings
+      const apiNotificationSettings: NotificationSettings = {
+        ...notificationSettings,
+        notificationEmail: notificationSettings.emailNotifications,
+        notificationPush: notificationSettings.pushNotifications,
+        // Keep the existing values for fields not in our form
+      };
+      
+      await updateUserSettings(apiNotificationSettings);
       toast.success('Notification preferences updated!');
-    } catch (error) {
-      toast.error('Failed to update notifications');
+    } catch (err: any) {
+      toast.error(err.message);
     } finally {
-      setIsLoading(false);
+      setIsSavingNotifications(false);
     }
   };
-
+  
+  // System settings save handler
   const handleSaveSystem = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('System settings updated!');
-    } catch (error) {
-      toast.error('Failed to update system settings');
-    } finally {
+      // Here you would implement API call to save system settings
+      // For now, we'll just simulate a successful save
+      setTimeout(() => {
+        toast.success('System settings updated successfully!');
+        setIsLoading(false);
+      }, 1000);
+    } catch (err: any) {
+      toast.error(err.message);
       setIsLoading(false);
     }
   };
+
+  // Wait until profileData is loaded before rendering
+  if (isLoadingProfile || !profileData) {
+    return (
+      <AuthGuard>
+        <div className="p-8 text-center">Loading profile...</div>
+      </AuthGuard>
+    );
+  }
 
   return (
     <AuthGuard>
@@ -168,77 +290,70 @@ export default function SettingsPage() {
                   <CardContent className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="firstName">First Name</Label>
-                        <Input
+                        <Label htmlFor="firstName">First Name</Label>                        <Input
                           id="firstName"
-                          value={profileData.firstName}
-                          onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
+                          value={profileData?.firstName}
+                          onChange={(e) => setProfileData(prev => safeProfileUpdate(prev, { firstName: e.target.value }))}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="lastName">Last Name</Label>
-                        <Input
+                        <Label htmlFor="lastName">Last Name</Label>                        <Input
                           id="lastName"
-                          value={profileData.lastName}
-                          onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
+                          value={profileData?.lastName}
+                          onChange={(e) => setProfileData(prev => safeProfileUpdate(prev, { lastName: e.target.value }))}
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email Address</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={profileData.email}
-                        onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-                      />
+                      <Label htmlFor="email">Email Address</Label>                        <Input
+                          id="email"
+                          type="email"
+                          value={profileData?.email}
+                          onChange={(e) => setProfileData(prev => safeProfileUpdate(prev, { email: e.target.value }))}
+                        />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="bio">Bio</Label>
-                      <Textarea
-                        id="bio"
-                        placeholder="Tell us about yourself..."
-                        value={profileData.bio}
-                        onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
-                        rows={3}
-                      />
+                      <Label htmlFor="bio">Bio</Label>                        <Textarea
+                          id="bio"
+                          placeholder="Tell us about yourself..."
+                          value={profileData?.bio}
+                          onChange={(e) => setProfileData(prev => safeProfileUpdate(prev, { bio: e.target.value }))}
+                          rows={3}
+                        />
                     </div>
 
                     {/* New profile fields */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="website">Website</Label>
-                        <Input
-                          id="website"
-                          value={profileData.website}
-                          onChange={e => setProfileData(prev => ({ ...prev, website: e.target.value }))}
-                        />
+                        <Label htmlFor="website">Website</Label>                          <Input
+                            id="website"
+                            value={profileData?.website}
+                            onChange={e => setProfileData(prev => safeProfileUpdate(prev, { website: e.target.value }))}
+                          />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="linkedin">LinkedIn</Label>
-                        <Input
-                          id="linkedin"
-                          value={profileData.linkedin}
-                          onChange={e => setProfileData(prev => ({ ...prev, linkedin: e.target.value }))}
-                        />
+                        <Label htmlFor="linkedin">LinkedIn</Label>                          <Input
+                            id="linkedin"
+                            value={profileData?.linkedin}
+                            onChange={e => setProfileData(prev => safeProfileUpdate(prev, { linkedin: e.target.value }))}
+                          />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="github">GitHub</Label>
-                        <Input
-                          id="github"
-                          value={profileData.github}
-                          onChange={e => setProfileData(prev => ({ ...prev, github: e.target.value }))}
-                        />
+                        <Label htmlFor="github">GitHub</Label>                          <Input
+                            id="github"
+                            value={profileData?.github}
+                            onChange={e => setProfileData(prev => safeProfileUpdate(prev, { github: e.target.value }))}
+                          />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="experienceLevel">Experience Level</Label>
                         <Select
-                          value={profileData.experienceLevel}
-                          onValueChange={val => setProfileData(prev => ({ ...prev, experienceLevel: val }))}
+                          value={profileData?.experienceLevel}
+                          onValueChange={val => setProfileData(prev => safeProfileUpdate(prev, { experienceLevel: val as 'beginner' | 'intermediate' | 'advanced' }))}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select level" />
@@ -256,22 +371,19 @@ export default function SettingsPage() {
                       <Textarea
                         id="skills"
                         rows={2}
-                        value={profileData.skills}
-                        onChange={e => setProfileData(prev => ({ ...prev, skills: e.target.value }))}
+                        value={profileData?.skills}                          onChange={e => setProfileData(prev => safeProfileUpdate(prev, { skills: e.target.value }))}
                       />
                       <Label htmlFor="interests">Interests (comma-separated)</Label>
                       <Textarea
                         id="interests"
                         rows={2}
-                        value={profileData.interests}
-                        onChange={e => setProfileData(prev => ({ ...prev, interests: e.target.value }))}
+                        value={profileData?.interests}                          onChange={e => setProfileData(prev => safeProfileUpdate(prev, { interests: e.target.value }))}
                       />
                       <Label htmlFor="academicBackground">Academic Background</Label>
                       <Textarea
                         id="academicBackground"
                         rows={2}
-                        value={profileData.academicBackground}
-                        onChange={e => setProfileData(prev => ({ ...prev, academicBackground: e.target.value }))}
+                        value={profileData?.academicBackground}                          onChange={e => setProfileData(prev => safeProfileUpdate(prev, { academicBackground: e.target.value }))}
                       />
                     </div>
 
@@ -279,7 +391,7 @@ export default function SettingsPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="timezone">Timezone</Label>
-                        <Select value={profileData.timezone} onValueChange={(value) => setProfileData(prev => ({ ...prev, timezone: value }))}>
+                        <Select value={profileData?.timezone} onValueChange={(value) => setProfileData(prev => safeProfileUpdate(prev, { timezone: value }))}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -293,7 +405,7 @@ export default function SettingsPage() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="language">Language</Label>
-                        <Select value={profileData.language} onValueChange={(value) => setProfileData(prev => ({ ...prev, language: value }))}>
+                        <Select value={profileData?.language} onValueChange={(value) => setProfileData(prev => safeProfileUpdate(prev, { language: value }))}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -311,17 +423,17 @@ export default function SettingsPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Created At</Label>
-                        <Input value={profileData.createdAt} disabled />
+                        <Input value={profileData?.createdAt} disabled />
                       </div>
                       <div className="space-y-2">
                         <Label>Updated At</Label>
-                        <Input value={profileData.updatedAt} disabled />
+                        <Input value={profileData?.updatedAt} disabled />
                       </div>
                     </div>
 
                     <div className="flex justify-end">
-                      <Button onClick={handleSaveProfile} disabled={isLoading}>
-                        {isLoading ? (
+                      <Button onClick={handleSaveProfile} disabled={isSavingProfile}>
+                        {isSavingProfile ? (
                           <>
                             <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                             Saving...
@@ -357,8 +469,8 @@ export default function SettingsPage() {
                           </p>
                         </div>
                         <Switch
-                          checked={notificationSettings.emailNotifications}
-                          onCheckedChange={(checked) => setNotificationSettings(prev => ({ ...prev, emailNotifications: checked }))}
+                          checked={notificationSettings?.emailNotifications}
+                          onCheckedChange={(checked) => setNotificationSettings(prev => safeNotificationUpdate(prev, { emailNotifications: checked }))}
                         />
                       </div>
 
@@ -372,8 +484,8 @@ export default function SettingsPage() {
                           </p>
                         </div>
                         <Switch
-                          checked={notificationSettings.pushNotifications}
-                          onCheckedChange={(checked) => setNotificationSettings(prev => ({ ...prev, pushNotifications: checked }))}
+                          checked={notificationSettings?.pushNotifications}
+                          onCheckedChange={(checked) => setNotificationSettings(prev => safeNotificationUpdate(prev, { pushNotifications: checked }))}
                         />
                       </div>
 
@@ -387,8 +499,8 @@ export default function SettingsPage() {
                           </p>
                         </div>
                         <Switch
-                          checked={notificationSettings.assignmentReminders}
-                          onCheckedChange={(checked) => setNotificationSettings(prev => ({ ...prev, assignmentReminders: checked }))}
+                          checked={notificationSettings?.assignmentReminders}
+                          onCheckedChange={(checked) => setNotificationSettings(prev => safeNotificationUpdate(prev, { assignmentReminders: checked }))}
                         />
                       </div>
 
@@ -400,8 +512,8 @@ export default function SettingsPage() {
                           </p>
                         </div>
                         <Switch
-                          checked={notificationSettings.gradeNotifications}
-                          onCheckedChange={(checked) => setNotificationSettings(prev => ({ ...prev, gradeNotifications: checked }))}
+                          checked={notificationSettings?.gradeNotifications}
+                          onCheckedChange={(checked) => setNotificationSettings(prev => safeNotificationUpdate(prev, { gradeNotifications: checked }))}
                         />
                       </div>
 
@@ -413,8 +525,8 @@ export default function SettingsPage() {
                           </p>
                         </div>
                         <Switch
-                          checked={notificationSettings.courseUpdates}
-                          onCheckedChange={(checked) => setNotificationSettings(prev => ({ ...prev, courseUpdates: checked }))}
+                          checked={notificationSettings?.courseUpdates}
+                          onCheckedChange={(checked) => setNotificationSettings(prev => safeNotificationUpdate(prev, { courseUpdates: checked }))}
                         />
                       </div>
 
@@ -426,15 +538,15 @@ export default function SettingsPage() {
                           </p>
                         </div>
                         <Switch
-                          checked={notificationSettings.systemAnnouncements}
-                          onCheckedChange={(checked) => setNotificationSettings(prev => ({ ...prev, systemAnnouncements: checked }))}
+                          checked={notificationSettings?.systemAnnouncements}
+                          onCheckedChange={(checked) => setNotificationSettings(prev => safeNotificationUpdate(prev, { systemAnnouncements: checked }))}
                         />
                       </div>
                     </div>
 
                     <div className="flex justify-end">
-                      <Button onClick={handleSaveNotifications} disabled={isLoading}>
-                        {isLoading ? (
+                      <Button onClick={handleSaveNotifications} disabled={isSavingNotifications}>
+                        {isSavingNotifications ? (
                           <>
                             <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                             Saving...
@@ -531,7 +643,7 @@ export default function SettingsPage() {
                             <Input
                               id="siteName"
                               value={systemSettings.siteName}
-                              onChange={(e) => setSystemSettings(prev => ({ ...prev, siteName: e.target.value }))}
+                              onChange={(e) => setSystemSettings({ ...systemSettings, siteName: e.target.value })}
                             />
                           </div>
                           <div className="space-y-2">
@@ -540,7 +652,7 @@ export default function SettingsPage() {
                               id="maxFileSize"
                               type="number"
                               value={systemSettings.maxFileSize}
-                              onChange={(e) => setSystemSettings(prev => ({ ...prev, maxFileSize: e.target.value }))}
+                              onChange={(e) => setSystemSettings({ ...systemSettings, maxFileSize: e.target.value })}
                             />
                           </div>
                         </div>
@@ -550,7 +662,7 @@ export default function SettingsPage() {
                           <Textarea
                             id="siteDescription"
                             value={systemSettings.siteDescription}
-                            onChange={(e) => setSystemSettings(prev => ({ ...prev, siteDescription: e.target.value }))}
+                            onChange={(e) => setSystemSettings({ ...systemSettings, siteDescription: e.target.value })}
                             rows={2}
                           />
                         </div>
@@ -565,7 +677,7 @@ export default function SettingsPage() {
                             </div>
                             <Switch
                               checked={systemSettings.maintenanceMode}
-                              onCheckedChange={(checked) => setSystemSettings(prev => ({ ...prev, maintenanceMode: checked }))}
+                              onCheckedChange={(checked) => setSystemSettings({ ...systemSettings, maintenanceMode: checked })}
                             />
                           </div>
 
@@ -578,7 +690,7 @@ export default function SettingsPage() {
                             </div>
                             <Switch
                               checked={systemSettings.registrationEnabled}
-                              onCheckedChange={(checked) => setSystemSettings(prev => ({ ...prev, registrationEnabled: checked }))}
+                              onCheckedChange={(checked) => setSystemSettings({ ...systemSettings, registrationEnabled: checked })}
                             />
                           </div>
                         </div>
@@ -590,12 +702,12 @@ export default function SettingsPage() {
                               id="sessionTimeout"
                               type="number"
                               value={systemSettings.sessionTimeout}
-                              onChange={(e) => setSystemSettings(prev => ({ ...prev, sessionTimeout: e.target.value }))}
+                              onChange={(e) => setSystemSettings({ ...systemSettings, sessionTimeout: e.target.value })}
                             />
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="backupFrequency">Backup Frequency</Label>
-                            <Select value={systemSettings.backupFrequency} onValueChange={(value) => setSystemSettings(prev => ({ ...prev, backupFrequency: value }))}>
+                            <Select value={systemSettings.backupFrequency} onValueChange={(value) => setSystemSettings({ ...systemSettings, backupFrequency: value })}>
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
