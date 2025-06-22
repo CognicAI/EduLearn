@@ -2,8 +2,7 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '@/middleware/auth';
 import { query } from '@/config/db';
 
-export class SettingsController {
-  // GET /api/user/profile
+export class SettingsController {  // GET /api/user/profile
   async getProfile(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user!.userId;
@@ -13,37 +12,135 @@ export class SettingsController {
         [userId]
       );
       const profileRes = await query(
-        `SELECT bio, website, linkedin, github, skills, interests, academic_background, experience_level
+        `SELECT id as profile_id, bio, website, linkedin, github, skills, interests, academic_background, experience_level,
+                created_at, updated_at
          FROM user_profiles WHERE user_id = $1`,
         [userId]
       );
+      
+      if (!userRes.rows.length) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      
       const user = userRes.rows[0];
-      const profile = profileRes.rows[0] || {};
-      return res.json({ success: true, data: { ...user, ...profile } });
+      const profile = profileRes.rows[0] || {
+        bio: '',
+        website: '',
+        linkedin: '',
+        github: '',
+        skills: [],
+        interests: [],
+        academic_background: [],
+        experience_level: 'beginner',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      // Map the data to match our frontend expected format
+      const profileData = {
+        id: profile.profile_id || userId,
+        userId: userId,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        bio: profile.bio,
+        website: profile.website,
+        linkedin: profile.linkedin,
+        github: profile.github,
+        skills: profile.skills || [],
+        interests: profile.interests || [],
+        academicBackground: profile.academic_background || [],
+        experienceLevel: profile.experience_level,
+        createdAt: profile.created_at || user.created_at,
+        updatedAt: profile.updated_at || user.updated_at
+      };
+      
+      return res.json({ success: true, data: profileData });
     } catch (err) {
-      console.error(err);
+      console.error('Error getting profile:', err);
       return res.status(500).json({ success: false, message: 'Failed to load profile' });
     }
   }
-
   // PUT /api/user/profile
   async updateProfile(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user!.userId;
-      const { email, firstName, lastName, profileImage, timezone, language, bio, website, linkedin, github, skills, interests, academicBackground, experienceLevel } = req.body;
-      await query(
-        `UPDATE users SET email=$1, first_name=$2, last_name=$3, profile_image=$4, timezone=$5, language=$6, updated_at=NOW() WHERE id=$7`,
-        [email, firstName, lastName, profileImage, timezone, language, userId]
-      );
-      await query(
-        `INSERT INTO user_profiles(user_id, bio, website, linkedin, github, skills, interests, academic_background, experience_level, created_at, updated_at)
-         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW(),NOW())
-         ON CONFLICT (user_id) DO UPDATE SET bio=EXCLUDED.bio, website=EXCLUDED.website, linkedin=EXCLUDED.linkedin, github=EXCLUDED.github, skills=EXCLUDED.skills, interests=EXCLUDED.interests, academic_background=EXCLUDED.academic_background, experience_level=EXCLUDED.experience_level, updated_at=NOW()`,
-        [userId, bio, website, linkedin, github, skills, interests, academicBackground, experienceLevel]
-      );
+      const { 
+        firstName, lastName, email, timezone, language, 
+        bio, website, linkedin, github, 
+        skills, interests, academicBackground, experienceLevel 
+      } = req.body;
+
+      // Log the incoming data for debugging
+      console.log('Profile update request:', req.body);
+      
+      // First update user table
+      if (email || firstName || lastName || timezone || language) {
+        await query(
+          `UPDATE users SET 
+           first_name = COALESCE($1, first_name),
+           last_name = COALESCE($2, last_name),
+           email = COALESCE($3, email),
+           timezone = COALESCE($4, timezone),
+           language = COALESCE($5, language),
+           updated_at = NOW()
+           WHERE id = $6`,
+          [firstName, lastName, email, timezone, language, userId]
+        );
+      }
+      
+      // Then update the profile table
+      // Convert skills, interests, and academicBackground from string to JSON if needed
+      const processedSkills = typeof skills === 'string' ? skills.split(',').map(s => s.trim()) : skills;
+      const processedInterests = typeof interests === 'string' ? interests.split(',').map(s => s.trim()) : interests;
+      const processedAcademicBackground = typeof academicBackground === 'string' ? 
+        academicBackground.split(',').map(s => s.trim()) : academicBackground;
+
+      // Check if a profile exists for this user
+      const profileCheck = await query(`SELECT id FROM user_profiles WHERE user_id = $1`, [userId]);
+      
+      if (profileCheck.rows.length === 0) {
+        // Create new profile if it doesn't exist
+        await query(
+          `INSERT INTO user_profiles(
+             user_id, bio, website, linkedin, github, skills, interests, 
+             academic_background, experience_level, created_at, updated_at
+           ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())`,
+          [
+            userId, bio, website, linkedin, github, 
+            processedSkills ? JSON.stringify(processedSkills) : null,
+            processedInterests ? JSON.stringify(processedInterests) : null,
+            processedAcademicBackground ? JSON.stringify(processedAcademicBackground) : null,
+            experienceLevel
+          ]
+        );
+      } else {
+        // Update existing profile
+        await query(
+          `UPDATE user_profiles SET
+           bio = COALESCE($1, bio),
+           website = COALESCE($2, website),
+           linkedin = COALESCE($3, linkedin),
+           github = COALESCE($4, github),
+           skills = COALESCE($5, skills),
+           interests = COALESCE($6, interests),
+           academic_background = COALESCE($7, academic_background),
+           experience_level = COALESCE($8, experience_level),
+           updated_at = NOW()
+           WHERE user_id = $9`,
+          [
+            bio, website, linkedin, github,
+            processedSkills ? JSON.stringify(processedSkills) : null,
+            processedInterests ? JSON.stringify(processedInterests) : null,
+            processedAcademicBackground ? JSON.stringify(processedAcademicBackground) : null,
+            experienceLevel,
+            userId
+          ]
+        );
+      }
+      
       return res.json({ success: true, message: 'Profile updated' });
     } catch (err) {
-      console.error(err);
+      console.error('Error updating profile:', err);
       return res.status(500).json({ success: false, message: 'Failed to update profile' });
     }
   }
