@@ -1,4 +1,4 @@
-import { ProfileData, NotificationSettings, SystemSettings, Session, ActivityLog } from '@/lib/types/settings';
+import { ProfileData, NotificationSettings, Session, ActivityLog } from '@/lib/types/settings';
 import { authService } from '@/lib/auth/auth-service';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -57,4 +57,14 @@ export async function fetchUserActivity(): Promise<ActivityLog[]> {
   const json = await res.json();
   if (!json.success) throw new Error(json.message);
   return json.data;
+}
+
+export async function updateUserPassword(data: { currentPassword: string; newPassword: string; }): Promise<void> {
+  const res = await fetch(`${API_URL}/user/password`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data)
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message);
 }

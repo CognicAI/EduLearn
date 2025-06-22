@@ -29,3 +29,25 @@ export interface NotificationSettings {
   createdAt: string;
   updatedAt: string;
 }
+
+// Session for user sessions
+export interface Session {
+  id: string;
+  sessionToken: string;
+  expiresAt: string;
+  ipAddress: string;
+  userAgent: string;
+  deviceType: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+// ActivityLog for user activity logs
+export interface ActivityLog {
+  activityType: string;
+  description: string;
+  ipAddress: string;
+  userAgent: string;
+  metadata: any;
+  createdAt: string;
+}

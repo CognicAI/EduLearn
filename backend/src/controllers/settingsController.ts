@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '@/middleware/auth';
 import { query } from '@/config/db';
+import bcrypt from 'bcryptjs';
 
 export class SettingsController {  // GET /api/user/profile
   async getProfile(req: AuthenticatedRequest, res: Response) {
@@ -209,6 +210,43 @@ export class SettingsController {  // GET /api/user/profile
     } catch (err) {
       console.error(err);
       return res.status(500).json({ success: false, message: 'Failed to load activity logs' });
+    }
+  }
+
+  // PUT /api/user/password
+  async updatePassword(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user!.userId;
+      const { currentPassword, newPassword } = req.body;
+
+      // Fetch current password hash
+      const result = await query(
+        'SELECT password_hash FROM users WHERE id = $1',
+        [userId]
+      );
+      if (!result.rows.length) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      const { password_hash } = result.rows[0];
+
+      // Validate current password
+      const isValid = await bcrypt.compare(currentPassword, password_hash);
+      if (!isValid) {
+        return res.status(400).json({ success: false, message: 'Current password is incorrect' });
+      }
+
+      // Hash new password and update
+      const saltRounds = 12;
+      const newHash = await bcrypt.hash(newPassword, saltRounds);
+      await query(
+        'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+        [newHash, userId]
+      );
+
+      return res.json({ success: true, message: 'Password updated' });
+    } catch (err) {
+      console.error('Error updating password:', err);
+      return res.status(500).json({ success: false, message: 'Failed to update password' });
     }
   }
 }

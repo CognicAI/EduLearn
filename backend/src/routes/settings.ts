@@ -15,5 +15,7 @@ router.put('/settings', authenticateToken, settingsController.updateSettings);
 // User sessions and activity logs
 router.get('/sessions', authenticateToken, settingsController.getSessions);
 router.get('/activity', authenticateToken, settingsController.getActivity);
+// Update user password
+router.put('/password', authenticateToken, settingsController.updatePassword);
 
 export default router;
