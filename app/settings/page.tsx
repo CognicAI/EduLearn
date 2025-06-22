@@ -135,7 +135,7 @@ export default function SettingsPage() {
             </div>
 
             <Tabs defaultValue="profile" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className={user?.role === 'admin' ? 'grid w-full grid-cols-4' : 'grid w-full grid-cols-3'}>
                 <TabsTrigger value="profile" className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   Profile

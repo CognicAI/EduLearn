@@ -32,6 +32,7 @@ const sidebarItems = {
     { name: 'Assignments', href: '/assignments', icon: FileText },
     { name: 'Calendar', href: '/calendar', icon: Calendar },
     { name: 'Progress', href: '/progress', icon: BarChart3 },
+    { name: 'Settings', href: '/settings', icon: Settings },
   ],
   teacher: [
     { name: 'Dashboard', href: '/dashboard/teacher', icon: LayoutDashboard },
@@ -40,6 +41,7 @@ const sidebarItems = {
     { name: 'Assignments', href: '/assignments', icon: FileText },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Calendar', href: '/calendar', icon: Calendar },
+    { name: 'Settings', href: '/settings', icon: Settings },
   ],
   admin: [
     { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
