@@ -8,7 +8,7 @@ export interface User {
   role: UserRole;
   avatar?: string;
   createdAt: string;
-  lastLogin?: string;
+  updatedAt?: string; // Changed from lastLogin to updatedAt
 }
 
 export interface AuthTokens {
@@ -38,4 +38,5 @@ export interface AuthState {
 export interface AuthResponse {
   user: User;
   tokens: AuthTokens;
+  message?: string; // Added optional message property
 }

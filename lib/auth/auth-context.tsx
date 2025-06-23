@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, AuthState, LoginCredentials, RegisterCredentials } from '@/lib/types/auth';
-import { authService } from './auth-service';
+import authService from './auth-service';
 import { toast } from 'sonner';
 
 interface AuthContextType extends AuthState {
