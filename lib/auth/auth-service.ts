@@ -90,7 +90,24 @@ class AuthService {
     return true;
   }
 
-  logout(): void {
+  async logout(): Promise<void> {
+    // Notify backend to log out and record activity
+    if (this.accessToken) {
+      try {
+        await this.request<{ message: string }>(
+          '/auth/logout',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${this.accessToken}`
+            }
+          }
+        );
+      } catch (err) {
+        console.error('Error during backend logout:', err);
+      }
+    }
+    // Clear local auth data
     this.accessToken = null;
     this.refreshToken = null;
     this.currentUser = null;
