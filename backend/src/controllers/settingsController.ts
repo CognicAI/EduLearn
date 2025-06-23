@@ -179,12 +179,30 @@ export class SettingsController {  // GET /api/user/profile
     try {
       const userId = req.user!.userId;
       const { notificationEmail, notificationPush, notificationSms, theme, dashboardLayout, privacySettings, languagePreference, timezonePreference } = req.body;
-      await query(
-        `INSERT INTO user_settings(user_id, notification_email, notification_push, notification_sms, theme, dashboard_layout, privacy_settings, language_preference, timezone_preference, created_at, updated_at)
-         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW(),NOW())
-         ON CONFLICT (user_id) DO UPDATE SET notification_email=EXCLUDED.notification_email, notification_push=EXCLUDED.notification_push, notification_sms=EXCLUDED.notification_sms, theme=EXCLUDED.theme, dashboard_layout=EXCLUDED.dashboard_layout, privacy_settings=EXCLUDED.privacy_settings, language_preference=EXCLUDED.language_preference, timezone_preference=EXCLUDED.timezone_preference, updated_at=NOW()`,
+      // Try updating existing settings
+      const updateResult = await query(
+        `UPDATE user_settings SET
+           notification_email = $2,
+           notification_push = $3,
+           notification_sms = $4,
+           theme = $5,
+           dashboard_layout = $6,
+           privacy_settings = $7,
+           language_preference = $8,
+           timezone_preference = $9,
+           updated_at = NOW()
+         WHERE user_id = $1`,
         [userId, notificationEmail, notificationPush, notificationSms, theme, dashboardLayout, privacySettings, languagePreference, timezonePreference]
       );
+      if (updateResult.rowCount === 0) {
+        // Insert new settings if none exist
+        await query(
+          `INSERT INTO user_settings
+           (user_id, notification_email, notification_push, notification_sms, theme, dashboard_layout, privacy_settings, language_preference, timezone_preference, created_at, updated_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW(),NOW())`,
+          [userId, notificationEmail, notificationPush, notificationSms, theme, dashboardLayout, privacySettings, languagePreference, timezonePreference]
+        );
+      }
       return res.json({ success: true, message: 'Settings updated' });
     } catch (err) {
       console.error(err);

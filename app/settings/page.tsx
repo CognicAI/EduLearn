@@ -167,7 +167,13 @@ export default function SettingsPage() {
           ...data,
           emailNotifications: data.notificationEmail,
           pushNotifications: data.notificationPush,
-          assignmentReminders: true, // Default values
+          notificationSms: data.notificationSms,
+          theme: data.theme,
+          languagePreference: data.languagePreference,
+          timezonePreference: data.timezonePreference,
+          dashboardLayout: null,
+          privacySettings: null,
+          assignmentReminders: true,
           gradeNotifications: true,
           courseUpdates: true,
           systemAnnouncements: true
@@ -205,7 +211,12 @@ export default function SettingsPage() {
         ...notificationSettings,
         notificationEmail: notificationSettings.emailNotifications,
         notificationPush: notificationSettings.pushNotifications,
-        // Keep the existing values for fields not in our form
+        notificationSms: notificationSettings.notificationSms,
+        theme: notificationSettings.theme,
+        dashboardLayout: null,
+        privacySettings: null,
+        languagePreference: notificationSettings.languagePreference,
+        timezonePreference: notificationSettings.timezonePreference
       };
       
       await updateUserSettings(apiNotificationSettings);
@@ -494,10 +505,20 @@ export default function SettingsPage() {
                         </div>
                         <Switch
                           checked={notificationSettings?.emailNotifications}
-                          onCheckedChange={(checked) => setNotificationSettings(prev => safeNotificationUpdate(prev, { emailNotifications: checked }))}
+                          onCheckedChange={(checked) => setNotificationSettings(prev => prev && safeNotificationUpdate(prev, { emailNotifications: checked }))}
                         />
                       </div>
 
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label>SMS Notifications</Label>
+                          <p className="text-sm text-muted-foreground">Receive notifications via SMS</p>
+                        </div>
+                        <Switch
+                          checked={notificationSettings?.notificationSms}
+                          onCheckedChange={(checked) => setNotificationSettings(prev => prev && safeNotificationUpdate(prev, { notificationSms: checked }))}
+                        />
+                      </div>
                       <Separator />
 
                       <div className="flex items-center justify-between">
@@ -509,63 +530,94 @@ export default function SettingsPage() {
                         </div>
                         <Switch
                           checked={notificationSettings?.pushNotifications}
-                          onCheckedChange={(checked) => setNotificationSettings(prev => safeNotificationUpdate(prev, { pushNotifications: checked }))}
+                          onCheckedChange={(checked) => setNotificationSettings(prev => prev && safeNotificationUpdate(prev, { pushNotifications: checked }))}
                         />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Theme</Label>
+                        <Select
+                          value={notificationSettings?.theme}
+                          onValueChange={(val) => setNotificationSettings(prev => prev && safeNotificationUpdate(prev, { theme: val as 'light' | 'dark' | 'auto' }))}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="light">Light</SelectItem>
+                            <SelectItem value="dark">Dark</SelectItem>
+                            <SelectItem value="auto">Auto</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <Separator />
 
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label>Assignment Reminders</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Get reminded about upcoming assignment deadlines
-                          </p>
+                      {/* Existing switches... */}
+                      {/* Language & Timezone */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Language</Label>
+                          <Select
+                            value={notificationSettings?.languagePreference}
+                            onValueChange={(val) => setNotificationSettings(prev => prev && safeNotificationUpdate(prev, { languagePreference: val }))}
+                          >
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="en">English</SelectItem>
+                              <SelectItem value="es">Spanish</SelectItem>
+                              <SelectItem value="fr">French</SelectItem>
+                              <SelectItem value="de">German</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
-                        <Switch
-                          checked={notificationSettings?.assignmentReminders}
-                          onCheckedChange={(checked) => setNotificationSettings(prev => safeNotificationUpdate(prev, { assignmentReminders: checked }))}
+                        <div className="space-y-2">
+                          <Label>Timezone</Label>
+                          <Select
+                            value={notificationSettings?.timezonePreference}
+                            onValueChange={(val) => setNotificationSettings(prev => prev && safeNotificationUpdate(prev, { timezonePreference: val }))}
+                          >
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="UTC">UTC</SelectItem>
+                              <SelectItem value="EST">EST</SelectItem>
+                              <SelectItem value="PST">PST</SelectItem>
+                              <SelectItem value="GMT">GMT</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Dashboard Layout JSON */}
+                      <div className="space-y-2">
+                        <Label>Dashboard Layout (JSON)</Label>
+                        <Textarea
+                          rows={3}
+                          value={typeof notificationSettings?.dashboardLayout === 'string' ? notificationSettings.dashboardLayout : JSON.stringify(notificationSettings?.dashboardLayout, null, 2)}
+                          onChange={(e) => setNotificationSettings(prev => prev && safeNotificationUpdate(prev, { dashboardLayout: e.target.value }))}
                         />
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label>Grade Notifications</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Be notified when grades are posted
-                          </p>
-                        </div>
-                        <Switch
-                          checked={notificationSettings?.gradeNotifications}
-                          onCheckedChange={(checked) => setNotificationSettings(prev => safeNotificationUpdate(prev, { gradeNotifications: checked }))}
+                      {/* Privacy Settings JSON */}
+                      <div className="space-y-2">
+                        <Label>Privacy Settings (JSON)</Label>
+                        <Textarea
+                          rows={3}
+                          value={typeof notificationSettings?.privacySettings === 'string' ? notificationSettings.privacySettings : JSON.stringify(notificationSettings?.privacySettings, null, 2)}
+                          onChange={(e) => setNotificationSettings(prev => prev && safeNotificationUpdate(prev, { privacySettings: e.target.value }))}
                         />
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label>Course Updates</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Receive updates about course content and announcements
-                          </p>
+                      {/* Timestamps */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Created At</Label>
+                          <Input value={notificationSettings?.createdAt} disabled />
                         </div>
-                        <Switch
-                          checked={notificationSettings?.courseUpdates}
-                          onCheckedChange={(checked) => setNotificationSettings(prev => safeNotificationUpdate(prev, { courseUpdates: checked }))}
-                        />
+                        <div className="space-y-2">
+                          <Label>Updated At</Label>
+                          <Input value={notificationSettings?.updatedAt} disabled />
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label>System Announcements</Label>
-                          <p className="text-sm text-muted-foreground">
-                            Important system-wide announcements and maintenance notices
-                          </p>
-                        </div>
-                        <Switch
-                          checked={notificationSettings?.systemAnnouncements}
-                          onCheckedChange={(checked) => setNotificationSettings(prev => safeNotificationUpdate(prev, { systemAnnouncements: checked }))}
-                        />
-                      </div>
                     </div>
 
                     <div className="flex justify-end">
