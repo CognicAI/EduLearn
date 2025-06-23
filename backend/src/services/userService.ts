@@ -39,9 +39,9 @@ export class UserService {
     };
   }
 
-  async findUserByEmail(email: string): Promise<User | null> {
+  async findUserByEmail(email: string): Promise<(User & { isActive: boolean; loginCount: number }) | null> {
     const selectQuery = `
-      SELECT id, email, first_name, last_name, password_hash, role, profile_image, created_at, updated_at, last_login
+      SELECT id, email, first_name, last_name, password_hash, role, profile_image, created_at, updated_at, last_login, is_active, COALESCE(login_count,0) AS login_count
       FROM users 
       WHERE email = $1
     `;
@@ -63,7 +63,9 @@ export class UserService {
       avatar: user.profile_image,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
-      lastLogin: user.last_login
+      lastLogin: user.last_login,
+      isActive: user.is_active,
+      loginCount: parseInt(user.login_count, 10)
     };
   }
 
@@ -99,6 +101,11 @@ export class UserService {
 
   async updateLastLogin(id: string): Promise<void> {
     await query('UPDATE users SET last_login = NOW() WHERE id = $1', [id]);
+  }
+
+  // Increment user's login count
+  async incrementLoginCount(id: string): Promise<void> {
+    await query('UPDATE users SET login_count = COALESCE(login_count,0) + 1 WHERE id = $1', [id]);
   }
 }
 

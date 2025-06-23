@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { AuthGuard } from '@/lib/auth/auth-guard';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
@@ -25,14 +25,13 @@ import {
   UserX,
   Shield,
   GraduationCap,
-  BookOpenIcon,
-  MoreHorizontal
+  BookOpenIcon
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { authService } from '@/lib/auth/auth-service';
 
 export default function AdminUsersPage() {
-  const { user } = useAuth();
+  useAuth(); // initialize auth context
   const [users, setUsers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -86,20 +85,53 @@ export default function AdminUsersPage() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  const handleRoleChange = (userId: string, newRole: string) => {
-    setUsers(prev => prev.map(user => 
-      user.id === userId ? { ...user, role: newRole } : user
-    ));
-    toast.success('User role updated successfully');
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      const token = authService.getAccessToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ role: newRole })
+      });
+      const json = await res.json();
+      if (json.success) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+        toast.success('User role updated successfully');
+      } else {
+        throw new Error(json.message);
+      }
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast.error('Failed to update user role');
+    }
   };
 
-  const handleStatusToggle = (userId: string) => {
-    setUsers(prev => prev.map(user => 
-      user.id === userId 
-        ? { ...user, status: user.status === 'active' ? 'inactive' : 'active' }
-        : user
-    ));
-    toast.success('User status updated successfully');
+  const handleStatusToggle = async (userId: string) => {
+    const newStatus = users.find(u => u.id === userId)?.status === 'active' ? 'inactive' : 'active';
+    try {
+      const token = authService.getAccessToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const json = await res.json();
+      if (json.success) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+        toast.success('User status updated successfully');
+      } else {
+        throw new Error(json.message);
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Failed to update user status');
+    }
   };
 
   const handleCreateUser = () => {
@@ -126,42 +158,75 @@ export default function AdminUsersPage() {
     setIsCreateDialogOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (!formData.email.trim() || !formData.firstName.trim() || !formData.lastName.trim()) {
       toast.error('Please fill in all required fields');
       return;
     }
 
-    if (editingUser) {
-      setUsers(prev => prev.map(user => 
-        user.id === editingUser.id 
-          ? { ...user, ...formData }
-          : user
-      ));
-      toast.success('User updated successfully!');
-    } else {
-      const newUser = {
-        id: Date.now().toString(),
-        ...formData,
-        avatar: undefined,
-        createdAt: new Date().toISOString().split('T')[0],
-        lastLogin: 'Never',
-        coursesEnrolled: 0,
-        coursesCompleted: 0
-      };
-      setUsers(prev => [...prev, newUser]);
-      toast.success('User created successfully!');
+    const token = authService.getAccessToken();
+    try {
+      let res: Response;
+      let json: any;
+      if (editingUser) {
+        res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${editingUser.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(formData)
+        });
+        json = await res.json();
+        if (json.success) {
+          setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...formData } : u));
+          toast.success('User updated successfully!');
+        }
+      } else {
+        res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(formData)
+        });
+        json = await res.json();
+        if (json.success) {
+          setUsers(prev => [...prev, json.data]);
+          toast.success('User created successfully!');
+        }
+      }
+      if (!json.success) throw new Error(json.message);
+      setIsCreateDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving user:', error);
+      toast.error('Failed to save user');
     }
-
-    setIsCreateDialogOpen(false);
   };
 
-  const handleDeleteUser = (userId: string) => {
-    if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      setUsers(prev => prev.filter(user => user.id !== userId));
-      toast.success('User deleted successfully!');
+  const handleDeleteUser = async (userId: string) => {
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+    try {
+      const token = authService.getAccessToken();
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const json = await res.json();
+      if (json.success) {
+        setUsers(prev => prev.filter(u => u.id !== userId));
+        toast.success('User deleted successfully!');
+      } else {
+        throw new Error(json.message);
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error('Failed to delete user');
     }
   };
 

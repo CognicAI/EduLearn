@@ -49,19 +49,21 @@ export class AuthController {
       
       const user = await userService.findUserByEmail(email);
       if (!user) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid email or password'
-        });
+        return res.status(401).json({ success: false, message: 'Invalid email or password' });
       }
 
       const isValidPassword = await userService.validatePassword(password, user.passwordHash);
       if (!isValidPassword) {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid email or password'
-        });
+        return res.status(401).json({ success: false, message: 'Invalid email or password' });
       }
+
+      // Do not allow inactive users to login
+      if (!user.isActive) {
+        return res.status(403).json({ success: false, message: 'Account is inactive' });
+      }
+
+      // Increment login count
+      await userService.incrementLoginCount(user.id);
 
       // Update last login
       await userService.updateLastLogin(user.id);
