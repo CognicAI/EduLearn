@@ -254,6 +254,15 @@ export class SettingsController {  // GET /api/user/profile
         [newHash, userId]
       );
 
+      // Log password change activity
+      await activityLogService.logActivity({
+        userId,
+        activityType: 'profile_update',
+        description: 'User changed password',
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent') || undefined
+      });
+
       return res.json({ success: true, message: 'Password updated' });
     } catch (err) {
       console.error('Error updating password:', err);

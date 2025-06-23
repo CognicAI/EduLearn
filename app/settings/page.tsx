@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { AuthGuard } from '@/lib/auth/auth-guard';
-import { fetchUserProfile, updateUserProfile, fetchUserSettings, updateUserSettings } from '@/lib/services/settingsService';
+import { fetchUserProfile, updateUserProfile, fetchUserSettings, updateUserSettings, updateUserPassword } from '@/lib/services/settingsService';
 import type { ProfileData, NotificationSettings } from '@/lib/types/settings';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -84,7 +84,13 @@ export default function SettingsPage() {
     sessionTimeout: '60',
     backupFrequency: 'daily'
   });
-  const [isLoading, setIsLoading] = useState(false);  // Safe update function that handles null checks
+  const [isLoading, setIsLoading] = useState(false);  
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  // Safe update function that handles null checks
   const safeProfileUpdate = (prev: ExtendedProfileData | null, updates: Partial<ExtendedProfileData>): ExtendedProfileData => {
     if (!prev) {
       // If prev is null, create a default object with required fields
@@ -224,6 +230,24 @@ export default function SettingsPage() {
     } catch (err: any) {
       toast.error(err.message);
       setIsLoading(false);
+    }
+  };
+  
+  // Password change handler
+  const handleChangePassword = async () => {
+    if (newPasswordInput !== confirmPasswordInput) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    setIsChangingPassword(true);
+    try {
+      await updateUserPassword({ currentPassword, newPassword: newPasswordInput });
+      toast.success('Password updated successfully!');
+      setCurrentPassword(''); setNewPasswordInput(''); setConfirmPasswordInput('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to change password');
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -577,22 +601,31 @@ export default function SettingsPage() {
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="currentPassword">Current Password</Label>
-                          <Input id="currentPassword" type="password" />
+                          <Input id="currentPassword" type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="newPassword">New Password</Label>
-                          <Input id="newPassword" type="password" />
+                          <Input id="newPassword" type="password" value={newPasswordInput} onChange={e => setNewPasswordInput(e.target.value)} />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                          <Input id="confirmPassword" type="password" />
+                          <Input id="confirmPassword" type="password" value={confirmPasswordInput} onChange={e => setConfirmPasswordInput(e.target.value)} />
                         </div>
                       </div>
 
                       <div className="flex justify-end">
-                        <Button>
-                          <Shield className="h-4 w-4 mr-2" />
-                          Update Password
+                        <Button onClick={handleChangePassword} disabled={isChangingPassword || !currentPassword || !newPasswordInput || newPasswordInput !== confirmPasswordInput}>
+                          {isChangingPassword ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Changing...
+                            </>
+                          ) : (
+                            <>
+                              <Shield className="h-4 w-4 mr-2" />
+                              Change Password
+                            </>
+                          )}
                         </Button>
                       </div>
                     </CardContent>
