@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { AuthenticatedRequest } from '@/middleware/auth';
-import { query } from '@/config/db';
+import { AuthenticatedRequest } from '../middleware/auth';
+import { query } from '../config/db';
 
 export class AdminController {
   async getUsers(req: AuthenticatedRequest, res: Response) {

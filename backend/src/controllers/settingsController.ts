@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '@/middleware/auth';
-import { query } from '@/config/db';
+import { AuthenticatedRequest } from '../middleware/auth';
+import { query } from '../config/db';
 import bcrypt from 'bcryptjs';
 
 export class SettingsController {  // GET /api/user/profile

@@ -1,0 +1,147 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.authController = exports.AuthController = void 0;
+const userService_1 = require("@/services/userService");
+const jwt_1 = require("@/config/jwt");
+class AuthController {
+    async register(req, res) {
+        try {
+            const userData = req.body;
+            const user = await userService_1.userService.createUser(userData);
+            const tokens = (0, jwt_1.generateTokens)({
+                userId: user.id,
+                email: user.email,
+                role: user.role
+            });
+            return res.status(201).json({
+                success: true,
+                message: 'User registered successfully',
+                data: {
+                    user,
+                    tokens
+                }
+            });
+        }
+        catch (error) {
+            console.error('Registration error:', error);
+            if (error instanceof Error) {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+            return res.status(500).json({
+                success: false,
+                message: 'Internal server error'
+            });
+        }
+    }
+    async login(req, res) {
+        try {
+            const { email, password } = req.body;
+            const user = await userService_1.userService.findUserByEmail(email);
+            if (!user) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Invalid email or password'
+                });
+            }
+            const isValidPassword = await userService_1.userService.validatePassword(password, user.passwordHash);
+            if (!isValidPassword) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Invalid email or password'
+                });
+            }
+            await userService_1.userService.updateLastLogin(user.id);
+            const tokens = (0, jwt_1.generateTokens)({
+                userId: user.id,
+                email: user.email,
+                role: user.role
+            });
+            const userResponse = {
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                role: user.role,
+                avatar: user.avatar,
+                createdAt: user.createdAt.toISOString(),
+                lastLogin: new Date().toISOString()
+            };
+            return res.json({
+                success: true,
+                message: 'Login successful',
+                data: {
+                    user: userResponse,
+                    tokens
+                }
+            });
+        }
+        catch (error) {
+            console.error('Login error:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Internal server error'
+            });
+        }
+    }
+    async getCurrentUser(req, res) {
+        try {
+            if (!req.user) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'User not authenticated'
+                });
+            }
+            const user = await userService_1.userService.findUserById(req.user.userId);
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
+            return res.json({
+                success: true,
+                data: user
+            });
+        }
+        catch (error) {
+            console.error('Get current user error:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Internal server error'
+            });
+        }
+    }
+    async refreshToken(req, res) {
+        try {
+            const { refreshToken } = req.body;
+            if (!refreshToken) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Refresh token required'
+                });
+            }
+            const tokens = (0, jwt_1.generateTokens)({
+                userId: req.body.userId,
+                email: req.body.email,
+                role: req.body.role
+            });
+            return res.json({
+                success: true,
+                data: { tokens }
+            });
+        }
+        catch (error) {
+            console.error('Token refresh error:', error);
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid refresh token'
+            });
+        }
+    }
+}
+exports.AuthController = AuthController;
+exports.authController = new AuthController();
+//# sourceMappingURL=authController.js.map

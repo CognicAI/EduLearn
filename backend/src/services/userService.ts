@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
-import { query } from '@/config/db';
-import { User, CreateUserData, UserResponse } from '@/types/user';
+import { query } from '../config/db';
+import { User, CreateUserData, UserResponse } from '../types/user';
 
 export class UserService {
   async createUser(userData: CreateUserData): Promise<UserResponse> {

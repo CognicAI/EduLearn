@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { userService } from '@/services/userService';
-import { generateTokens } from '@/config/jwt';
-import { LoginCredentials, CreateUserData } from '@/types/user';
-import { AuthenticatedRequest } from '@/middleware/auth';
+import { userService } from '../services/userService';
+import { generateTokens } from '../config/jwt';
+import { LoginCredentials, CreateUserData } from '../types/user';
+import { AuthenticatedRequest } from '../middleware/auth';
 
 export class AuthController {
   async register(req: Request, res: Response) {
