@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { query } from '../config/db';
 import bcrypt from 'bcryptjs';
+import { activityLogService } from '../services/activityLogService';
 
 export class SettingsController {  // GET /api/user/profile
   async getProfile(req: AuthenticatedRequest, res: Response) {
@@ -138,6 +139,16 @@ export class SettingsController {  // GET /api/user/profile
           ]
         );
       }
+      
+      // Log profile update activity
+      await activityLogService.logActivity({
+        userId,
+        activityType: 'profile_update',
+        description: 'User updated profile',
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent') || undefined,
+        metadata: req.body
+      });
       
       return res.json({ success: true, message: 'Profile updated' });
     } catch (err) {

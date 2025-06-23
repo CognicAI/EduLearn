@@ -3,6 +3,8 @@ import { userService } from '../services/userService';
 import { generateTokens } from '../config/jwt';
 import { LoginCredentials, CreateUserData } from '../types/user';
 import { AuthenticatedRequest } from '../middleware/auth';
+import { query } from '../config/db';
+import { activityLogService } from '../services/activityLogService';
 
 export class AuthController {
   async register(req: Request, res: Response) {
@@ -63,6 +65,14 @@ export class AuthController {
 
       // Update last login
       await userService.updateLastLogin(user.id);
+      // Log login activity
+      await activityLogService.logActivity({
+        userId: user.id,
+        activityType: 'login',
+        description: 'User logged in',
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent') || undefined
+      });
 
       const tokens = generateTokens({
         userId: user.id,
@@ -157,6 +167,31 @@ export class AuthController {
         success: false,
         message: 'Invalid refresh token'
       });
+    }
+  }
+
+  // POST /api/auth/logout
+  async logout(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user!.userId;
+      // Invalidate session token
+      const bearer = req.headers.authorization;
+      const token = bearer && bearer.startsWith('Bearer ') ? bearer.split(' ')[1] : undefined;
+      if (token) {
+        await query('DELETE FROM user_sessions WHERE session_token = $1', [token]);
+      }
+       // Log logout activity
+      await activityLogService.logActivity({
+        userId,
+        activityType: 'logout',
+        description: 'User logged out',
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent') || undefined
+      });
+      return res.json({ success: true, message: 'Logout successful' });
+    } catch (error) {
+      console.error('Logout error:', error);
+      return res.status(500).json({ success: false, message: 'Internal server error' });
     }
   }
 }
