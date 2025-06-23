@@ -18,6 +18,15 @@ export class AuthController {
         role: user.role
       });
 
+      // Log registration activity
+      await activityLogService.logActivity({
+        userId: user.id,
+        activityType: 'profile_update',
+        description: 'New user registered',
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent') || undefined
+      });
+
       return res.status(201).json({
         success: true,
         message: 'User registered successfully',

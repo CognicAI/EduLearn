@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { query } from '../config/db';
 import bcrypt from 'bcrypt';
+import { activityLogService } from '../services/activityLogService';
 
 export class AdminController {
   async getUsers(req: AuthenticatedRequest, res: Response) {
@@ -41,7 +42,7 @@ export class AdminController {
       const { email, firstName, lastName, role, status } = req.body;
       const isActive = status === 'active';
       // Default password for new users (should prompt reset)
-      const defaultPassword = 'Password123'; // Use a secure default password
+      const defaultPassword = 'Password@123'; // Use a secure default password
       const passwordHash = await bcrypt.hash(defaultPassword, 10);
       const insert = await query(
         `INSERT INTO users (email, first_name, last_name, role, is_active, password_hash)
@@ -50,6 +51,13 @@ export class AdminController {
         [email, firstName, lastName, role, isActive, passwordHash]
       );
       const user = insert.rows[0];
+      // Log user creation activity
+      await activityLogService.logActivity({
+        userId: req.user!.userId,
+        activityType: 'profile_update',
+        description: `Admin created user ${user.email}`,
+        metadata: { createdUserId: user.id }
+      });
       res.status(201).json({ success: true, data: user });
     } catch (err) {
       console.error('Error creating user:', err);
