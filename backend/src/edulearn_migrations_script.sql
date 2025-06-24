@@ -190,8 +190,8 @@ CREATE TABLE user_profiles (
 CREATE TABLE user_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    session_token VARCHAR(255) UNIQUE NOT NULL,
-    refresh_token VARCHAR(255) UNIQUE,
+    session_token TEXT UNIQUE NOT NULL,
+    refresh_token TEXT UNIQUE,
     expires_at TIMESTAMP NOT NULL,
     ip_address VARCHAR(45),
     user_agent TEXT,

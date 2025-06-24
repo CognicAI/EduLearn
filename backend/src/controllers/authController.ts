@@ -5,6 +5,9 @@ import { LoginCredentials, CreateUserData } from '../types/user';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { query } from '../config/db';
 import { activityLogService } from '../services/activityLogService';
+import jwt from 'jsonwebtoken';
+import { sessionService } from '../services/sessionService';
+import { verifyRefreshToken } from '../config/jwt';
 
 export class AuthController {
   async register(req: Request, res: Response) {
@@ -91,6 +94,21 @@ export class AuthController {
         role: user.role
       });
 
+      // Create a new session record
+      const userAgent = req.get('User-Agent') || '';
+      const deviceType = /mobile/i.test(userAgent) ? 'mobile' : /tablet/i.test(userAgent) ? 'tablet' : 'desktop';
+      const decodedAccess: any = jwt.decode(tokens.accessToken) as any;
+      const expiresAt = new Date(decodedAccess.exp * 1000);
+      await sessionService.createSession({
+        userId: user.id,
+        sessionToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresAt,
+        ipAddress: req.ip,
+        userAgent,
+        deviceType
+      });
+
       const userResponse = {
         id: user.id,
         email: user.email,
@@ -152,32 +170,40 @@ export class AuthController {
   async refreshToken(req: Request, res: Response) {
     try {
       const { refreshToken } = req.body;
-      
       if (!refreshToken) {
-        return res.status(401).json({
-          success: false,
-          message: 'Refresh token required'
-        });
+        return res.status(401).json({ success: false, message: 'Refresh token required' });
       }
 
-      // In a production app, you'd verify the refresh token and check if it's still valid
-      // For now, we'll implement a basic version
+      // Verify refresh token
+      let payload;
+      try {
+        payload = verifyRefreshToken(refreshToken);
+      } catch (err) {
+        return res.status(403).json({ success: false, message: 'Invalid or expired refresh token' });
+      }
+
+      // Validate session exists and is active
+      const session = await sessionService.getSessionByRefreshToken(refreshToken);
+      if (!session) {
+        return res.status(401).json({ success: false, message: 'Session not found or inactive' });
+      }
+
+      // Generate new tokens
       const tokens = generateTokens({
-        userId: req.body.userId,
-        email: req.body.email,
-        role: req.body.role
+        userId: payload.userId,
+        email: payload.email,
+        role: payload.role
       });
 
-      return res.json({
-        success: true,
-        data: { tokens }
-      });
+      // Update session with new tokens and expiry
+      const decodedNew: any = jwt.decode(tokens.accessToken) as any;
+      const newExpiresAt = new Date(decodedNew.exp * 1000);
+      await sessionService.updateSession(session.id, tokens.accessToken, tokens.refreshToken, newExpiresAt);
+
+      return res.json({ success: true, data: { tokens } });
     } catch (error) {
       console.error('Token refresh error:', error);
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid refresh token'
-      });
+      return res.status(401).json({ success: false, message: 'Invalid refresh token' });
     }
   }
 
@@ -185,13 +211,13 @@ export class AuthController {
   async logout(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user!.userId;
-      // Invalidate session token
       const bearer = req.headers.authorization;
       const token = bearer && bearer.startsWith('Bearer ') ? bearer.split(' ')[1] : undefined;
       if (token) {
-        await query('DELETE FROM user_sessions WHERE session_token = $1', [token]);
+        // Invalidate session record
+        await sessionService.deleteSessionByToken(token);
       }
-       // Log logout activity
+      // Log logout activity
       await activityLogService.logActivity({
         userId,
         activityType: 'logout',

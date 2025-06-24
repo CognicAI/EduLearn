@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { Secret } from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -12,23 +12,23 @@ export interface JWTPayload {
 export const generateTokens = (payload: JWTPayload) => {
   const accessToken = jwt.sign(
     payload,
-    process.env.JWT_SECRET!,
-    { expiresIn: '15m' }
+    process.env.JWT_SECRET! as Secret,
+    { algorithm: 'HS256', expiresIn: process.env.JWT_EXPIRES_IN || '15m' } as any
   );
 
   const refreshToken = jwt.sign(
     payload,
-    process.env.JWT_REFRESH_SECRET!,
-    { expiresIn: '7d' }
+    process.env.JWT_REFRESH_SECRET! as Secret,
+    { algorithm: 'HS256', expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' } as any
   );
 
   return { accessToken, refreshToken };
-};
+}
 
 export const verifyAccessToken = (token: string): JWTPayload => {
-  return jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
+  return jwt.verify(token, process.env.JWT_SECRET! as Secret) as JWTPayload;
 };
 
 export const verifyRefreshToken = (token: string): JWTPayload => {
-  return jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as JWTPayload;
+  return jwt.verify(token, process.env.JWT_REFRESH_SECRET! as Secret) as JWTPayload;
 };
