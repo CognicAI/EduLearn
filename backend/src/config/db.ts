@@ -9,6 +9,9 @@ const pool = new Pool({
   database: process.env.DB_NAME,
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
+  ssl: {
+    rejectUnauthorized: false // ✅ Required for DigitalOcean/remote PostgreSQL with self-signed cert
+  }
 });
 
 export const query = (text: string, params?: any[]) => pool.query(text, params);
