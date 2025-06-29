@@ -18,10 +18,35 @@ class AuthService {
     }
   }
 
-  private async request<T>(endpoint: string, options: RequestInit): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit, retryOnAuth = true): Promise<T> {
     const res = await fetch(`${API_URL}${endpoint}`, options);
+    
+    // Handle 403 Forbidden - try to refresh token once
+    if (res.status === 403 && retryOnAuth && this.refreshToken && endpoint !== '/auth/refresh') {
+      try {
+        await this.refreshAccessToken();
+        // Retry the request with new token
+        const newOptions = {
+          ...options,
+          headers: {
+            ...options.headers,
+            Authorization: `Bearer ${this.accessToken}`,
+          },
+        };
+        return this.request<T>(endpoint, newOptions, false); // Don't retry again
+      } catch (refreshError) {
+        // Refresh failed, clear tokens and redirect to login
+        this.clearTokens();
+        throw new Error('Session expired. Please log in again.');
+      }
+    }
+
     const json = await res.json();
     if (!res.ok || !json.success) {
+      if (res.status === 401 || res.status === 403) {
+        this.clearTokens();
+        throw new Error('Invalid or expired token');
+      }
       throw new Error(json.message || 'Request failed');
     }
     return json.data;
@@ -67,12 +92,22 @@ class AuthService {
 
   async getCurrentUser(): Promise<User | null> {
     if (!this.accessToken) return null;
-    const data = await this.request<User>('/auth/me', {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${this.accessToken}` },
-    });
-    this.currentUser = data;
-    return data;
+    
+    try {
+      const data = await this.request<User>('/auth/me', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${this.accessToken}` },
+      });
+      this.currentUser = data;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('currentUser', JSON.stringify(data));
+      }
+      return data;
+    } catch (error) {
+      // If getting current user fails, clear local auth state
+      this.clearTokens();
+      return null;
+    }
   }
 
   async refreshAccessToken(): Promise<boolean> {
@@ -101,20 +136,27 @@ class AuthService {
             headers: {
               Authorization: `Bearer ${this.accessToken}`
             }
-          }
+          },
+          false // Don't retry on auth error during logout
         );
       } catch (err) {
         console.error('Error during backend logout:', err);
       }
     }
     // Clear local auth data
-    this.accessToken = null;
-    this.refreshToken = null;
-    this.currentUser = null;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('currentUser');
+    this.clearTokens();
+  }
+
+  async checkBackendConnection(): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_URL}/health`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Backend connection check failed:', error);
+      return false;
     }
   }
 
@@ -127,8 +169,23 @@ class AuthService {
     }
   }
 
+  private clearTokens(): void {
+    this.accessToken = null;
+    this.refreshToken = null;
+    this.currentUser = null;
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('currentUser');
+    }
+  }
+
   getAccessToken(): string | null {
     return this.accessToken;
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.accessToken && !!this.currentUser;
   }
 }
 
