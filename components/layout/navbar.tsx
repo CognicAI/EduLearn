@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { ThemeToggle, ProminentThemeToggle } from '@/components/ui/theme-toggle';
 import { BookOpenIcon, Menu, LogOut, User, Settings } from 'lucide-react';
 
 const navigationItems = {
@@ -69,6 +70,9 @@ export function Navbar() {
 
           {/* User Menu */}
           <div className="flex items-center space-x-4">
+            {/* Prominent Theme Toggle - Always visible */}
+            <ProminentThemeToggle />
+            
             {isAuthenticated && user ? (
               <>
                 {/* Desktop User Menu */}
@@ -154,7 +158,11 @@ export function Navbar() {
                           </Link>
                         ))}
                         
-                        <div className="pt-4 border-t">
+                        <div className="pt-4 border-t space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">Theme</span>
+                            <ThemeToggle />
+                          </div>
                           <Button
                             variant="ghost"
                             className="w-full justify-start"

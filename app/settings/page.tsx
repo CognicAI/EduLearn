@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/auth-context';
+import { useTheme } from '@/lib/theme/theme-provider';
 import { AuthGuard } from '@/lib/auth/auth-guard';
 import { fetchUserProfile, updateUserProfile, fetchUserSettings, updateUserSettings, updateUserPassword } from '@/lib/services/settingsService';
 import type { ProfileData, NotificationSettings } from '@/lib/types/settings';
@@ -64,6 +65,8 @@ interface SystemSettings {
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const { theme, setTheme, updateUserTheme } = useTheme();
+  
   // Profile settings state
   const [profileData, setProfileData] = useState<ExtendedProfileData | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -261,6 +264,24 @@ export default function SettingsPage() {
       setIsChangingPassword(false);
     }
   };
+
+  // Sync theme when notification settings are loaded
+  useEffect(() => {
+    if (notificationSettings?.theme) {
+      // Map backend theme format to frontend format
+      let userTheme: 'light' | 'dark' | 'system' = 'system';
+      if (notificationSettings.theme === 'auto') {
+        userTheme = 'system';
+      } else if (notificationSettings.theme === 'light' || notificationSettings.theme === 'dark') {
+        userTheme = notificationSettings.theme;
+      }
+      
+      // Only update if it's different from current theme
+      if (userTheme !== theme) {
+        setTheme(userTheme);
+      }
+    }
+  }, [notificationSettings?.theme, theme, setTheme]);
 
   // Wait until profileData is loaded before rendering
   if (isLoadingProfile || !profileData) {
@@ -537,16 +558,46 @@ export default function SettingsPage() {
                       <div className="space-y-2">
                         <Label>Theme</Label>
                         <Select
-                          value={notificationSettings?.theme}
-                          onValueChange={(val) => setNotificationSettings(prev => prev && safeNotificationUpdate(prev, { theme: val as 'light' | 'dark' | 'auto' }))}
+                          value={theme === 'system' ? 'auto' : theme}
+                          onValueChange={(val) => {
+                            // Map backend format to frontend format and apply immediately
+                            const newTheme = val === 'auto' ? 'system' : val as 'light' | 'dark';
+                            
+                            // Update theme with user settings sync
+                            updateUserTheme(newTheme, async (backendTheme) => {
+                              if (notificationSettings) {
+                                const apiNotificationSettings = {
+                                  ...notificationSettings,
+                                  notificationEmail: notificationSettings.emailNotifications,
+                                  notificationPush: notificationSettings.pushNotifications,
+                                  notificationSms: notificationSettings.notificationSms,
+                                  theme: backendTheme,
+                                  dashboardLayout: null,
+                                  privacySettings: null,
+                                  languagePreference: notificationSettings.languagePreference,
+                                  timezonePreference: notificationSettings.timezonePreference
+                                };
+                                await updateUserSettings(apiNotificationSettings);
+                              }
+                            });
+                            
+                            // Update the notification settings state to keep UI in sync
+                            setNotificationSettings(prev => prev && safeNotificationUpdate(prev, { theme: val as 'light' | 'dark' | 'auto' }));
+                            
+                            // Show success message
+                            toast.success('Theme updated and saved!');
+                          }}
                         >
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="light">Light</SelectItem>
                             <SelectItem value="dark">Dark</SelectItem>
-                            <SelectItem value="auto">Auto</SelectItem>
+                            <SelectItem value="auto">Auto (System)</SelectItem>
                           </SelectContent>
                         </Select>
+                        <p className="text-xs text-muted-foreground">
+                          Theme changes are applied immediately and saved to your profile.
+                        </p>
                       </div>
 
                       <Separator />

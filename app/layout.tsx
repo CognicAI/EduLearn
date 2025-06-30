@@ -3,7 +3,9 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import { QueryProvider } from '@/lib/query-provider';
+import { ThemeProvider } from '@/lib/theme/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
+import { ChatbotWidget } from '@/components/chatbot/chatbot-widget';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -29,12 +31,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body className={inter.className}>
         <QueryProvider>
           <AuthProvider>
-            {children}
-            <Toaster position="top-right" />
+            <ThemeProvider
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange={false}
+            >
+              {children}
+              <ChatbotWidget />
+              <Toaster position="top-right" />
+            </ThemeProvider>
           </AuthProvider>
         </QueryProvider>
       </body>

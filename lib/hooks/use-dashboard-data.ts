@@ -208,15 +208,38 @@ const generateAdminData = (): DashboardData => ({
   systemAlerts: [
     {
       type: 'warning',
-      title: 'High server load',
-      description: 'CPU usage above 80%',
-      time: '2 hours ago'
+      title: 'High server load detected',
+      description: 'CPU usage above 80% for the past 30 minutes. Consider scaling resources.',
+      time: '2 hours ago',
+      priority: 'high'
+    },
+    {
+      type: 'success',
+      title: 'Backup completed successfully',
+      description: 'Daily system backup completed without any issues. All data is secure.',
+      time: '4 hours ago',
+      priority: 'low'
     },
     {
       type: 'info',
-      title: 'Scheduled maintenance',
-      description: 'Database update tomorrow 2 AM',
-      time: '1 day ago'
+      title: 'Scheduled maintenance window',
+      description: 'Database optimization and security updates planned for tomorrow at 2:00 AM EST.',
+      time: '1 day ago',
+      priority: 'medium'
+    },
+    {
+      type: 'warning',
+      title: 'Storage capacity warning',
+      description: 'File storage is at 85% capacity. Consider archiving old files.',
+      time: '6 hours ago',
+      priority: 'medium'
+    },
+    {
+      type: 'info',
+      title: 'New feature deployment',
+      description: 'Enhanced analytics dashboard will be available next week.',
+      time: '2 days ago',
+      priority: 'low'
     }
   ]
 });

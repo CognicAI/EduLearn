@@ -24,7 +24,7 @@
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 239 84% 67%;
+    --primary: 221 83% 53%;
     --primary-foreground: 0 0% 98%;
     --secondary: 159 64% 68%;
     --secondary-foreground: 0 0% 9%;
@@ -36,39 +36,87 @@
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 239 84% 67%;
+    --ring: 221 83% 53%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.75rem;
+    
+    /* EduLearn specific colors */
+    --sidebar: 0 0% 98%;
+    --sidebar-foreground: 0 0% 3.9%;
+    --navbar: 0 0% 100%;
+    --navbar-foreground: 0 0% 3.9%;
+    --dashboard: 0 0% 97%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 3.9%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 98%;
   }
+  
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 239 84% 67%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Rich, vibrant dark background with subtle gradient feel */
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+    
+    /* Enhanced card with subtle elevation and depth */
+    --card: 224 47% 8%;
+    --card-foreground: 213 31% 91%;
+    
+    /* Popover with better contrast */
+    --popover: 224 47% 8%;
+    --popover-foreground: 213 31% 91%;
+    
+    /* Vibrant primary with electric blue accent */
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 84% 4.9%;
+    
+    /* Enhanced secondary with purple tint */
+    --secondary: 240 21% 15%;
+    --secondary-foreground: 213 31% 91%;
+    
+    /* Better muted tones with more contrast */
+    --muted: 223 47% 11%;
+    --muted-foreground: 215.4 16.3% 65%;
+    
+    /* Accent with cyan-blue gradient feel */
+    --accent: 240 21% 15%;
+    --accent-foreground: 213 31% 91%;
+    
+    /* Enhanced destructive with better visibility */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 213 31% 91%;
+    
+    /* Subtle borders with better visibility */
+    --border: 240 19% 16%;
+    --input: 240 19% 16%;
+    --ring: 217 91% 60%;
+    
+    /* Vibrant chart colors for better data visualization */
+    --chart-1: 217 91% 60%;
+    --chart-2: 142 76% 46%;
+    --chart-3: 38 92% 60%;
+    --chart-4: 280 65% 70%;
+    --chart-5: 340 75% 65%;
+    
+    /* EduLearn specific dark colors with enhanced depth */
+    --sidebar: 224 47% 8%;
+    --sidebar-foreground: 213 31% 91%;
+    --navbar: 224 71% 4%;
+    --navbar-foreground: 213 31% 91%;
+    --dashboard: 224 71% 4%;
+    
+    /* Enhanced status colors with better visibility */
+    --success: 142 76% 46%;
+    --success-foreground: 213 31% 91%;
+    --warning: 38 92% 60%;
+    --warning-foreground: 0 0% 3.9%;
+    --info: 217 91% 60%;
+    --info-foreground: 213 31% 91%;
   }
 }
 
@@ -79,6 +127,12 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  /* Ensure smooth transitions for all themed elements */
+  .theme-transition {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
   }
 }
 
@@ -90,6 +144,52 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* Chatbot Widget Animations */
+@layer utilities {
+  .chatbot-slide-in {
+    animation: chatbot-slide-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .chatbot-fade-in {
+    animation: chatbot-fade-in 0.2s ease-out;
+  }
+  
+  .chatbot-message-in {
+    animation: chatbot-message-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  @keyframes chatbot-slide-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  @keyframes chatbot-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes chatbot-message-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
@@ -108,5 +208,290 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+}
+
+/* Enhanced Dark Theme Styles */
+@layer utilities {
+  /* Custom scrollbar for better dark theme experience */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* Enhanced focus styles for accessibility */
+  .focus-enhanced:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: var(--radius);
+  }
+
+  /* Dark theme image adjustments */
+  .dark-theme-image {
+    transition: opacity 0.3s ease, filter 0.3s ease;
+  }
+
+  .dark .dark-theme-image {
+    opacity: 0.9;
+  }
+
+  .dark .dark-theme-image:hover {
+    opacity: 1;
+  }
+
+  /* Selection styles */
+  .enhanced-selection::selection {
+    background: hsl(var(--primary) / 0.2);
+    color: hsl(var(--primary-foreground));
+  }
+
+  .dark .enhanced-selection::selection {
+    background: hsl(var(--primary) / 0.3);
+    color: hsl(var(--primary-foreground));
+  }
+
+  /* Code block theming */
+  .code-block {
+    background: hsl(var(--muted));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    transition: all 0.3s ease;
+  }
+
+  .dark .code-block {
+    background: hsl(var(--muted));
+    border-color: hsl(var(--border));
+  }
+
+  /* Glass morphism effect for cards in dark mode */
+  .glass-card {
+    background: hsl(var(--card) / 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.5);
+    transition: all 0.3s ease;
+  }
+
+  .dark .glass-card {
+    background: hsl(var(--card) / 0.6);
+    backdrop-filter: blur(16px);
+    border: 1px solid hsl(var(--border) / 0.3);
+  }
+
+  /* Gradient text for headers */
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .dark .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Enhanced button hover effects */
+  .button-enhanced {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(0);
+  }
+
+  .button-enhanced:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsl(var(--primary) / 0.15);
+  }
+
+  .dark .button-enhanced:hover {
+    box-shadow: 0 4px 20px hsl(var(--primary) / 0.25);
+  }
+
+  /* Skeleton loading with dark theme support */
+  .skeleton-enhanced {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+  }
+
+  @keyframes skeleton-loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+}
+
+/* Enhanced dark theme UI components */
+@layer utilities {
+  /* Vibrant card styles */
+  .card-enhanced {
+    background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--card)) 70%, hsl(var(--accent) / 0.05));
+    border: 1px solid hsl(var(--border));
+    backdrop-filter: blur(8px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark .card-enhanced {
+    background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--card)) 70%, hsl(var(--primary) / 0.05));
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px hsl(var(--background) / 0.1);
+  }
+
+  .card-enhanced:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px hsl(var(--foreground) / 0.1);
+  }
+
+  .dark .card-enhanced:hover {
+    box-shadow: 0 8px 25px hsl(var(--primary) / 0.15);
+    border-color: hsl(var(--primary) / 0.3);
+  }
+
+  /* Enhanced badge styles */
+  .badge-enhanced {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)) 70%, hsl(var(--accent)));
+    color: hsl(var(--primary-foreground));
+    border: none;
+    text-shadow: 0 1px 2px hsl(var(--primary) / 0.3);
+  }
+
+  .badge-success {
+    background: linear-gradient(135deg, hsl(var(--success)), hsl(142 76% 50%));
+    color: hsl(var(--success-foreground));
+  }
+
+  .badge-warning {
+    background: linear-gradient(135deg, hsl(var(--warning)), hsl(38 92% 60%));
+    color: hsl(var(--warning-foreground));
+  }
+
+  .badge-destructive {
+    background: linear-gradient(135deg, hsl(var(--destructive)), hsl(0 72% 60%));
+    color: hsl(var(--destructive-foreground));
+  }
+
+  /* Toggle and switch enhancements */
+  .toggle-enhanced {
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark .toggle-enhanced[data-state="checked"] {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(217 91% 70%));
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  }
+
+  /* Button enhancements */
+  .button-primary-enhanced {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(217 91% 70%));
+    border: none;
+    color: hsl(var(--primary-foreground));
+    box-shadow: 0 2px 8px hsl(var(--primary) / 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .button-primary-enhanced:hover {
+    background: linear-gradient(135deg, hsl(217 91% 70%), hsl(var(--primary)));
+    box-shadow: 0 4px 16px hsl(var(--primary) / 0.4);
+    transform: translateY(-1px);
+  }
+
+  /* Input enhancements */
+  .input-enhanced {
+    background: hsl(var(--background));
+    border: 1px solid hsl(var(--border));
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark .input-enhanced {
+    background: hsl(var(--card));
+    border-color: hsl(var(--border));
+  }
+
+  .input-enhanced:focus {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+  }
+
+  .dark .input-enhanced:focus {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.2);
+  }
+
+  /* Navigation enhancements */
+  .nav-item-enhanced {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .nav-item-enhanced::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent);
+    transition: left 0.5s;
+  }
+
+  .nav-item-enhanced:hover::before {
+    left: 100%;
+  }
+
+  .dark .nav-item-enhanced:hover {
+    background: hsl(var(--accent) / 0.8);
+    color: hsl(var(--accent-foreground));
+  }
+
+  /* Status indicators */
+  .status-online {
+    background: linear-gradient(135deg, hsl(142 76% 46%), hsl(142 76% 56%));
+    box-shadow: 0 0 8px hsl(142 76% 46% / 0.4);
+  }
+
+  .status-busy {
+    background: linear-gradient(135deg, hsl(0 72% 51%), hsl(0 72% 61%));
+    box-shadow: 0 0 8px hsl(0 72% 51% / 0.4);
+  }
+
+  .status-away {
+    background: linear-gradient(135deg, hsl(38 92% 60%), hsl(38 92% 70%));
+    box-shadow: 0 0 8px hsl(38 92% 60% / 0.4);
+  }
+}
+
+/* Additional dark theme specific enhancements */
+@media (prefers-color-scheme: dark) {
+  .glassmorphism-enhanced {
+    background: linear-gradient(135deg, hsl(var(--card) / 0.9), hsl(var(--card) / 0.7));
+    backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.3);
   }
 }

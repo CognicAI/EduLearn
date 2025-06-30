@@ -11,6 +11,7 @@ interface AuthContextType extends AuthState {
   register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  getAccessToken: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -29,6 +30,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const initializeAuth = async () => {
     try {
+      // Check if backend is available
+      const isBackendAvailable = await authService.checkBackendConnection();
+      if (!isBackendAvailable) {
+        console.warn('Backend is not available');
+        setAuthState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
+        return;
+      }
+
       const user = await authService.getCurrentUser();
       if (user) {
         setAuthState({
@@ -45,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Auth initialization error:', error);
+      // Don't show toast on initial load if token is expired
       setAuthState({
         user: null,
         isAuthenticated: false,
@@ -65,6 +79,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (credentials: LoginCredentials) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }));
+      
+      // Check backend availability first
+      const isBackendAvailable = await authService.checkBackendConnection();
+      if (!isBackendAvailable) {
+        throw new Error('Unable to connect to server. Please check your internet connection.');
+      }
+
       const { user } = await authService.login(credentials);
       
       setAuthState({
@@ -88,6 +109,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (credentials: RegisterCredentials) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }));
+      
+      // Check backend availability first
+      const isBackendAvailable = await authService.checkBackendConnection();
+      if (!isBackendAvailable) {
+        throw new Error('Unable to connect to server. Please check your internet connection.');
+      }
+
       const { user } = await authService.register(credentials);
       
       setAuthState({
@@ -130,12 +158,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const getAccessToken = () => {
+    return authService.getAccessToken();
+  };
+
   const contextValue: AuthContextType = {
     ...authState,
     login,
     register,
     logout,
     refreshUser,
+    getAccessToken,
   };
 
   return (
