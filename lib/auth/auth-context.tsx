@@ -11,6 +11,7 @@ interface AuthContextType extends AuthState {
   register: (credentials: RegisterCredentials) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  getAccessToken: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -157,12 +158,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const getAccessToken = () => {
+    return authService.getAccessToken();
+  };
+
   const contextValue: AuthContextType = {
     ...authState,
     login,
     register,
     logout,
     refreshUser,
+    getAccessToken,
   };
 
   return (

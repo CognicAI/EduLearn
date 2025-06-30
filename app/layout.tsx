@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import { QueryProvider } from '@/lib/query-provider';
 import { Toaster } from '@/components/ui/sonner';
+import { ChatbotWidget } from '@/components/chatbot/chatbot-widget';
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -34,6 +35,7 @@ export default function RootLayout({
         <QueryProvider>
           <AuthProvider>
             {children}
+            <ChatbotWidget />
             <Toaster position="top-right" />
           </AuthProvider>
         </QueryProvider>
