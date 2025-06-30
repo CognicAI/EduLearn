@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, BookOpenIcon, TrendingUp, AlertTriangle, Settings, UserPlus } from 'lucide-react';
+import { Users, BookOpenIcon, TrendingUp, AlertTriangle, Settings, UserPlus, CheckCircle, Info } from 'lucide-react';
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data';
 import { useUserProfile } from '@/lib/hooks/use-user';
 
@@ -213,32 +214,99 @@ export default function AdminDashboard() {
 
                 <div className="space-y-6">
                   {/* System Alerts */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>System Alerts</CardTitle>
+                  <Card className="card-enhanced overflow-hidden">
+                    <CardHeader className="bg-gradient-to-r from-background to-accent/5 border-b border-border/50">
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
+                            <AlertTriangle className="h-4 w-4 text-primary" />
+                          </div>
+                          System Alerts
+                        </div>
+                        {dashboardData?.systemAlerts && dashboardData.systemAlerts.length > 0 && (
+                          <Badge variant="outline" className="ml-2">
+                            {dashboardData.systemAlerts.length}
+                          </Badge>
+                        )}
+                      </CardTitle>
                       <CardDescription>
-                        Important system notifications
+                        Monitor critical system notifications and warnings
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      {dashboardData?.systemAlerts?.map((alert, index) => (
-                        <div key={index} className={`p-3 rounded-lg border ${
-                          alert.type === 'warning' ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'
-                        }`}>
-                          <div className="flex items-start gap-2">
-                            <AlertTriangle className={`h-4 w-4 mt-0.5 ${
-                              alert.type === 'warning' ? 'text-orange-600' : 'text-blue-600'
-                            }`} />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium">{alert.title}</p>
-                              <p className="text-xs text-muted-foreground">{alert.description}</p>
-                              <p className="text-xs text-muted-foreground mt-1">{alert.time}</p>
-                            </div>
+                    <CardContent className="p-0">
+                      {dashboardData?.systemAlerts && dashboardData.systemAlerts.length > 0 ? (
+                        <ScrollArea className="h-[400px]">
+                          <div className="divide-y divide-border/50">
+                            {dashboardData.systemAlerts.map((alert, index) => (
+                            <div key={index} className="p-4 hover:bg-accent/30 transition-all duration-200 group relative">
+                              {/* Priority indicator */}
+                              <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                                alert.priority === 'high' ? 'bg-destructive' :
+                                alert.priority === 'medium' ? 'bg-warning' : 'bg-muted'
+                              }`}></div>
+                              <div className="flex items-start gap-3 ml-3">
+                                <div className="flex-shrink-0 mt-1">
+                                  <Badge 
+                                    variant={
+                                      alert.type === 'warning' ? 'warning' : 
+                                      alert.type === 'success' ? 'success' : 'info'
+                                    } 
+                                    className="shadow-sm group-hover:shadow-md transition-shadow duration-200"
+                                  >
+                                    {alert.type === 'warning' ? (
+                                      <AlertTriangle className="h-3 w-3 mr-1" />
+                                    ) : alert.type === 'success' ? (
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                    ) : (
+                                      <Info className="h-3 w-3 mr-1" />
+                                    )}
+                                    {alert.type === 'warning' ? 'Warning' : 
+                                     alert.type === 'success' ? 'Success' : 'Info'}
+                                  </Badge>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-2 mb-1">
+                                    <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors duration-200">
+                                      {alert.title}
+                                    </p>
+                                    <span className="text-xs text-muted-foreground/80 font-medium bg-muted/50 px-2 py-1 rounded-md whitespace-nowrap">
+                                      {alert.time}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                                    {alert.description}
+                                  </p>
+                                  {alert.type === 'warning' && (
+                                    <div className="flex items-center gap-2">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="h-7 px-3 text-xs bg-background/50 hover:bg-success/10 hover:text-success hover:border-success/30 transition-all duration-200"
+                                      >
+                                        Resolve
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="h-7 px-3 text-xs text-muted-foreground hover:text-foreground"
+                                      >
+                                        Details
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>                            ))}
                           </div>
-                        </div>
-                      )) || (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-muted-foreground">No system alerts.</p>
+                        </ScrollArea>
+                      ) : (
+                        <div className="text-center py-12 px-4">
+                          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-success/10 to-success/5 rounded-full flex items-center justify-center mb-4 ring-1 ring-success/20">
+                            <CheckCircle className="h-8 w-8 text-success" />
+                          </div>
+                          <h3 className="text-sm font-semibold text-foreground mb-1">All Clear!</h3>
+                          <p className="text-xs text-muted-foreground">No system alerts at the moment.</p>
+                          <p className="text-xs text-muted-foreground/80 mt-1">Your system is running smoothly.</p>
                         </div>
                       )}
                     </CardContent>
