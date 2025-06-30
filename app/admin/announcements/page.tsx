@@ -186,29 +186,29 @@ export default function AdminAnnouncementsPage() {
     }
   };
 
-  const getAudienceColor = (audience: string) => {
+  const getAudienceVariant = (audience: string): "info" | "success" | "secondary" | "default" => {
     switch (audience) {
       case 'students':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'info';
       case 'teachers':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'success';
       case 'all':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return 'secondary';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'default';
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityVariant = (priority: string): "destructive" | "warning" | "success" | "default" => {
     switch (priority) {
       case 'high':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'destructive';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'warning';
       case 'low':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'success';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'default';
     }
   };
 
@@ -406,11 +406,11 @@ export default function AdminAnnouncementsPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <CardTitle className="text-lg">{announcement.title}</CardTitle>
-                          <Badge className={getPriorityColor(announcement.priority)}>
+                          <Badge variant={getPriorityVariant(announcement.priority)}>
                             {getPriorityIcon(announcement.priority)}
                             <span className="ml-1">{announcement.priority}</span>
                           </Badge>
-                          <Badge className={getAudienceColor(announcement.audience)}>
+                          <Badge variant={getAudienceVariant(announcement.audience)}>
                             {getAudienceIcon(announcement.audience)}
                             <span className="ml-1">{announcement.audience}</span>
                           </Badge>
