@@ -495,3 +495,91 @@
     border: 1px solid hsl(var(--border) / 0.3);
   }
 }
+
+/* Speech Recognition Animations */
+@keyframes speechPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+@keyframes microphonePulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+}
+
+@keyframes speechWave {
+  0%, 100% { height: 4px; }
+  50% { height: 12px; }
+}
+
+.speech-recording {
+  animation: microphonePulse 1.5s infinite;
+}
+
+.speech-wave {
+  animation: speechWave 1s infinite;
+}
+
+.speech-wave:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.speech-wave:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+/* Chatbot Speech Recognition Styles */
+.chatbot-speech-indicator {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.chatbot-speech-indicator::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: speechPulse 2s infinite;
+}
+
+.chatbot-listening-input {
+  background: linear-gradient(135deg, #fef2f2, #ffffff);
+  border-color: #fecaca !important;
+}
+
+.chatbot-listening-input::placeholder {
+  color: #dc2626;
+  font-style: italic;
+}
+
+/* Enhanced microphone button styles */
+.microphone-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.microphone-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.microphone-button.recording::before {
+  width: 100%;
+  height: 100%;
+  animation: microphonePulse 1.5s infinite;
+}

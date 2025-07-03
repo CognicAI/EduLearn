@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Paperclip, FileText, Download } from 'lucide-react';
+import { MessageCircle, X, Send, Paperclip, FileText, Download, Mic, MicOff, Volume2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/auth-context';
 import { cn } from '@/lib/utils';
+import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 
 interface Message {
   id: string;
@@ -39,11 +40,58 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     base64: string;
   }>>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatWidgetRef = useRef<HTMLDivElement>(null);
   const chatButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, isAuthenticated, getAccessToken } = useAuth();
+
+  // Client-side check
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Speech recognition hook
+  const {
+    transcript,
+    interimTranscript,
+    finalTranscript,
+    isListening,
+    isSupported: isSpeechSupported,
+    startListening,
+    stopListening,
+    resetTranscript,
+    error: speechError
+  } = useSpeechRecognition({
+    continuous: false,
+    interimResults: true,
+    lang: 'en-US',
+    onTranscript: (transcript) => {
+      setInputValue(prev => prev + transcript);
+    },
+    onError: (error) => {
+      console.error('Speech recognition error:', error);
+      setIsRecording(false);
+      if (error === 'not-allowed') {
+        addMessage({
+          text: 'Microphone access denied. Please allow microphone access in your browser settings to use voice input.',
+          sender: 'error'
+        });
+      } else if (error === 'network') {
+        addMessage({
+          text: 'Network error occurred during speech recognition. Please check your internet connection.',
+          sender: 'error'
+        });
+      } else {
+        addMessage({
+          text: `Speech recognition error: ${error}. Please try again.`,
+          sender: 'error'
+        });
+      }
+    }
+  });
 
   // Generate session ID on mount
   useEffect(() => {
@@ -339,11 +387,39 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     sendMessage(replyText);
   };
 
+  const handleSpeechToggle = () => {
+    if (isListening) {
+      stopListening();
+      setIsRecording(false);
+    } else {
+      if (!isSpeechSupported || !isClient) {
+        addMessage({
+          text: 'Speech recognition is not supported in your browser. Please use a modern browser like Chrome, Firefox, or Safari.',
+          sender: 'error'
+        });
+        return;
+      }
+      
+      resetTranscript();
+      startListening();
+      setIsRecording(true);
+    }
+  };
+
+  // Handle speech recognition completion
+  useEffect(() => {
+    if (!isListening && isRecording && finalTranscript) {
+      setIsRecording(false);
+      // Don't auto-send, just let user review the transcript
+    }
+  }, [isListening, isRecording, finalTranscript]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim() && !isLoading) {
       sendMessage(inputValue);
       setInputValue('');
+      resetTranscript(); // Clear speech transcript after sending
     } else if (!inputValue.trim() && attachments.length > 0) {
       // If only files are attached without text, prompt user to ask about them
       addMessage({
@@ -681,21 +757,74 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
             onClick={() => fileInputRef.current?.click()}
             className="absolute left-3 p-2 text-gray-500 hover:text-blue-600 transition-colors rounded-full hover:bg-blue-50"
             disabled={isLoading || !isAuthenticated}
+            title="Attach files"
           >
             <Paperclip size={16} />
           </button>
+          
+          {/* Microphone Button - Only render on client */}
+          {isClient && (
+            <button
+              type="button"
+              onClick={handleSpeechToggle}
+              className={cn(
+                "absolute left-12 p-2 transition-colors rounded-full microphone-button",
+                isListening || isRecording
+                  ? "text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 recording"
+                  : "text-gray-500 hover:text-blue-600 hover:bg-blue-50",
+                !isSpeechSupported && "opacity-50 cursor-not-allowed"
+              )}
+              disabled={isLoading || !isAuthenticated || !isSpeechSupported}
+              title={
+                !isSpeechSupported 
+                  ? "Speech recognition not supported" 
+                  : isListening || isRecording 
+                    ? "Stop recording" 
+                    : "Start voice input"
+              }
+            >
+              {isListening || isRecording ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
+          )}
           
           <input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder={isDragOver ? "Drop files here or type your message..." : "Type your message..."}
+            placeholder={
+              isClient && (isListening || isRecording)
+                ? "Listening... Speak now" 
+                : isDragOver 
+                  ? "Drop files here or type your message..." 
+                  : isClient && isSpeechSupported
+                    ? "Type or speak your message..."
+                    : "Type your message..."
+            }
             className={cn(
-              "w-full pl-12 pr-20 py-3 border-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm bg-white",
-              isDragOver ? "border-blue-500 bg-blue-50/50" : "border-gray-300"
+              "w-full py-3 border-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm bg-white",
+              isClient && isSpeechSupported ? "pl-20" : "pl-12",
+              "pr-20",
+              isDragOver ? "border-blue-500 bg-blue-50/50" : "border-gray-300",
+              isClient && (isListening || isRecording) && "chatbot-listening-input"
             )}
             disabled={isLoading || !isAuthenticated}
           />
+          
+          {/* Speech Recognition Visual Feedback - Only render on client */}
+          {isClient && (isListening || isRecording) && (
+            <div className="absolute left-24 top-1/2 transform -translate-y-1/2 chatbot-speech-indicator">
+              <div className="w-1 h-1 bg-red-500 rounded-full speech-wave"></div>
+              <div className="w-1 h-1 bg-red-500 rounded-full speech-wave"></div>
+              <div className="w-1 h-1 bg-red-500 rounded-full speech-wave"></div>
+            </div>
+          )}
+          
+          {/* Interim Speech Text Display - Only render on client */}
+          {isClient && interimTranscript && (
+            <div className="absolute left-24 top-1/2 transform -translate-y-1/2 text-xs text-gray-500 italic max-w-40 truncate">
+              {interimTranscript}
+            </div>
+          )}
           
           {/* Hidden File Input */}
           <input
