@@ -2,6 +2,7 @@ import { Router } from 'express';
 import authRoutes from './auth';
 import adminRoutes from './admin';
 import settingsRoutes from './settings';
+import chatbotRoutes from './chatbot';
 
 const router = Router();
 
@@ -9,6 +10,7 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/admin', adminRoutes);
 router.use('/user', settingsRoutes);
+router.use('/chatbot', chatbotRoutes);
 
 // Health check
 router.get('/health', (req, res) => {

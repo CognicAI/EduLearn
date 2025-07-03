@@ -257,14 +257,14 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
         timestamp: new Date().toISOString()
       };
 
-      // Use the webhook URL from environment variable instead of local backend
-      const webhookUrl = process.env.NEXT_PUBLIC_CHATBOT_WEBHOOK_URL;
+      // Use the backend API instead of direct webhook call
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       
-      if (!webhookUrl) {
-        throw new Error('Chatbot webhook URL not configured. Please check your environment variables.');
+      if (!apiUrl) {
+        throw new Error('API URL not configured. Please check your environment variables.');
       }
 
-      const response = await fetch(webhookUrl, {
+      const response = await fetch(`${apiUrl}/chatbot/query`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -284,10 +284,16 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
           throw new Error('Authentication failed. Please log in again.');
         }
         const errorText = await response.text();
-        throw new Error(`Webhook error: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
-      const data = await response.json();
+      const responseData = await response.json();
+      
+      if (!responseData.success) {
+        throw new Error(responseData.message || 'Chatbot request failed');
+      }
+      
+      const data = responseData.data;
       
       // Get role-specific quick replies
       const defaultQuickReplies = getRoleSpecificContent().quickReplies;
