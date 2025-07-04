@@ -758,6 +758,15 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
           >
             <Paperclip size={20} />
           </button>
+          {/* Hidden File Input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
           {/* Mic Button */}
           {isClient && (
             <button
