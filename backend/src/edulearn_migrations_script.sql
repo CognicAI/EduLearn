@@ -805,6 +805,55 @@ CREATE INDEX idx_messages_recipient_read ON messages(recipient_id, is_read);
 CREATE INDEX idx_user_analytics_user_created ON user_analytics(user_id, created_at);
 CREATE INDEX idx_course_analytics_course_date ON course_analytics(course_id, metric_date);
 CREATE INDEX idx_platform_analytics_date ON platform_analytics(metric_date);
+-- Section 13.1: Chatbot Logging Schema
+
+-- ENUM for chat session status
+CREATE TYPE chat_session_status AS ENUM (
+  'active',
+  'idle',
+  'closed',
+  'expired',
+  'error'
+);
+
+-- ENUM for message sender
+CREATE TYPE chat_message_sender AS ENUM (
+  'user',
+  'bot',
+  'error'
+);
+
+-- Table for chat sessions
+CREATE TABLE chat_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_token VARCHAR(255) NOT NULL UNIQUE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status chat_session_status NOT NULL DEFAULT 'active',
+  started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_activity TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ended_at TIMESTAMP,
+  summary TEXT,
+  metadata JSON,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table for chat messages
+CREATE TABLE chat_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+  sender chat_message_sender NOT NULL,
+  text TEXT NOT NULL,
+  attachments JSON,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for chat tables
+CREATE INDEX idx_chat_sessions_user_id ON chat_sessions(user_id);
+CREATE INDEX idx_chat_sessions_status ON chat_sessions(status);
+CREATE INDEX idx_chat_sessions_last_activity ON chat_sessions(last_activity);
+CREATE INDEX idx_chat_messages_session_id ON chat_messages(session_id);
+CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at);
 
 -- Events and calendar
 CREATE INDEX idx_events_datetime_type ON events(start_datetime, event_type);
