@@ -46,7 +46,32 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
   const chatWidgetRef = useRef<HTMLDivElement>(null);
   const chatButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { user, isAuthenticated, getAccessToken } = useAuth();
+
+  // Function to resize textarea
+  const resizeTextarea = (textarea: HTMLTextAreaElement) => {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+  };
+
+  // Function to update input value and resize textarea
+  const updateInputValue = (value: string) => {
+    setInputValue(value);
+    // Trigger resize on next frame
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        resizeTextarea(textareaRef.current);
+      }
+    });
+  };
+
+  // Effect to resize textarea when inputValue changes (e.g., from speech recognition)
+  useEffect(() => {
+    if (textareaRef.current) {
+      resizeTextarea(textareaRef.current);
+    }
+  }, [inputValue]);
 
   // Client-side check
   useEffect(() => {
@@ -69,7 +94,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     interimResults: true,
     lang: 'en-US',
     onTranscript: (transcript) => {
-      setInputValue(prev => prev + transcript);
+      updateInputValue(inputValue + transcript);
     },
     onError: (error) => {
       console.error('Speech recognition error:', error);
@@ -720,132 +745,67 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white rounded-b-xl">
-        {/* Attachment Preview */}
-        {attachments.length > 0 && (
-          <div className="mb-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-gray-500 font-medium">Attachments ({attachments.length})</div>
-              <div className="text-xs text-blue-500 font-medium">Ask me about these files to include them</div>
-            </div>
-            <div className="space-y-2 max-h-24 overflow-y-auto">
-              {attachments.map((attachment, index) => (
-                <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg border">
-                  <FileText size={16} className="text-blue-500" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium text-gray-700 truncate">{attachment.name}</div>
-                    <div className="text-xs text-gray-500">{formatFileSize(attachment.size)}</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeAttachment(index)}
-                    className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        <div className="relative flex items-center">
-          {/* File Upload Button */}
+      {/* Input Area */}
+      <div className="p-4 border-t border-gray-200 bg-white rounded-b-xl">
+        <form onSubmit={handleSubmit} className="flex items-end space-x-3">
+          {/* Attach Button */}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="absolute left-3 p-2 text-gray-500 hover:text-blue-600 transition-colors rounded-full hover:bg-blue-50"
+            className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-gray-100 transition"
             disabled={isLoading || !isAuthenticated}
             title="Attach files"
           >
-            <Paperclip size={16} />
+            <Paperclip size={20} />
           </button>
-          
-          {/* Microphone Button - Only render on client */}
+          {/* Mic Button */}
           {isClient && (
             <button
               type="button"
               onClick={handleSpeechToggle}
               className={cn(
-                "absolute left-12 p-2 transition-colors rounded-full microphone-button",
+                "p-2 rounded-full transition",
                 isListening || isRecording
-                  ? "text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 recording"
-                  : "text-gray-500 hover:text-blue-600 hover:bg-blue-50",
+                  ? "text-red-600 bg-red-100"
+                  : "text-gray-500 hover:text-blue-600 hover:bg-gray-100",
                 !isSpeechSupported && "opacity-50 cursor-not-allowed"
               )}
               disabled={isLoading || !isAuthenticated || !isSpeechSupported}
               title={
-                !isSpeechSupported 
-                  ? "Speech recognition not supported" 
-                  : isListening || isRecording 
-                    ? "Stop recording" 
-                    : "Start voice input"
+                isListening || isRecording ? "Stop voice input" : "Start voice input"
               }
             >
-              {isListening || isRecording ? <MicOff size={16} /> : <Mic size={16} />}
+              {isListening || isRecording ? <MicOff size={20} /> : <Mic size={20} />}
             </button>
           )}
-          
-          <input
-            type="text"
+          {/* Expanding Textarea */}
+          <textarea
+            ref={textareaRef}
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={e => {
+              setInputValue(e.target.value);
+              resizeTextarea(e.target);
+            }}
+            onInput={e => resizeTextarea(e.target as HTMLTextAreaElement)}
+            rows={1}
             placeholder={
-              isClient && (isListening || isRecording)
-                ? "Listening... Speak now" 
-                : isDragOver 
-                  ? "Drop files here or type your message..." 
-                  : isClient && isSpeechSupported
-                    ? "Type or speak your message..."
-                    : "Type your message..."
+              isListening
+                ? "Listening..."
+                : "Type a message..."
             }
-            className={cn(
-              "w-full py-3 border-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm bg-white",
-              isClient && isSpeechSupported ? "pl-20" : "pl-12",
-              "pr-20",
-              isDragOver ? "border-blue-500 bg-blue-50/50" : "border-gray-300",
-              isClient && (isListening || isRecording) && "chatbot-listening-input"
-            )}
-            disabled={isLoading || !isAuthenticated}
+            className="flex-1 resize-none overflow-hidden py-2 px-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           />
-          
-          {/* Speech Recognition Visual Feedback - Only render on client */}
-          {isClient && (isListening || isRecording) && (
-            <div className="absolute left-24 top-1/2 transform -translate-y-1/2 chatbot-speech-indicator">
-              <div className="w-1 h-1 bg-red-500 rounded-full speech-wave"></div>
-              <div className="w-1 h-1 bg-red-500 rounded-full speech-wave"></div>
-              <div className="w-1 h-1 bg-red-500 rounded-full speech-wave"></div>
-            </div>
-          )}
-          
-          {/* Interim Speech Text Display - Only render on client */}
-          {isClient && interimTranscript && (
-            <div className="absolute left-24 top-1/2 transform -translate-y-1/2 text-xs text-gray-500 italic max-w-40 truncate">
-              {interimTranscript}
-            </div>
-          )}
-          
-          {/* Hidden File Input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-          
+          {/* Send Button */}
           <button
             type="submit"
-            disabled={isLoading || !inputValue.trim() || !isAuthenticated}
-            className="absolute right-2 px-3 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center font-medium border-2 border-blue-600 hover:border-blue-700 space-x-1"
+            disabled={isLoading || (!inputValue.trim() && attachments.length === 0)}
+            className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Send message"
           >
-            <Send size={14} />
-            <span className="text-xs">Send</span>
+            <Send size={20} />
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
