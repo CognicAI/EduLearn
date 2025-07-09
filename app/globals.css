@@ -121,6 +121,10 @@
 }
 
 @layer base {
+  /* Ensure root html, body, and #__next fill full viewport height */
+  html, body, #__next {
+    height: 100%;
+  }
   * {
     @apply border-border;
   }

@@ -26,6 +26,9 @@ interface ChatbotWidgetProps {
   className?: string;
 }
 
+// Add direct webhook URL from env
+const CHATBOT_WEBHOOK_URL = process.env.NEXT_PUBLIC_CHATBOT_WEBHOOK_URL;
+
 export function ChatbotWidget({ className }: ChatbotWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -330,24 +333,22 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
         timestamp: new Date().toISOString()
       };
 
-      // Use the backend API instead of direct webhook call
+      // Send through backend proxy to enable database logging
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      
       if (!apiUrl) {
-        throw new Error('API URL not configured. Please check your environment variables.');
+        throw new Error('API URL not configured. Please set NEXT_PUBLIC_API_URL.');
       }
-
       const response = await fetch(`${apiUrl}/chatbot/query`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'X-User-Role': user.role,
-          'X-User-ID': user.id
-        },
-        body: JSON.stringify(payload)
-      });
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+           'Accept': 'application/json',
+           'Authorization': `Bearer ${token}`,
+           'X-User-Role': user.role,
+           'X-User-ID': user.id
+         },
+         body: JSON.stringify(payload)
+       });
 
       // Remove typing indicator
       setMessages(prev => prev.filter(msg => !msg.isTyping));
