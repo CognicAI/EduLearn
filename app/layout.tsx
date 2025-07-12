@@ -7,11 +7,16 @@ import { ThemeProvider } from '@/lib/theme/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { ChatbotWidget } from '@/components/chatbot/chatbot-widget';
 
+
 const inter = Inter({ 
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter'
 });
+console.log(
+  'NEXT_PUBLIC_API_URL from layout:',
+  process.env.NEXT_PUBLIC_API_URL
+);
 
 export const metadata: Metadata = {
   title: 'EduLearn - Learning Management System',
