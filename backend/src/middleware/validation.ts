@@ -3,9 +3,11 @@ import Joi from 'joi';
 
 export const validateRequest = (schema: Joi.ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const { error } = schema.validate(req.body);
+    console.log('Validating request body:', req.body); // Added for debugging
+    const { error } = schema.validate(req.body, { abortEarly: false, allowUnknown: true }); // Allow all keys
     
     if (error) {
+      console.error('Validation error details:', JSON.stringify(error.details, null, 2)); // Added for debugging
       return res.status(400).json({
         success: false,
         message: 'Validation error',
@@ -23,7 +25,7 @@ export const validateRequest = (schema: Joi.ObjectSchema) => {
 export const loginSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().required()
-}).unknown(true);
+});
 
 export const registerSchema = Joi.object({
   email: Joi.string().email().required(),
