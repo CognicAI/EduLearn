@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import routes from './routes';
+import apiRoutes from './routes'; // Import main router
 import { testConnection } from './config/db';
 
 // Load environment variables
@@ -45,8 +45,13 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// API routes
-app.use('/api', routes);
+// API Routes
+app.use('/api', apiRoutes);
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
 
 // Global error handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
