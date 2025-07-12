@@ -11,24 +11,26 @@ import { loginSchema, LoginFormData } from '@/lib/utils/validation';
 import { useAuth } from '@/lib/auth/auth-context';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
+import apiClient from '@/lib/apiClient';
+import { z } from 'zod';
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading } = useAuth();
-  
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
+  const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await login(data);
+      const response = await apiClient.post('/auth/login', data);
+      if (response.data.success) {
+        login(response.data.data);
+      } else {
+        // Handle login failure (e.g., show error message)
+      }
     } catch (error) {
-      // Error handling is done in the auth context
+      // Handle error (e.g., show error message)
     }
   };
 
@@ -41,18 +43,18 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="Enter your email"
-              {...register('email')}
-              className={errors.email ? 'border-destructive' : ''}
+              {...form.register('email')}
+              className={form.formState.errors.email ? 'border-destructive' : ''}
             />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
+            {form.formState.errors.email && (
+              <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
             )}
           </div>
           
@@ -63,8 +65,8 @@ export function LoginForm() {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Enter your password"
-                {...register('password')}
-                className={errors.password ? 'border-destructive pr-10' : 'pr-10'}
+                {...form.register('password')}
+                className={form.formState.errors.password ? 'border-destructive pr-10' : 'pr-10'}
               />
               <Button
                 type="button"
@@ -80,8 +82,8 @@ export function LoginForm() {
                 )}
               </Button>
             </div>
-            {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
+            {form.formState.errors.password && (
+              <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
             )}
           </div>
 
