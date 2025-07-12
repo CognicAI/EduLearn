@@ -11,7 +11,6 @@ import { loginSchema, LoginFormData } from '@/lib/utils/validation';
 import { useAuth } from '@/lib/auth/auth-context';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
-import apiClient from '@/lib/apiClient';
 import { z } from 'zod';
 
 export function LoginForm() {
@@ -23,14 +22,10 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      const response = await apiClient.post('/auth/login', data);
-      if (response.data.success) {
-        login(response.data.data);
-      } else {
-        // Handle login failure (e.g., show error message)
-      }
+      await login(data);
     } catch (error) {
       // Handle error (e.g., show error message)
+      console.error("Login failed from form:", error);
     }
   };
 
