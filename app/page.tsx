@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/auth-context';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { BookOpenIcon, Users, Award, TrendingUp, ArrowRight, Play, Star, CheckCircle, Globe, Zap, Shield, Heart } from 'lucide-react';
 import Link from 'next/link';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ClientOnly } from '@/components/client-only';
 
 const features = [
   {
@@ -115,6 +117,12 @@ const popularCourses = [
 export default function HomePage() {
   const { isAuthenticated, user, isLoading } = useAuth();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  // Fix hydration issues by ensuring component is mounted
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
@@ -130,9 +138,21 @@ export default function HomePage() {
     }
   }, [isAuthenticated, user, isLoading, router]);
 
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900">
+        <div className="text-center">
+          <BookOpenIcon className="h-12 w-12 text-primary mx-auto mb-4 animate-pulse" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900">
         <div className="text-center">
           <BookOpenIcon className="h-12 w-12 text-primary mx-auto mb-4 animate-pulse" />
           <p className="text-muted-foreground">Loading EduLearn...</p>
@@ -143,7 +163,7 @@ export default function HomePage() {
 
   if (isAuthenticated && user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900">
         <div className="text-center">
           <BookOpenIcon className="h-12 w-12 text-primary mx-auto mb-4 animate-pulse" />
           <p className="text-muted-foreground">Redirecting to your dashboard...</p>
@@ -153,22 +173,63 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+      <div className="relative overflow-hidden min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900">
+        {/* Animated Grid Background */}
+        <div className="absolute inset-0 opacity-10 dark:opacity-20">
+          <div className="grid-background animate-grid-move"></div>
+        </div>
+        
+        {/* Floating Particles - Only render on client */}
+        {mounted && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {Array.from({ length: 20 }, (_, i) => (
+              <div
+                key={i}
+                className="floating-particle"
+                style={{
+                  left: `${(i * 5.26) % 100}%`, // Deterministic positioning
+                  animationDelay: `${i * 1}s`,
+                  animationDuration: `${15 + (i % 10)}s`
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Futuristic moving lines */}
+        {[15, 35, 55, 75, 95].map((pos) => (
+          <div
+            key={pos}
+            className="cyber-line"
+            style={{ top: `${pos}%`, animationDelay: `${pos/30}s` }}
+          />
+        ))}
+        
+        {/* Glowing orbs */}
+        <div className="absolute top-20 left-10 w-32 h-32 bg-blue-500/20 rounded-full blur-xl animate-pulse"></div>
+        <div className="absolute bottom-40 right-20 w-48 h-48 bg-purple-500/20 rounded-full blur-2xl animate-bounce-slow"></div>
+        
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur-md">
+      <nav className="sticky top-0 z-50 border-b border-white/20 bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <BookOpenIcon className="h-8 w-8 text-primary" />
-              <span className="ml-2 text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <div className="flex items-center group">
+              <div className="relative">
+                <BookOpenIcon className="h-8 w-8 text-primary transition-all duration-300 group-hover:scale-110 group-hover:rotate-12" />
+                <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </div>
+              <span className="ml-2 text-xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent animate-gradient-x">
                 EduLearn
               </span>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" asChild>
+              <ClientOnly fallback={<div className="w-9 h-9" />}>
+                <ThemeToggle />
+              </ClientOnly>
+              <Button variant="ghost" asChild className="hover:bg-white/20 dark:hover:bg-gray-800/20 transition-all duration-300 hover:scale-105">
                 <Link href="/auth/login">Sign In</Link>
               </Button>
-              <Button asChild className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+              <Button asChild className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25">
                 <Link href="/auth/register">Start Learning</Link>
               </Button>
             </div>
@@ -177,103 +238,109 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50 py-20">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+      <section className="relative overflow-hidden py-20 min-h-screen flex items-center">
+        {/* Animated background elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-blue-400/30 to-purple-400/30 rounded-full blur-3xl animate-float"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-purple-400/30 to-pink-400/30 rounded-full blur-3xl animate-float-delayed"></div>
+        </div>
+        
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="text-center lg:text-left">
-              <Badge className="mb-4 bg-blue-100 text-blue-700 border-blue-200">
+            <div className="text-center lg:text-left space-y-8 animate-slide-up">
+              <Badge className="mb-4 bg-blue-100/80 text-blue-700 border-blue-200/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300 animate-bounce-in">
                 🚀 Join 50,000+ learners worldwide
               </Badge>
-              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                Transform Your Future with
-                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent block">
+              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
+                <span className="animate-text-shimmer">Transform Your Future with</span>
+                <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent block animate-gradient-x bg-300% mt-2">
                   World-Class Education
                 </span>
               </h1>
-              <p className="text-xl text-gray-600 mb-8 max-w-2xl">
+              <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl animate-fade-in-delayed">
                 Master in-demand skills with our AI-powered learning platform. Get personalized courses, 
                 expert mentorship, and industry-recognized certificates.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button size="lg" asChild className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-slide-up-delayed">
+                <Button size="lg" asChild className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transform transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-blue-500/50 group">
                   <Link href="/auth/register" className="flex items-center">
                     Start Your Journey
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="border-2">
-                  <Play className="mr-2 h-4 w-4" />
+                <Button size="lg" variant="outline" className="border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-300 hover:scale-105 hover:shadow-lg group">
+                  <Play className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform duration-300" />
                   Watch Demo
                 </Button>
               </div>
-              <div className="mt-8 flex items-center gap-6 justify-center lg:justify-start text-sm text-gray-600">
-                <div className="flex items-center gap-1">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  Free trial available
-                </div>
-                <div className="flex items-center gap-1">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  No credit card required
-                </div>
-                <div className="flex items-center gap-1">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  Cancel anytime
-                </div>
+              <div className="mt-8 flex items-center gap-6 justify-center lg:justify-start text-sm text-gray-600 dark:text-gray-400 animate-fade-in-delayed">
+                {[
+                  { icon: CheckCircle, text: "Free trial available" },
+                  { icon: CheckCircle, text: "No credit card required" },
+                  { icon: CheckCircle, text: "Cancel anytime" }
+                ].map((item, index) => (
+                  <div key={index} className="flex items-center gap-1 group hover:scale-105 transition-transform duration-300">
+                    <item.icon className="h-4 w-4 text-green-500 group-hover:text-green-400 transition-colors duration-300" />
+                    <span className="group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-300">{item.text}</span>
+                  </div>
+                ))}
               </div>
             </div>
             
-            <div className="relative">
-              <div className="relative z-10 bg-white rounded-2xl shadow-2xl p-8 border">
+            <div className="relative animate-slide-up-delayed">
+              <div className="relative z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/20 dark:border-gray-700/20 hover:shadow-3xl transition-all duration-500 hover:scale-105 group">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <BookOpenIcon className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">Live Learning Session</h3>
-                    <p className="text-sm text-gray-600">Advanced React Patterns</p>
+                    <h3 className="font-semibold dark:text-white">Live Learning Session</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Advanced React Patterns</p>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Progress</span>
-                    <span className="text-sm font-medium">78%</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Progress</span>
+                    <span className="text-sm font-medium dark:text-white">78%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full" style={{width: '78%'}}></div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full animate-progress-fill" style={{width: '78%'}}></div>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex -space-x-2">
                       {[1,2,3,4].map(i => (
-                        <div key={i} className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-medium">
+                        <div key={i} className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center text-white text-xs font-medium hover:scale-110 transition-transform duration-300 animate-bounce-in" style={{animationDelay: `${i * 0.1}s`}}>
                           {i}
                         </div>
                       ))}
                     </div>
-                    <span className="text-sm text-gray-600">+127 students online</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">+127 students online</span>
                   </div>
                 </div>
               </div>
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full opacity-20"></div>
-              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-r from-green-400 to-blue-400 rounded-full opacity-20"></div>
+              
+              {/* Animated background shapes */}
+              <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full opacity-20 animate-pulse-slow"></div>
+              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-r from-green-400 to-blue-400 rounded-full opacity-20 animate-spin-slow"></div>
+              <div className="absolute top-1/2 -right-8 w-16 h-16 bg-gradient-to-r from-pink-400 to-purple-400 rounded-full opacity-30 animate-bounce-slow"></div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-y border-white/20 dark:border-gray-700/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => {
               const Icon = stat.icon;
               return (
-                <div key={index} className="text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full mb-4">
-                    <Icon className="h-8 w-8 text-blue-600" />
+                <div key={index} className="text-center group animate-bounce-in" style={{animationDelay: `${index * 0.2}s`}}>
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-full mb-4 group-hover:scale-110 transition-all duration-500 group-hover:shadow-lg group-hover:shadow-blue-500/25">
+                    <Icon className="h-8 w-8 text-blue-600 dark:text-blue-400 group-hover:rotate-12 transition-transform duration-300" />
                   </div>
-                  <div className="text-3xl font-bold text-gray-900 mb-2">{stat.number}</div>
-                  <div className="text-gray-600">{stat.label}</div>
+                  <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">{stat.number}</div>
+                  <div className="text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-300">{stat.label}</div>
                 </div>
               );
             })}
@@ -282,17 +349,23 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-purple-100 text-purple-700 border-purple-200">
+      <section className="py-20 bg-gradient-to-br from-gray-50 via-blue-50/50 to-purple-50/50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20 relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-300/20 dark:bg-blue-600/10 rounded-full blur-3xl animate-pulse-slow"></div>
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-300/20 dark:bg-purple-600/10 rounded-full blur-3xl animate-float"></div>
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 animate-slide-up">
+            <Badge className="mb-4 bg-purple-100/80 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
               Why Choose EduLearn
             </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               Everything You Need for
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Success</span>
+              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent animate-gradient-x bg-300%"> Success</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Our comprehensive platform provides all the tools and support you need to achieve your learning goals.
             </p>
           </div>
@@ -301,16 +374,19 @@ export default function HomePage() {
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <Card key={index} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg hover:-translate-y-1">
+                <Card key={index} className="group glass-card hover:shadow-2xl transition-all duration-500 border-0 shadow-lg hover:-translate-y-2 hover:scale-105 animate-slide-up backdrop-blur-xl" style={{animationDelay: `${index * 0.1}s`}}>
                   <CardHeader>
-                    <div className={`inline-flex items-center justify-center w-12 h-12 rounded-lg border mb-4 ${feature.color}`}>
-                      <Icon className="h-6 w-6" />
+                    <div className={`inline-flex items-center justify-center w-12 h-12 rounded-lg border mb-4 ${feature.color} dark:bg-gray-800/50 dark:border-gray-600/50 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                      <Icon className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
                     </div>
-                    <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">{feature.title}</CardTitle>
+                    <CardTitle className="text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 dark:text-white">{feature.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription className="text-gray-600 leading-relaxed">{feature.description}</CardDescription>
+                    <CardDescription className="text-gray-600 dark:text-gray-400 leading-relaxed group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-300">{feature.description}</CardDescription>
                   </CardContent>
+                  
+                  {/* Hover glow effect */}
+                  <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                 </Card>
               );
             })}
@@ -319,63 +395,79 @@ export default function HomePage() {
       </section>
 
       {/* Popular Courses */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-green-100 text-green-700 border-green-200">
+      <section className="py-20 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm relative overflow-hidden">
+        {/* Animated background grid */}
+        <div className="absolute inset-0 opacity-5 dark:opacity-10">
+          <div className="grid-background animate-grid-move"></div>
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 animate-slide-up">
+            <Badge className="mb-4 bg-green-100/80 dark:bg-green-900/50 text-green-700 dark:text-green-300 border-green-200/50 dark:border-green-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300 animate-bounce-in">
               🔥 Most Popular
             </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               Trending Courses
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Join thousands of students in our most popular courses designed by industry experts.
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {popularCourses.map((course, index) => (
-              <Card key={index} className="group overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <Card key={index} className="group overflow-hidden glass-card hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 hover:scale-105 animate-slide-up border border-white/20 dark:border-gray-700/20" style={{animationDelay: `${index * 0.15}s`}}>
                 <div className="aspect-video relative overflow-hidden">
                   <img
                     src={course.image}
                     alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent group-hover:from-black/40 transition-all duration-300"></div>
                   <div className="absolute top-4 left-4">
-                    <Badge className="bg-white/90 text-gray-700">{course.level}</Badge>
+                    <Badge className="bg-white/90 dark:bg-gray-800/90 text-gray-700 dark:text-gray-300 backdrop-blur-sm hover:scale-105 transition-transform duration-300">{course.level}</Badge>
                   </div>
                   <div className="absolute top-4 right-4">
-                    <Badge className="bg-green-500 text-white">{course.price}</Badge>
+                    <Badge className="bg-green-500 text-white neon-glow hover:scale-105 transition-transform duration-300">{course.price}</Badge>
+                  </div>
+                  
+                  {/* Play button overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 hover:scale-110 transition-transform duration-300">
+                      <Play className="h-6 w-6 text-white ml-1" />
+                    </div>
                   </div>
                 </div>
                 
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg line-clamp-2 group-hover:text-blue-600 transition-colors">
+                  <CardTitle className="text-lg line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 dark:text-white">
                     {course.title}
                   </CardTitle>
-                  <p className="text-sm text-gray-600">{course.instructor}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-300">{course.instructor}</p>
                 </CardHeader>
                 
                 <CardContent className="pt-0">
-                  <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-                    <div className="flex items-center gap-1">
+                  <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    <div className="flex items-center gap-1 group-hover:scale-105 transition-transform duration-300">
                       <Users className="h-4 w-4" />
                       <span>{course.students.toLocaleString()} students</span>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 group-hover:scale-105 transition-transform duration-300">
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                       <span>{course.rating}</span>
                     </div>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">{course.duration}</span>
-                    <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{course.duration}</span>
+                    <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transform transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-blue-500/25">
                       Enroll Now
                     </Button>
                   </div>
                 </CardContent>
+                
+                {/* Animated border */}
+                <div className="absolute inset-0 rounded-lg border-2 border-transparent bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
               </Card>
             ))}
           </div>
@@ -383,40 +475,48 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-gradient-to-br from-blue-50 to-purple-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-blue-100 text-blue-700 border-blue-200">
+      <section className="py-20 bg-gradient-to-br from-blue-50/80 via-purple-50/50 to-pink-50/80 dark:from-blue-900/30 dark:via-purple-900/20 dark:to-pink-900/30 relative overflow-hidden">
+        {/* Floating elements */}
+        <div className="absolute top-10 left-10 w-20 h-20 bg-blue-400/20 rounded-full blur-xl animate-float"></div>
+        <div className="absolute bottom-10 right-10 w-32 h-32 bg-purple-400/20 rounded-full blur-2xl animate-float-delayed"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-300/10 to-purple-300/10 rounded-full blur-3xl animate-pulse-slow"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 animate-slide-up">
+            <Badge className="mb-4 bg-blue-100/80 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
               💬 Student Success Stories
             </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               What Our Students Say
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Real stories from real students who transformed their careers with EduLearn.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="bg-white/80 backdrop-blur border-0 shadow-lg hover:shadow-xl transition-shadow">
+              <Card key={index} className="glass-card backdrop-blur-xl border border-white/20 dark:border-gray-700/20 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:scale-105 animate-slide-up group" style={{animationDelay: `${index * 0.2}s`}}>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-1 mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400 group-hover:scale-110 transition-transform duration-300" style={{animationDelay: `${i * 0.1}s`}} />
                     ))}
                   </div>
-                  <p className="text-gray-700 mb-6 italic">"{testimonial.content}"</p>
+                  <p className="text-gray-700 dark:text-gray-300 mb-6 italic group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors duration-300">"{testimonial.content}"</p>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-medium">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-medium group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg">
                       {testimonial.avatar}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{testimonial.name}</p>
-                      <p className="text-sm text-gray-600">{testimonial.role}</p>
+                      <p className="font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">{testimonial.name}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-300">{testimonial.role}</p>
                     </div>
                   </div>
                 </CardContent>
+                
+                {/* Glowing border effect */}
+                <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none blur-sm"></div>
               </Card>
             ))}
           </div>
@@ -424,102 +524,118 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+      <section className="py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 relative overflow-hidden bg-300% animate-gradient-x">
+        {/* Animated elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-0 w-full h-full bg-black/10"></div>
+          {mounted && Array.from({ length: 10 }, (_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 bg-white/20 rounded-full animate-float"
+              style={{
+                left: `${(i * 10) % 100}%`,
+                top: `${(i * 13) % 100}%`,
+                animationDelay: `${i * 0.5}s`,
+                animationDuration: `${3 + (i % 4)}s`
+              }}
+            />
+          ))}
+        </div>
+        
+        <div className="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 animate-slide-up">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 animate-text-shimmer">
             Ready to Start Your Learning Journey?
           </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto animate-fade-in-delayed">
             Join thousands of students who are already transforming their careers with EduLearn. 
             Start your free trial today!
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild className="bg-white text-blue-600 hover:bg-gray-100">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up-delayed">
+            <Button size="lg" asChild className="bg-white text-blue-600 hover:bg-gray-100 transform transition-all duration-300 hover:scale-110 hover:shadow-2xl group">
               <Link href="/auth/register" className="flex items-center">
                 Get Started Free
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-              <Heart className="mr-2 h-4 w-4" />
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 transition-all duration-300 hover:scale-105 hover:shadow-lg group">
+              <Heart className="mr-2 h-4 w-4 group-hover:scale-110 group-hover:text-red-400 transition-all duration-300" />
               Learn More
             </Button>
           </div>
-          <div className="mt-8 flex items-center justify-center gap-8 text-blue-100 text-sm">
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              <span>Secure & Private</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              <span>Money-back Guarantee</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span>24/7 Support</span>
-            </div>
+          <div className="mt-8 flex items-center justify-center gap-8 text-blue-100 text-sm animate-fade-in-delayed">
+            {[
+              { icon: Shield, text: "Secure & Private" },
+              { icon: CheckCircle, text: "Money-back Guarantee" },
+              { icon: Users, text: "24/7 Support" }
+            ].map((item, index) => (
+              <div key={index} className="flex items-center gap-2 group hover:scale-105 transition-transform duration-300">
+                <item.icon className="h-4 w-4 group-hover:text-white transition-colors duration-300" />
+                <span className="group-hover:text-white transition-colors duration-300">{item.text}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <footer className="bg-gray-900 dark:bg-black text-white py-12 relative overflow-hidden">
+        {/* Subtle animated background */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="grid-background animate-grid-move"></div>
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center mb-4">
-                <BookOpenIcon className="h-8 w-8 text-blue-400" />
-                <span className="ml-2 text-xl font-bold">EduLearn</span>
+            <div className="animate-slide-up">
+              <div className="flex items-center mb-4 group">
+                <BookOpenIcon className="h-8 w-8 text-blue-400 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
+                <span className="ml-2 text-xl font-bold group-hover:text-blue-400 transition-colors duration-300">EduLearn</span>
               </div>
-              <p className="text-gray-400 mb-4">
+              <p className="text-gray-400 mb-4 hover:text-gray-300 transition-colors duration-300">
                 Empowering learners worldwide with cutting-edge education technology and expert instruction.
               </p>
               <div className="flex space-x-4">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-xs">f</span>
-                </div>
-                <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center">
-                  <span className="text-xs">t</span>
-                </div>
-                <div className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center">
-                  <span className="text-xs">in</span>
-                </div>
+                {[
+                  { name: 'f', bg: 'bg-blue-600' },
+                  { name: 't', bg: 'bg-blue-400' },
+                  { name: 'in', bg: 'bg-blue-700' }
+                ].map((social, index) => (
+                  <div key={index} className={`w-8 h-8 ${social.bg} rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300 cursor-pointer hover:shadow-lg`}>
+                    <span className="text-xs">{social.name}</span>
+                  </div>
+                ))}
               </div>
             </div>
             
-            <div>
-              <h3 className="font-semibold mb-4">Platform</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Browse Courses</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">For Business</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Become Instructor</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Mobile App</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Support</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">System Status</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Bug Reports</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Company</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-              </ul>
-            </div>
+            {[
+              {
+                title: "Platform",
+                links: ["Browse Courses", "For Business", "Become Instructor", "Mobile App"]
+              },
+              {
+                title: "Support", 
+                links: ["Help Center", "Contact Us", "System Status", "Bug Reports"]
+              },
+              {
+                title: "Company",
+                links: ["About Us", "Careers", "Privacy Policy", "Terms of Service"]
+              }
+            ].map((section, index) => (
+              <div key={index} className="animate-slide-up" style={{animationDelay: `${(index + 1) * 0.1}s`}}>
+                <h3 className="font-semibold mb-4 hover:text-blue-400 transition-colors duration-300">{section.title}</h3>
+                <ul className="space-y-2 text-gray-400">
+                  {section.links.map((link, linkIndex) => (
+                    <li key={linkIndex}>
+                      <a href="#" className="hover:text-white transition-all duration-300 hover:translate-x-1 block">{link}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
           
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>© 2024 EduLearn. Empowering education through technology.</p>
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 animate-fade-in-delayed">
+            <p className="hover:text-gray-300 transition-colors duration-300">© 2024 EduLearn. Empowering education through technology.</p>
           </div>
         </div>
       </footer>
