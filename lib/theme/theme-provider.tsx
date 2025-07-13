@@ -21,7 +21,7 @@ type ThemeProviderState = {
 };
 
 const initialState: ThemeProviderState = {
-  theme: 'light',
+  theme: 'system',
   setTheme: () => null,
   resolvedTheme: 'light',
   updateUserTheme: () => {},
@@ -31,7 +31,7 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
   children,
-  defaultTheme = 'light',
+  defaultTheme = 'system',
   storageKey = 'edulearn-theme',
   attribute = 'class',
   enableSystem = true,
@@ -45,7 +45,17 @@ export function ThemeProvider({
     return defaultTheme;
   });
 
-  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('light');
+  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window !== 'undefined') {
+      // If theme is system or not set, detect system preference
+      const storedTheme = localStorage.getItem(storageKey) as Theme;
+      if (!storedTheme || storedTheme === 'system') {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      return storedTheme === 'dark' ? 'dark' : 'light';
+    }
+    return 'light';
+  });
 
   // Function to update theme with optional user settings sync
   const updateUserTheme = (newTheme: Theme, updateUserSettings?: (theme: 'light' | 'dark' | 'auto') => Promise<void>) => {

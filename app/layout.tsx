@@ -49,7 +49,7 @@ export default function RootLayout({
           <QueryProvider>
             <AuthProvider>
               <ThemeProvider
-                defaultTheme="light"
+                defaultTheme="system"
                 enableSystem={true}
                 disableTransitionOnChange={false}
               >

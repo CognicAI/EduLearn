@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BookOpenIcon, Users, Award, TrendingUp, ArrowRight, Play, Star, CheckCircle, Globe, Zap, Shield, Heart } from 'lucide-react';
+import { BookOpenIcon, Users, Award, TrendingUp, ArrowRight, Play, Star, CheckCircle, Globe, Zap, Shield, Heart, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { ClientOnly } from '@/components/client-only';
@@ -330,86 +330,26 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border-y border-white/20 dark:border-gray-700/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <div key={index} className="text-center group animate-bounce-in" style={{animationDelay: `${index * 0.2}s`}}>
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-full mb-4 group-hover:scale-110 transition-all duration-500 group-hover:shadow-lg group-hover:shadow-blue-500/25">
-                    <Icon className="h-8 w-8 text-blue-600 dark:text-blue-400 group-hover:rotate-12 transition-transform duration-300" />
-                  </div>
-                  <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">{stat.number}</div>
-                  <div className="text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-300">{stat.label}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 via-blue-50/50 to-purple-50/50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20 relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 left-1/4 w-72 h-72 bg-blue-300/20 dark:bg-blue-600/10 rounded-full blur-3xl animate-pulse-slow"></div>
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-300/20 dark:bg-purple-600/10 rounded-full blur-3xl animate-float"></div>
-        </div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16 animate-slide-up">
-            <Badge className="mb-4 bg-purple-100/80 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
-              Why Choose EduLearn
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Everything You Need for
-              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent animate-gradient-x bg-300%"> Success</span>
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Our comprehensive platform provides all the tools and support you need to achieve your learning goals.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <Card key={index} className="group glass-card hover:shadow-2xl transition-all duration-500 border-0 shadow-lg hover:-translate-y-2 hover:scale-105 animate-slide-up backdrop-blur-xl" style={{animationDelay: `${index * 0.1}s`}}>
-                  <CardHeader>
-                    <div className={`inline-flex items-center justify-center w-12 h-12 rounded-lg border mb-4 ${feature.color} dark:bg-gray-800/50 dark:border-gray-600/50 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
-                      <Icon className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
-                    </div>
-                    <CardTitle className="text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 dark:text-white">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-gray-600 dark:text-gray-400 leading-relaxed group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-300">{feature.description}</CardDescription>
-                  </CardContent>
-                  
-                  {/* Hover glow effect */}
-                  <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Popular Courses */}
-      <section className="py-20 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm relative overflow-hidden">
-        {/* Animated background grid */}
+      {/* Trending Courses - Enhanced */}
+      <section className="py-20 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-900/10 dark:to-purple-900/10 relative overflow-hidden">
+        {/* Subtle animated background */}
         <div className="absolute inset-0 opacity-5 dark:opacity-10">
           <div className="grid-background animate-grid-move"></div>
         </div>
         
+        {/* Floating design elements */}
+        <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-r from-blue-400/10 to-purple-400/10 rounded-full blur-2xl animate-float"></div>
+        <div className="absolute bottom-20 right-20 w-40 h-40 bg-gradient-to-r from-purple-400/10 to-pink-400/10 rounded-full blur-3xl animate-float-delayed"></div>
+        
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 animate-slide-up">
-            <Badge className="mb-4 bg-green-100/80 dark:bg-green-900/50 text-green-700 dark:text-green-300 border-green-200/50 dark:border-green-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300 animate-bounce-in">
-              🔥 Most Popular
+            <Badge className="mb-4 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/50 dark:to-emerald-900/50 text-green-700 dark:text-green-300 border-green-200/50 dark:border-green-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300 shadow-sm">
+              🔥 Most Popular Courses
             </Badge>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Trending Courses
+              <span className="bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 dark:from-white dark:via-blue-200 dark:to-purple-200 bg-clip-text text-transparent">
+                Trending Courses
+              </span>
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Join thousands of students in our most popular courses designed by industry experts.
@@ -418,66 +358,173 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {popularCourses.map((course, index) => (
-              <Card key={index} className="group overflow-hidden glass-card hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 hover:scale-105 animate-slide-up border border-white/20 dark:border-gray-700/20" style={{animationDelay: `${index * 0.15}s`}}>
-                <div className="aspect-video relative overflow-hidden">
-                  <img
-                    src={course.image}
-                    alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent group-hover:from-black/40 transition-all duration-300"></div>
-                  <div className="absolute top-4 left-4">
-                    <Badge className="bg-white/90 dark:bg-gray-800/90 text-gray-700 dark:text-gray-300 backdrop-blur-sm hover:scale-105 transition-transform duration-300">{course.level}</Badge>
-                  </div>
-                  <div className="absolute top-4 right-4">
-                    <Badge className="bg-green-500 text-white neon-glow hover:scale-105 transition-transform duration-300">{course.price}</Badge>
-                  </div>
-                  
-                  {/* Play button overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 hover:scale-110 transition-transform duration-300">
-                      <Play className="h-6 w-6 text-white ml-1" />
+              <Card key={index} className="group overflow-hidden bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-lg hover:shadow-2xl transition-all duration-700 hover:-translate-y-4 hover:scale-[1.02] animate-slide-up relative" style={{animationDelay: `${index * 0.15}s`}}>
+                {/* Enhanced gradient border effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-sm"></div>
+                <div className="absolute inset-[1px] bg-white dark:bg-gray-800 rounded-lg"></div>
+                
+                <div className="relative z-10">
+                  <div className="aspect-video relative overflow-hidden rounded-t-lg">
+                    <img
+                      src={course.image}
+                      alt={course.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                    />
+                    {/* Enhanced overlay with smooth gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent group-hover:from-black/50 transition-all duration-500"></div>
+                    
+                    {/* Badges with better positioning */}
+                    <div className="absolute top-3 left-3">
+                      <Badge className="bg-white/95 dark:bg-gray-800/95 text-gray-700 dark:text-gray-300 backdrop-blur-sm hover:scale-105 transition-transform duration-300 shadow-sm">
+                        {course.level}
+                      </Badge>
+                    </div>
+                    <div className="absolute top-3 right-3">
+                      <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg hover:scale-105 transition-transform duration-300">
+                        {course.price}
+                      </Badge>
+                    </div>
+                    
+                    {/* Enhanced play button */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
+                      <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 hover:scale-110 transition-transform duration-300 group-hover:bg-white/30">
+                        <Play className="h-6 w-6 text-white ml-1" />
+                      </div>
                     </div>
                   </div>
+                  
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 dark:text-white">
+                      {course.title}
+                    </CardTitle>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-300">
+                      by {course.instructor}
+                    </p>
+                  </CardHeader>
+                  
+                  <CardContent className="pt-0">
+                    <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      <div className="flex items-center gap-1 group-hover:scale-105 transition-transform duration-300">
+                        <Users className="h-4 w-4" />
+                        <span>{course.students.toLocaleString()} students</span>
+                      </div>
+                      <div className="flex items-center gap-1 group-hover:scale-105 transition-transform duration-300">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="font-medium">{course.rating}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {course.duration}
+                      </span>
+                      <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transform transition-all duration-300 hover:scale-105 hover:shadow-lg shadow-blue-500/25">
+                        Enroll Now
+                      </Button>
+                    </div>
+                  </CardContent>
                 </div>
-                
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 dark:text-white">
-                    {course.title}
-                  </CardTitle>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-300">{course.instructor}</p>
-                </CardHeader>
-                
-                <CardContent className="pt-0">
-                  <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    <div className="flex items-center gap-1 group-hover:scale-105 transition-transform duration-300">
-                      <Users className="h-4 w-4" />
-                      <span>{course.students.toLocaleString()} students</span>
-                    </div>
-                    <div className="flex items-center gap-1 group-hover:scale-105 transition-transform duration-300">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span>{course.rating}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{course.duration}</span>
-                    <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transform transition-all duration-300 hover:scale-110 hover:shadow-lg hover:shadow-blue-500/25">
-                      Enroll Now
-                    </Button>
-                  </div>
-                </CardContent>
-                
-                {/* Animated border */}
-                <div className="absolute inset-0 rounded-lg border-2 border-transparent bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
               </Card>
             ))}
           </div>
         </div>
       </section>
 
+      {/* Learn Anywhere, Anytime - Mobile Learning Experience */}
+      <section className="py-20 bg-gradient-to-br from-pink-50/30 via-rose-50/20 to-orange-50/30 dark:from-pink-900/20 dark:via-rose-900/10 dark:to-orange-900/10 relative overflow-hidden">
+        {/* Enhanced floating particles */}
+        <div className="absolute inset-0 overflow-hidden">
+          {mounted && Array.from({ length: 15 }, (_, i) => (
+            <div
+              key={i}
+              className="absolute w-3 h-3 bg-gradient-to-r from-pink-400/30 to-orange-400/30 rounded-full animate-float blur-sm"
+              style={{
+                left: `${(i * 6.67) % 100}%`,
+                top: `${(i * 8.33) % 100}%`,
+                animationDelay: `${i * 0.3}s`,
+                animationDuration: `${4 + (i % 8)}s`
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Glowing orbs for enhanced visual appeal */}
+        <div className="absolute top-20 left-10 w-40 h-40 bg-pink-400/10 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div className="absolute bottom-20 right-10 w-60 h-60 bg-orange-400/10 rounded-full blur-3xl animate-float-delayed"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-rose-400/5 rounded-full blur-3xl animate-spin-slow"></div>
+        
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Centered Mobile App Simulator with enhanced animations */}
+          <div className="flex justify-center items-center animate-slide-up">
+            <div className="relative">
+              {/* Animated rings around the mobile simulator */}
+              <div className="absolute inset-0 -m-8">
+                <div className="absolute inset-0 border-2 border-pink-300/20 rounded-full animate-ping" style={{animationDuration: '3s'}}></div>
+                <div className="absolute inset-0 border-2 border-orange-300/20 rounded-full animate-ping" style={{animationDuration: '4s', animationDelay: '1s'}}></div>
+                <div className="absolute inset-0 border-2 border-rose-300/20 rounded-full animate-ping" style={{animationDuration: '5s', animationDelay: '2s'}}></div>
+              </div>
+              
+              {/* Enhanced glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 via-rose-500/20 to-orange-500/20 rounded-3xl blur-2xl animate-pulse"></div>
+              
+              {/* Main simulator with enhanced styling */}
+              <div className="relative transform hover:scale-105 transition-all duration-700 hover:rotate-1">
+                <MobileAppSimulator />
+              </div>
+              
+              {/* Floating tags/badges around the simulator */}
+              <div className="absolute -top-8 -left-8 animate-bounce-in" style={{animationDelay: '0.5s'}}>
+                <div className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:scale-110 transition-transform duration-300">
+                  📱 Mobile First
+                </div>
+              </div>
+              
+              <div className="absolute -top-8 -right-8 animate-bounce-in" style={{animationDelay: '1s'}}>
+                <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:scale-110 transition-transform duration-300">
+                  🤖 AI Powered
+                </div>
+              </div>
+              
+              <div className="absolute -bottom-8 -left-8 animate-bounce-in" style={{animationDelay: '1.5s'}}>
+                <div className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:scale-110 transition-transform duration-300">
+                  💾 Offline Ready
+                </div>
+              </div>
+              
+              <div className="absolute -bottom-8 -right-8 animate-bounce-in" style={{animationDelay: '2s'}}>
+                <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:scale-110 transition-transform duration-300">
+                  🔄 Real-time Sync
+                </div>
+              </div>
+              
+              <div className="absolute top-1/2 -left-16 transform -translate-y-1/2 animate-bounce-in" style={{animationDelay: '2.5s'}}>
+                <div className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:scale-110 transition-transform duration-300">
+                  🎯 Smart Learning
+                </div>
+              </div>
+              
+              <div className="absolute top-1/2 -right-16 transform -translate-y-1/2 animate-bounce-in" style={{animationDelay: '3s'}}>
+                <div className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:scale-110 transition-transform duration-300">
+                  📊 Progress Tracking
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Coming Soon notification at the bottom */}
+          <div className="mt-16 text-center animate-slide-up-delayed">
+            <div className="inline-flex items-center gap-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-full px-8 py-4 border border-white/20 dark:border-gray-700/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+              <span className="text-lg font-semibold text-gray-900 dark:text-white">Mobile App Coming Soon</span>
+              <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* AI Assistant Showcase */}
-      <section className="py-20 bg-gradient-to-br from-indigo-50/80 via-cyan-50/50 to-blue-50/80 dark:from-indigo-900/30 dark:via-cyan-900/20 dark:to-blue-900/30 relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-indigo-50/30 via-cyan-50/20 to-blue-50/30 dark:from-indigo-900/20 dark:via-cyan-900/10 dark:to-blue-900/10 relative overflow-hidden">
         {/* Animated AI particles */}
         <div className="absolute inset-0 overflow-hidden">
           {mounted && Array.from({ length: 15 }, (_, i) => (
@@ -600,7 +647,7 @@ export default function HomePage() {
       </section>
 
       {/* Analytics Dashboard Preview */}
-      <section className="py-20 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-white via-emerald-50/20 to-teal-50/20 dark:from-gray-900 dark:via-emerald-900/10 dark:to-teal-900/10 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5 dark:opacity-10">
           <div className="grid-background animate-grid-move"></div>
         </div>
@@ -692,7 +739,7 @@ export default function HomePage() {
       </section>
 
       {/* Role-Based Solutions */}
-      <section className="py-20 bg-gradient-to-br from-slate-50 via-blue-50/50 to-indigo-50/50 dark:from-slate-900 dark:via-blue-900/20 dark:to-indigo-900/20 relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-slate-50/30 via-blue-50/20 to-indigo-50/20 dark:from-slate-900/20 dark:via-blue-900/10 dark:to-indigo-900/10 relative overflow-hidden">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 animate-slide-up">
             <Badge className="mb-4 bg-indigo-100/80 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border-indigo-200/50 dark:border-indigo-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
@@ -773,7 +820,7 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-gradient-to-br from-blue-50/80 via-purple-50/50 to-pink-50/80 dark:from-blue-900/30 dark:via-purple-900/20 dark:to-pink-900/30 relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/20 dark:from-blue-900/20 dark:via-purple-900/10 dark:to-pink-900/10 relative overflow-hidden">
         {/* Floating elements */}
         <div className="absolute top-10 left-10 w-20 h-20 bg-blue-400/20 rounded-full blur-xl animate-float"></div>
         <div className="absolute bottom-10 right-10 w-32 h-32 bg-purple-400/20 rounded-full blur-2xl animate-float-delayed"></div>
@@ -821,13 +868,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Mobile App Simulator */}
-      <section className="py-20 bg-gradient-to-br from-pink-50/80 via-rose-50/50 to-orange-50/80 dark:from-pink-900/30 dark:via-rose-900/20 dark:to-orange-900/30 relative overflow-hidden">
-        <MobileAppSimulator />
-      </section>
-
       {/* Trust & Social Proof */}
-      <section className="py-20 bg-gradient-to-br from-emerald-50/80 via-teal-50/50 to-cyan-50/80 dark:from-emerald-900/30 dark:via-teal-900/20 dark:to-cyan-900/30 relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-emerald-50/30 via-teal-50/20 to-cyan-50/20 dark:from-emerald-900/20 dark:via-teal-900/10 dark:to-cyan-900/10 relative overflow-hidden">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 animate-slide-up">
             <Badge className="mb-4 bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border-emerald-200/50 dark:border-emerald-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
@@ -939,7 +981,7 @@ export default function HomePage() {
       </section>
 
       {/* Interactive ROI Calculator */}
-      <section className="py-20 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm relative overflow-hidden">
+      <section className="py-20 bg-gradient-to-br from-white via-orange-50/20 to-amber-50/20 dark:from-gray-900 dark:via-orange-900/10 dark:to-amber-900/10 relative overflow-hidden">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 animate-slide-up">
             <Badge className="mb-4 bg-orange-100/80 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 border-orange-200/50 dark:border-orange-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
