@@ -10,6 +10,8 @@ import { BookOpenIcon, Users, Award, TrendingUp, ArrowRight, Play, Star, CheckCi
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { ClientOnly } from '@/components/client-only';
+import { AssessmentBuilder } from '@/components/demo/assessment-builder';
+import { MobileAppSimulator } from '@/components/demo/mobile-app-simulator';
 
 const features = [
   {
@@ -474,6 +476,302 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* AI Assistant Showcase */}
+      <section className="py-20 bg-gradient-to-br from-indigo-50/80 via-cyan-50/50 to-blue-50/80 dark:from-indigo-900/30 dark:via-cyan-900/20 dark:to-blue-900/30 relative overflow-hidden">
+        {/* Animated AI particles */}
+        <div className="absolute inset-0 overflow-hidden">
+          {mounted && Array.from({ length: 15 }, (_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 bg-cyan-400/30 rounded-full animate-float"
+              style={{
+                left: `${(i * 6.67) % 100}%`,
+                top: `${(i * 8.33) % 100}%`,
+                animationDelay: `${i * 0.3}s`,
+                animationDuration: `${4 + (i % 6)}s`
+              }}
+            />
+          ))}
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 animate-slide-up">
+            <Badge className="mb-4 bg-cyan-100/80 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300 border-cyan-200/50 dark:border-cyan-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
+              🤖 AI-Powered Learning Assistant
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Meet Your AI Study Companion
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+              Experience intelligent tutoring with our AI assistant that uploads files, answers questions, and adapts to your learning style.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* AI Chat Simulator */}
+            <div className="animate-slide-up">
+              <Card className="glass-card backdrop-blur-xl border border-white/20 dark:border-gray-700/20 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105 p-6">
+                <div className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-3 text-white">
+                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                      <span className="text-sm">🤖</span>
+                    </div>
+                    <span className="font-medium">EduLearn AI Assistant</span>
+                    <div className="ml-auto flex gap-1">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <span className="text-xs">Online</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-4 max-h-80 overflow-y-auto">
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs">AI</div>
+                    <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 flex-1">
+                      <p className="text-sm">Hi! I'm your AI learning assistant. Upload any document and I'll help you understand it better. What would you like to learn today?</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3 flex-row-reverse">
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs">You</div>
+                    <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3 flex-1">
+                      <p className="text-sm">Can you help me understand this research paper about machine learning?</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs">AI</div>
+                    <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 flex-1">
+                      <p className="text-sm">Absolutely! Upload your PDF and I'll analyze it, create a summary, generate questions, and explain complex concepts in simple terms. I can even create interactive quizzes based on the content!</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 text-center">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">📎 Drag & drop files here or click to upload</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Supports PDF, DOCX, TXT, and more</p>
+                </div>
+              </Card>
+            </div>
+
+            {/* AI Features */}
+            <div className="space-y-6 animate-slide-up-delayed">
+              {[
+                {
+                  icon: '🧠',
+                  title: 'Intelligent Document Analysis',
+                  description: 'Upload any document and get instant summaries, key points, and explanations.',
+                  color: 'from-purple-500 to-pink-500'
+                },
+                {
+                  icon: '💬',
+                  title: 'Interactive Q&A',
+                  description: 'Ask questions about your content and get detailed, contextual answers.',
+                  color: 'from-blue-500 to-cyan-500'
+                },
+                {
+                  icon: '🎯',
+                  title: 'Personalized Learning',
+                  description: 'AI adapts to your learning style and suggests optimal study paths.',
+                  color: 'from-green-500 to-teal-500'
+                },
+                {
+                  icon: '⚡',
+                  title: 'Instant Assessment',
+                  description: 'Generate quizzes and practice tests from any uploaded material.',
+                  color: 'from-orange-500 to-red-500'
+                }
+              ].map((feature, index) => (
+                <Card key={index} className="glass-card p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 group" style={{animationDelay: `${index * 0.1}s`}}>
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center text-white text-xl group-hover:scale-110 transition-transform duration-300`}>
+                      {feature.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">{feature.title}</h3>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-300">{feature.description}</p>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Analytics Dashboard Preview */}
+      <section className="py-20 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm relative overflow-hidden">
+        <div className="absolute inset-0 opacity-5 dark:opacity-10">
+          <div className="grid-background animate-grid-move"></div>
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 animate-slide-up">
+            <Badge className="mb-4 bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border-emerald-200/50 dark:border-emerald-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
+              📊 Real-Time Analytics
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Powerful Dashboard Insights
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+              Track learning progress, engagement metrics, and performance analytics with our comprehensive dashboard.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-3 gap-6 mb-12">
+            {/* Key Metrics Cards */}
+            {[
+              { title: 'Active Learners', value: '2,847', change: '+12%', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+              { title: 'Course Completion', value: '89.3%', change: '+5.2%', color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
+              { title: 'Avg. Study Time', value: '4.2h', change: '+0.8h', color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/30' }
+            ].map((metric, index) => (
+              <Card key={index} className="glass-card p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 animate-bounce-in" style={{animationDelay: `${index * 0.1}s`}}>
+                <div className={`w-12 h-12 ${metric.bg} rounded-lg flex items-center justify-center mb-4`}>
+                  <TrendingUp className={`h-6 w-6 ${metric.color}`} />
+                </div>
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{metric.title}</h3>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-gray-900 dark:text-white">{metric.value}</span>
+                  <span className="text-sm font-medium text-green-600">{metric.change}</span>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Dashboard Preview */}
+          <Card className="glass-card backdrop-blur-xl p-8 animate-slide-up">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Learning Analytics Dashboard</h3>
+              <div className="flex gap-2">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              </div>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Progress Chart */}
+              <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6">
+                <h4 className="font-medium text-gray-900 dark:text-white mb-4">Learning Progress</h4>
+                <div className="space-y-3">
+                  {['JavaScript', 'Python', 'React', 'Node.js'].map((skill, index) => (
+                    <div key={skill} className="flex items-center gap-3">
+                      <span className="text-sm text-gray-600 dark:text-gray-400 w-20">{skill}</span>
+                      <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-1000 ease-out"
+                          style={{width: `${85 - index * 15}%`, animationDelay: `${index * 0.2}s`}}
+                        ></div>
+                      </div>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{85 - index * 15}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Activity Heatmap */}
+              <div className="bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-lg p-6">
+                <h4 className="font-medium text-gray-900 dark:text-white mb-4">Weekly Activity</h4>
+                <div className="grid grid-cols-7 gap-1">
+                  {Array.from({ length: 49 }, (_, i) => (
+                    <div
+                      key={i}
+                      className={`w-6 h-6 rounded-sm ${
+                        Math.random() > 0.3 
+                          ? 'bg-green-400 hover:bg-green-500' 
+                          : 'bg-gray-200 dark:bg-gray-700'
+                      } transition-colors duration-200 cursor-pointer`}
+                      style={{animationDelay: `${i * 0.01}s`}}
+                    ></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </section>
+
+      {/* Role-Based Solutions */}
+      <section className="py-20 bg-gradient-to-br from-slate-50 via-blue-50/50 to-indigo-50/50 dark:from-slate-900 dark:via-blue-900/20 dark:to-indigo-900/20 relative overflow-hidden">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 animate-slide-up">
+            <Badge className="mb-4 bg-indigo-100/80 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border-indigo-200/50 dark:border-indigo-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
+              🎯 Tailored Solutions
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Built for Every Role
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+              Discover how EduLearn empowers students, teachers, and administrators with role-specific features.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                role: 'Students',
+                icon: '🎓',
+                color: 'from-blue-500 to-cyan-500',
+                features: [
+                  'AI-powered study assistant',
+                  'Personalized learning paths',
+                  'Interactive assignments',
+                  'Progress tracking',
+                  'Peer collaboration tools'
+                ]
+              },
+              {
+                role: 'Teachers',
+                icon: '👨‍🏫',
+                color: 'from-green-500 to-teal-500',
+                features: [
+                  'Course creation tools',
+                  'Automated grading',
+                  'Student analytics',
+                  'Assignment management',
+                  'Real-time feedback'
+                ]
+              },
+              {
+                role: 'Administrators',
+                icon: '👩‍💼',
+                color: 'from-purple-500 to-pink-500',
+                features: [
+                  'Institution dashboard',
+                  'User management',
+                  'Performance reports',
+                  'System integration',
+                  'Compliance tracking'
+                ]
+              }
+            ].map((solution, index) => (
+              <Card key={index} className="glass-card backdrop-blur-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 animate-slide-up group overflow-hidden" style={{animationDelay: `${index * 0.2}s`}}>
+                <div className={`h-2 bg-gradient-to-r ${solution.color}`}></div>
+                <CardHeader className="text-center pb-4">
+                  <div className={`w-16 h-16 bg-gradient-to-r ${solution.color} rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                    {solution.icon}
+                  </div>
+                  <CardTitle className="text-xl group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">{solution.role}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3">
+                    {solution.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-center gap-2 text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-300">
+                        <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span className="text-sm">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button className={`w-full mt-6 bg-gradient-to-r ${solution.color} hover:opacity-90 transition-all duration-300`}>
+                    Explore {solution.role} Features
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials */}
       <section className="py-20 bg-gradient-to-br from-blue-50/80 via-purple-50/50 to-pink-50/80 dark:from-blue-900/30 dark:via-purple-900/20 dark:to-pink-900/30 relative overflow-hidden">
         {/* Floating elements */}
@@ -520,6 +818,240 @@ export default function HomePage() {
               </Card>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Mobile App Simulator */}
+      <section className="py-20 bg-gradient-to-br from-pink-50/80 via-rose-50/50 to-orange-50/80 dark:from-pink-900/30 dark:via-rose-900/20 dark:to-orange-900/30 relative overflow-hidden">
+        <MobileAppSimulator />
+      </section>
+
+      {/* Trust & Social Proof */}
+      <section className="py-20 bg-gradient-to-br from-emerald-50/80 via-teal-50/50 to-cyan-50/80 dark:from-emerald-900/30 dark:via-teal-900/20 dark:to-cyan-900/30 relative overflow-hidden">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 animate-slide-up">
+            <Badge className="mb-4 bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border-emerald-200/50 dark:border-emerald-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
+              🏆 Trusted Worldwide
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Industry Recognition & Success Stories
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+              Join thousands of institutions worldwide who trust EduLearn for their educational technology needs.
+            </p>
+          </div>
+
+          {/* Awards & Recognition */}
+          <div className="grid md:grid-cols-4 gap-6 mb-12">
+            {[
+              { title: 'EdTech Innovation Award', year: '2024', org: 'Global Education Summit' },
+              { title: 'Best Learning Platform', year: '2024', org: 'TechEd Awards' },
+              { title: 'AI Excellence Award', year: '2023', org: 'Education Technology Review' },
+              { title: 'Top 50 EdTech Companies', year: '2023', org: 'EdTech Digest' }
+            ].map((award, index) => (
+              <Card key={index} className="glass-card p-6 text-center hover:shadow-xl transition-all duration-300 hover:scale-105 animate-bounce-in group" style={{animationDelay: `${index * 0.1}s`}}>
+                <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Award className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm mb-1 group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors duration-300">{award.title}</h3>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{award.year} - {award.org}</p>
+              </Card>
+            ))}
+          </div>
+
+          {/* Security & Compliance */}
+          <div className="grid md:grid-cols-2 gap-8 mb-12">
+            <Card className="glass-card p-8 hover:shadow-xl transition-all duration-300 hover:scale-105 animate-slide-up">
+              <div className="flex items-center gap-4 mb-6">
+                <Shield className="h-12 w-12 text-green-500" />
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Security & Compliance</h3>
+                  <p className="text-gray-600 dark:text-gray-400">Enterprise-grade security you can trust</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {['GDPR Compliant', 'FERPA Certified', 'SOC 2 Type II', 'ISO 27001'].map((cert, index) => (
+                  <div key={index} className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{cert}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="glass-card p-8 hover:shadow-xl transition-all duration-300 hover:scale-105 animate-slide-up-delayed">
+              <div className="flex items-center gap-4 mb-6">
+                <Globe className="h-12 w-12 text-blue-500" />
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Global Accessibility</h3>
+                  <p className="text-gray-600 dark:text-gray-400">Inclusive learning for everyone</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {['25+ Languages', 'WCAG 2.1 AA', 'Screen Reader', 'Mobile First'].map((feature, index) => (
+                  <div key={index} className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <CheckCircle className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{feature}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+
+          {/* Success Stories */}
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                institution: 'Stanford University',
+                result: '40% improvement in student engagement',
+                quote: 'EduLearn transformed our online learning experience with AI-powered personalization.',
+                person: 'Dr. Sarah Chen, Dean of Education'
+              },
+              {
+                institution: 'Tokyo International School',
+                result: '60% reduction in grading time',
+                quote: 'The automated assessment feature saved our teachers countless hours every week.',
+                person: 'Hiroshi Tanaka, Principal'
+              },
+              {
+                institution: 'Cambridge Institute',
+                result: '85% student completion rate',
+                quote: 'Our completion rates skyrocketed thanks to EduLearn\'s adaptive learning paths.',
+                person: 'Prof. Emma Williams, Head of Digital Learning'
+              }
+            ].map((story, index) => (
+              <Card key={index} className="glass-card p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 animate-slide-up group" style={{animationDelay: `${index * 0.2}s`}}>
+                <div className="text-center mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-white text-xl">🎓</span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-300">{story.institution}</h3>
+                  <p className="text-2xl font-bold text-green-600 mt-2">{story.result}</p>
+                </div>
+                <blockquote className="text-gray-600 dark:text-gray-400 italic text-center mb-4 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-300">
+                  "{story.quote}"
+                </blockquote>
+                <p className="text-sm text-gray-500 dark:text-gray-500 text-center">— {story.person}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Interactive ROI Calculator */}
+      <section className="py-20 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm relative overflow-hidden">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 animate-slide-up">
+            <Badge className="mb-4 bg-orange-100/80 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 border-orange-200/50 dark:border-orange-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
+              💰 Calculate Your Savings
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              ROI Calculator
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+              See how much time and money your institution can save with EduLearn's automated solutions.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <Card className="glass-card p-8 animate-slide-up">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Calculate Your Potential Savings</h3>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Number of Students</label>
+                  <div className="relative">
+                    <input 
+                      type="range" 
+                      min="100" 
+                      max="10000" 
+                      defaultValue="1000"
+                      className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-2 py-1 rounded text-xs">1,000</span>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Number of Teachers</label>
+                  <div className="relative">
+                    <input 
+                      type="range" 
+                      min="10" 
+                      max="500" 
+                      defaultValue="50"
+                      className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-2 py-1 rounded text-xs">50</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Manual Grading Hours/Week</label>
+                  <div className="relative">
+                    <input 
+                      type="range" 
+                      min="5" 
+                      max="40" 
+                      defaultValue="20"
+                      className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-purple-500 text-white px-2 py-1 rounded text-xs">20 hrs</span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="glass-card p-8 animate-slide-up-delayed">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Your Potential Savings</h3>
+              <div className="space-y-6">
+                <div className="flex justify-between items-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <span className="text-gray-700 dark:text-gray-300">Time Saved Per Year</span>
+                  <span className="text-2xl font-bold text-green-600">520 hours</span>
+                </div>
+                
+                <div className="flex justify-between items-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <span className="text-gray-700 dark:text-gray-300">Cost Savings Per Year</span>
+                  <span className="text-2xl font-bold text-blue-600">$26,000</span>
+                </div>
+                
+                <div className="flex justify-between items-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                  <span className="text-gray-700 dark:text-gray-300">ROI in First Year</span>
+                  <span className="text-2xl font-bold text-purple-600">340%</span>
+                </div>
+
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    With EduLearn's AI-powered automation, your institution could save significant time and money while improving educational outcomes.
+                  </p>
+                  <Button className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700">
+                    Get Detailed ROI Report
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Interactive Assessment Builder Demo */}
+      <section className="py-20 bg-gradient-to-br from-purple-50/80 via-pink-50/50 to-indigo-50/80 dark:from-purple-900/30 dark:via-pink-900/20 dark:to-indigo-900/30 relative overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
+          {mounted && Array.from({ length: 12 }, (_, i) => (
+            <div
+              key={i}
+              className="absolute w-3 h-3 bg-purple-400/20 rounded-full animate-float"
+              style={{
+                left: `${(i * 8.33) % 100}%`,
+                top: `${(i * 11.11) % 100}%`,
+                animationDelay: `${i * 0.4}s`,
+                animationDuration: `${6 + (i % 8)}s`
+              }}
+            />
+          ))}
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <AssessmentBuilder />
         </div>
       </section>
 

@@ -787,10 +787,201 @@
   border-radius: 50%;
   transform: translate(-50%, -50%);
   transition: width 0.3s ease, height 0.3s ease;
-}
+}  .microphone-button.recording::before {
+    width: 100%;
+    height: 100%;
+    animation: microphonePulse 1.5s infinite;
+  }
 
-.microphone-button.recording::before {
-  width: 100%;
-  height: 100%;
-  animation: microphonePulse 1.5s infinite;
-}
+  /* Enhanced Interactive Elements */
+  .slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(to right, #3b82f6 0%, #3b82f6 50%, #e5e7eb 50%, #e5e7eb 100%);
+    outline: none;
+    transition: all 0.3s ease;
+  }
+
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.5);
+  }
+
+  .slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .slider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.5);
+  }
+
+  /* Dashboard Chart Animations */
+  @keyframes chartGrow {
+    from { 
+      width: 0%; 
+      opacity: 0;
+    }
+    to { 
+      opacity: 1;
+    }
+  }
+
+  .chart-bar {
+    animation: chartGrow 1.5s ease-out forwards;
+  }
+
+  .chart-bar:nth-child(1) { animation-delay: 0.1s; }
+  .chart-bar:nth-child(2) { animation-delay: 0.2s; }
+  .chart-bar:nth-child(3) { animation-delay: 0.3s; }
+  .chart-bar:nth-child(4) { animation-delay: 0.4s; }
+
+  /* AI Chat Bubble Animations */
+  @keyframes messageBubbleIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .chat-message {
+    animation: messageBubbleIn 0.4s ease-out;
+  }
+
+  .chat-message:nth-child(1) { animation-delay: 0.1s; }
+  .chat-message:nth-child(2) { animation-delay: 0.3s; }
+  .chat-message:nth-child(3) { animation-delay: 0.5s; }
+
+  /* ROI Calculator Enhancements */
+  .savings-counter {
+    animation: countUp 2s ease-out;
+  }
+
+  @keyframes countUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Interactive Card Hover Effects */
+  .interactive-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .interactive-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.6s ease;
+  }
+
+  .interactive-card:hover::before {
+    left: 100%;
+  }
+
+  /* Enhanced Button Styles */
+  .cta-button {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6, #3b82f6);
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    transition: all 0.3s ease;
+  }
+
+  .cta-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6);
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Success Story Cards */
+  .success-card {
+    transform-style: preserve-3d;
+    transition: transform 0.6s ease;
+  }
+
+  .success-card:hover {
+    transform: rotateY(5deg) rotateX(5deg);
+  }
+
+  /* Award Badge Animations */
+  .award-badge {
+    position: relative;
+  }
+
+  .award-badge::after {
+    content: '✨';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    opacity: 0;
+    animation: sparkle 2s ease-in-out infinite;
+  }
+
+  .award-badge:hover::after {
+    opacity: 1;
+  }
+
+  @keyframes sparkle {
+    0%, 100% { 
+      opacity: 0; 
+      transform: scale(0.8) rotate(0deg);
+    }
+    50% { 
+      opacity: 1; 
+      transform: scale(1.2) rotate(180deg);
+    }
+  }
+
+  /* Dark mode specific enhancements for new sections */
+  .dark .slider {
+    background: linear-gradient(to right, #3b82f6 0%, #3b82f6 50%, #374151 50%, #374151 100%);
+  }
+
+  .dark .chat-message {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .dark .interactive-card::before {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  }
