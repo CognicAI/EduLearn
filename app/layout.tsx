@@ -41,8 +41,8 @@ export default function RootLayout({
         <QueryProvider>
           <AuthProvider>
             <ThemeProvider
-              defaultTheme="dark"
-              enableSystem={false}  // force dark mode by default
+              defaultTheme="light"
+              enableSystem={true}  // allow system preference detection
               disableTransitionOnChange={false}
             >
               <main className="flex-grow">{children}</main>  {/* main content grows to fill */}

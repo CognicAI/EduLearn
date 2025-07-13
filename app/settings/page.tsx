@@ -269,7 +269,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (notificationSettings?.theme) {
       // Map backend theme format to frontend format
-      let userTheme: 'light' | 'dark' | 'system' = 'system';
+      let userTheme: 'light' | 'dark' | 'system' = 'light';
       if (notificationSettings.theme === 'auto') {
         userTheme = 'system';
       } else if (notificationSettings.theme === 'light' || notificationSettings.theme === 'dark') {
@@ -596,7 +596,7 @@ export default function SettingsPage() {
                           </SelectContent>
                         </Select>
                         <p className="text-xs text-muted-foreground">
-                          Theme changes are applied immediately and saved to your profile.
+                          Light theme is the default. Theme changes are applied immediately and saved to your profile.
                         </p>
                       </div>
 

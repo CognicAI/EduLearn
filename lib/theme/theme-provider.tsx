@@ -21,7 +21,7 @@ type ThemeProviderState = {
 };
 
 const initialState: ThemeProviderState = {
-  theme: 'system',
+  theme: 'light',
   setTheme: () => null,
   resolvedTheme: 'light',
   updateUserTheme: () => {},
@@ -31,7 +31,7 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
   children,
-  defaultTheme = 'system',
+  defaultTheme = 'light',
   storageKey = 'edulearn-theme',
   attribute = 'class',
   enableSystem = true,
@@ -76,6 +76,8 @@ export function ThemeProvider({
       return;
     }
 
+    // For non-system themes, use the selected theme directly
+    // Default to light if theme is 'system' but enableSystem is false
     const resolvedTheme = theme === 'system' ? 'light' : theme;
     root.classList.add(resolvedTheme);
     setResolvedTheme(resolvedTheme);
