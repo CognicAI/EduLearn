@@ -195,9 +195,216 @@
       transform: translateY(0);
     }
   }
-}
+}  /* Smooth animations */
+  .moving-line {
+    position: absolute;
+    left: -100%;
+    width: 200%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: slide-lines 5s linear infinite;
+  }
+  @keyframes slide-lines {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(50%); }
+  }
 
-/* Smooth animations */
+  /* Futuristic UI Animations */
+  .grid-background {
+    background-image: 
+      linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    width: 100%;
+    height: 100%;
+  }
+
+  .cyber-line {
+    position: absolute;
+    left: -100%;
+    width: 200%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5), rgba(147, 51, 234, 0.5), transparent);
+    animation: cyber-move 8s linear infinite;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+  }
+
+  .floating-particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.8), transparent);
+    border-radius: 50%;
+    animation: float-particles 20s linear infinite;
+  }
+
+  @keyframes cyber-move {
+    0% { transform: translateX(-100%) scaleX(0); opacity: 0; }
+    10% { opacity: 1; transform: translateX(-100%) scaleX(1); }
+    90% { opacity: 1; transform: translateX(100%) scaleX(1); }
+    100% { transform: translateX(100%) scaleX(0); opacity: 0; }
+  }
+
+  @keyframes float-particles {
+    0% { transform: translateY(100vh) translateX(0) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-100vh) translateX(100px) rotate(360deg); opacity: 0; }
+  }
+
+  @keyframes animate-grid-move {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(50px, 50px); }
+  }
+
+  .animate-grid-move {
+    animation: animate-grid-move 20s linear infinite;
+  }
+
+  @keyframes gradient-x {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .animate-gradient-x {
+    background-size: 200% 200%;
+    animation: gradient-x 3s ease infinite;
+  }
+
+  @keyframes text-shimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+  }
+
+  .animate-text-shimmer {
+    background: linear-gradient(110deg, #000 45%, #fff 55%, #000 65%);
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: text-shimmer 2s linear infinite;
+  }
+
+  .dark .animate-text-shimmer {
+    background: linear-gradient(110deg, #fff 45%, #000 55%, #fff 65%);
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(50px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes bounce-in {
+    0% { opacity: 0; transform: scale(0.3); }
+    50% { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    33% { transform: translateY(-20px) rotate(120deg); }
+    66% { transform: translateY(10px) rotate(240deg); }
+  }
+
+  @keyframes float-delayed {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    33% { transform: translateY(15px) rotate(-120deg); }
+    66% { transform: translateY(-10px) rotate(-240deg); }
+  }
+
+  @keyframes progress-fill {
+    0% { width: 0%; }
+    100% { width: 78%; }
+  }
+
+  @keyframes pulse-slow {
+    0%, 100% { opacity: 0.2; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.1); }
+  }
+
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes bounce-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.8s ease-out;
+  }
+
+  .animate-slide-up-delayed {
+    animation: slide-up 0.8s ease-out 0.3s both;
+  }
+
+  .animate-fade-in-delayed {
+    animation: fade-in 0.8s ease-out 0.6s both;
+  }
+
+  .animate-bounce-in {
+    animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-float-delayed {
+    animation: float-delayed 8s ease-in-out infinite;
+  }
+
+  .animate-progress-fill {
+    animation: progress-fill 2s ease-out 1s both;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 4s ease-in-out infinite;
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 10s linear infinite;
+  }
+
+  .animate-bounce-slow {
+    animation: bounce-slow 3s ease-in-out infinite;
+  }
+
+  .bg-300\% {
+    background-size: 300% 300%;
+  }
+
+  /* Glass morphism effects */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .dark .glass-card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Neon glow effects */
+  .neon-glow {
+    box-shadow: 0 0 5px theme('colors.blue.400'), 0 0 20px theme('colors.blue.400'), 0 0 35px theme('colors.blue.400');
+  }
+
+  .neon-glow-purple {
+    box-shadow: 0 0 5px theme('colors.purple.400'), 0 0 20px theme('colors.purple.400'), 0 0 35px theme('colors.purple.400');
+  }
 @layer utilities {
   .animate-in {
     animation: animate-in 0.5s ease-out;
@@ -580,10 +787,201 @@
   border-radius: 50%;
   transform: translate(-50%, -50%);
   transition: width 0.3s ease, height 0.3s ease;
-}
+}  .microphone-button.recording::before {
+    width: 100%;
+    height: 100%;
+    animation: microphonePulse 1.5s infinite;
+  }
 
-.microphone-button.recording::before {
-  width: 100%;
-  height: 100%;
-  animation: microphonePulse 1.5s infinite;
-}
+  /* Enhanced Interactive Elements */
+  .slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(to right, #3b82f6 0%, #3b82f6 50%, #e5e7eb 50%, #e5e7eb 100%);
+    outline: none;
+    transition: all 0.3s ease;
+  }
+
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.5);
+  }
+
+  .slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .slider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.5);
+  }
+
+  /* Dashboard Chart Animations */
+  @keyframes chartGrow {
+    from { 
+      width: 0%; 
+      opacity: 0;
+    }
+    to { 
+      opacity: 1;
+    }
+  }
+
+  .chart-bar {
+    animation: chartGrow 1.5s ease-out forwards;
+  }
+
+  .chart-bar:nth-child(1) { animation-delay: 0.1s; }
+  .chart-bar:nth-child(2) { animation-delay: 0.2s; }
+  .chart-bar:nth-child(3) { animation-delay: 0.3s; }
+  .chart-bar:nth-child(4) { animation-delay: 0.4s; }
+
+  /* AI Chat Bubble Animations */
+  @keyframes messageBubbleIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .chat-message {
+    animation: messageBubbleIn 0.4s ease-out;
+  }
+
+  .chat-message:nth-child(1) { animation-delay: 0.1s; }
+  .chat-message:nth-child(2) { animation-delay: 0.3s; }
+  .chat-message:nth-child(3) { animation-delay: 0.5s; }
+
+  /* ROI Calculator Enhancements */
+  .savings-counter {
+    animation: countUp 2s ease-out;
+  }
+
+  @keyframes countUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Interactive Card Hover Effects */
+  .interactive-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .interactive-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.6s ease;
+  }
+
+  .interactive-card:hover::before {
+    left: 100%;
+  }
+
+  /* Enhanced Button Styles */
+  .cta-button {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6, #3b82f6);
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    transition: all 0.3s ease;
+  }
+
+  .cta-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6);
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Success Story Cards */
+  .success-card {
+    transform-style: preserve-3d;
+    transition: transform 0.6s ease;
+  }
+
+  .success-card:hover {
+    transform: rotateY(5deg) rotateX(5deg);
+  }
+
+  /* Award Badge Animations */
+  .award-badge {
+    position: relative;
+  }
+
+  .award-badge::after {
+    content: '✨';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    opacity: 0;
+    animation: sparkle 2s ease-in-out infinite;
+  }
+
+  .award-badge:hover::after {
+    opacity: 1;
+  }
+
+  @keyframes sparkle {
+    0%, 100% { 
+      opacity: 0; 
+      transform: scale(0.8) rotate(0deg);
+    }
+    50% { 
+      opacity: 1; 
+      transform: scale(1.2) rotate(180deg);
+    }
+  }
+
+  /* Dark mode specific enhancements for new sections */
+  .dark .slider {
+    background: linear-gradient(to right, #3b82f6 0%, #3b82f6 50%, #374151 50%, #374151 100%);
+  }
+
+  .dark .chat-message {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .dark .interactive-card::before {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  }
