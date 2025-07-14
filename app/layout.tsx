@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://edulearn.vercel.app'), // Replace with your actual domain
+  metadataBase: new URL('https://edulearn-app-jogu4.ondigitalocean.app/'), // Replace with your actual domain
   alternates: {
     canonical: '/',
   },
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     description: 'Advanced AI-integrated Learning Management System for modern education with intelligent features, interactive courses, and comprehensive analytics.',
     type: 'website',
     locale: 'en_US',
-    url: 'https://edulearn.vercel.app', // Replace with your actual domain
+    url: 'https://edulearn-app-jogu4.ondigitalocean.app/', // Replace with your actual domain
     siteName: 'EduLearn',
     images: [
       {
