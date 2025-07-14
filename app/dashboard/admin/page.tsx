@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Users, BookOpenIcon, TrendingUp, AlertTriangle, Settings, UserPlus, CheckCircle, Info } from 'lucide-react';
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data';
 import { useUserProfile } from '@/lib/hooks/use-user';
+import { useRouter } from 'next/navigation';
 
 const mockUserBreakdown = [
   { role: 'Students', count: 1089, percentage: 87 },
@@ -54,8 +55,13 @@ export default function AdminDashboard() {
   const { user } = useAuth();
   const { data: profileData, isLoading: profileLoading } = useUserProfile();
   const { data: dashboardData, isLoading: dashboardLoading, error } = useDashboardData('admin');
+  const router = useRouter();
 
   const isLoading = profileLoading || dashboardLoading;
+
+  const handleNavigation = (path: string) => {
+    router.push(path);
+  };
 
   if (error) {
     return (
@@ -318,19 +324,35 @@ export default function AdminDashboard() {
                       <CardTitle>Quick Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      <Button variant="outline" className="w-full justify-start">
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start" 
+                        onClick={() => handleNavigation('/admin/users')}
+                      >
                         <Users className="h-4 w-4 mr-2" />
                         Manage Users
                       </Button>
-                      <Button variant="outline" className="w-full justify-start">
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start"
+                        onClick={() => handleNavigation('/courses')}
+                      >
                         <BookOpenIcon className="h-4 w-4 mr-2" />
                         Course Overview
                       </Button>
-                      <Button variant="outline" className="w-full justify-start">
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start"
+                        onClick={() => handleNavigation('/admin/analytics')}
+                      >
                         <TrendingUp className="h-4 w-4 mr-2" />
                         View Analytics
                       </Button>
-                      <Button variant="outline" className="w-full justify-start">
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start"
+                        onClick={() => handleNavigation('/settings')}
+                      >
                         <Settings className="h-4 w-4 mr-2" />
                         System Settings
                       </Button>
