@@ -6,6 +6,8 @@ import { QueryProvider } from '@/lib/query-provider';
 import { ThemeProvider } from '@/lib/theme/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { ChatbotWidget } from '@/components/chatbot/chatbot-widget';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { ErrorSuppression } from '@/components/error-suppression';
 
 
 const inter = Inter({ 
@@ -96,20 +98,27 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
-      <body className={`${inter.className} flex flex-col min-h-screen`}>  {/* ensure full height layout */}
-        <QueryProvider>
-          <AuthProvider>
-            <ThemeProvider
-              defaultTheme="light"
-              enableSystem={true}  // allow system preference detection
-              disableTransitionOnChange={false}
-            >
-              <main className="flex-grow">{children}</main>  {/* main content grows to fill */}
-              <ChatbotWidget />
-              <Toaster position="top-right" />
-            </ThemeProvider>
-          </AuthProvider>
-        </QueryProvider>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+      </head>
+      <body className={`${inter.className} flex flex-col min-h-screen`} suppressHydrationWarning>
+        <ErrorSuppression />
+        <ErrorBoundary>
+          <QueryProvider>
+            <AuthProvider>
+              <ThemeProvider
+                defaultTheme="system"
+                enableSystem={true}
+                disableTransitionOnChange={false}
+              >
+                <main className="flex-grow">{children}</main>
+                <ChatbotWidget />
+                <Toaster position="top-right" />
+              </ThemeProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
