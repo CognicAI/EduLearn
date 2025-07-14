@@ -20,14 +20,73 @@ console.log(
 
 export const metadata: Metadata = {
   title: 'EduLearn - Learning Management System',
-  description: 'Advanced AI-integrated Learning Management System for modern education',
-  keywords: ['education', 'learning', 'management', 'system', 'AI', 'courses'],
+  description: 'Advanced AI-integrated Learning Management System for modern education with intelligent features, interactive courses, and comprehensive analytics.',
+  keywords: ['education', 'learning', 'management', 'system', 'AI', 'courses', 'online learning', 'e-learning'],
   authors: [{ name: 'EduLearn Team' }],
+  creator: 'EduLearn Team',
+  publisher: 'EduLearn',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL('https://edulearn.vercel.app'), // Replace with your actual domain
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     title: 'EduLearn - Learning Management System',
-    description: 'Advanced AI-integrated Learning Management System for modern education',
+    description: 'Advanced AI-integrated Learning Management System for modern education with intelligent features, interactive courses, and comprehensive analytics.',
     type: 'website',
+    locale: 'en_US',
+    url: 'https://edulearn.vercel.app', // Replace with your actual domain
+    siteName: 'EduLearn',
+    images: [
+      {
+        url: '/images/og/og-default.svg',
+        width: 1200,
+        height: 630,
+        alt: 'EduLearn - Learning Management System',
+        type: 'image/svg+xml',
+      },
+      {
+        url: '/images/og/og-square.svg',
+        width: 600,
+        height: 600,
+        alt: 'EduLearn Logo',
+        type: 'image/svg+xml',
+      },
+    ],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'EduLearn - Learning Management System',
+    description: 'Advanced AI-integrated Learning Management System for modern education',
+    images: ['/images/og/og-default.svg'],
+    creator: '@edulearn', // Replace with your actual Twitter handle
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/images/logos/icon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/images/logos/icon-32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/images/logos/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
