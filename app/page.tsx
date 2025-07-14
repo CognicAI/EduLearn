@@ -431,6 +431,66 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* How It Works - NEW */}
+      <section className="py-20 bg-gradient-to-br from-emerald-50/30 via-teal-50/20 to-cyan-50/30 dark:from-emerald-900/20 dark:via-teal-900/10 dark:to-cyan-900/10 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 animate-slide-up">
+            <Badge className="mb-4 bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border-emerald-200/50 dark:border-emerald-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
+              📚 Simple Process
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              How It Works
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+              Get started in minutes with our streamlined learning process designed for maximum efficiency.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                step: "01",
+                title: "Choose Your Path",
+                description: "Browse our curated courses or let AI recommend the perfect learning path based on your goals.",
+                icon: "🎯",
+                color: "from-blue-500 to-cyan-500"
+              },
+              {
+                step: "02", 
+                title: "Learn Interactively",
+                description: "Engage with AI-powered lessons, upload materials, and get instant feedback on your progress.",
+                icon: "🧠",
+                color: "from-purple-500 to-pink-500"
+              },
+              {
+                step: "03",
+                title: "Apply & Succeed",
+                description: "Complete assessments, earn certificates, and showcase your new skills to advance your career.",
+                icon: "🏆",
+                color: "from-emerald-500 to-teal-500"
+              }
+            ].map((step, index) => (
+              <Card key={index} className="relative group overflow-hidden bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-lg hover:shadow-2xl transition-all duration-700 hover:-translate-y-4 animate-slide-up p-8" style={{animationDelay: `${index * 0.2}s`}}>
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-bl-3xl flex items-start justify-end pr-4 pt-4">
+                  <span className="text-2xl font-bold text-gray-400 dark:text-gray-500">{step.step}</span>
+                </div>
+                
+                <div className={`w-16 h-16 bg-gradient-to-r ${step.color} rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                  {step.icon}
+                </div>
+                
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
+                  {step.title}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-300">
+                  {step.description}
+                </p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Learn Anywhere, Anytime - Mobile Learning Experience */}
       <section className="py-20 bg-gradient-to-br from-pink-50/30 via-rose-50/20 to-orange-50/30 dark:from-pink-900/20 dark:via-rose-900/10 dark:to-orange-900/10 relative overflow-hidden">
         {/* Enhanced floating particles */}
@@ -483,12 +543,6 @@ export default function HomePage() {
               <div className="absolute -top-8 -right-8 animate-bounce-in" style={{animationDelay: '1s'}}>
                 <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:scale-110 transition-transform duration-300">
                   🤖 AI Powered
-                </div>
-              </div>
-              
-              <div className="absolute -bottom-8 -left-8 animate-bounce-in" style={{animationDelay: '1.5s'}}>
-                <div className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:scale-110 transition-transform duration-300">
-                  💾 Offline Ready
                 </div>
               </div>
               
@@ -735,6 +789,128 @@ export default function HomePage() {
               </div>
             </div>
           </Card>
+        </div>
+      </section>
+
+      {/* Pricing Plans - NEW */}
+      <section className="py-20 bg-gradient-to-br from-indigo-50/30 via-purple-50/20 to-pink-50/30 dark:from-indigo-900/20 dark:via-purple-900/10 dark:to-pink-900/10 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 animate-slide-up">
+            <Badge className="mb-4 bg-purple-100/80 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-200/50 dark:border-purple-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
+              💰 Flexible Plans
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Choose Your Learning Path
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+              Start free and scale as you grow. All plans include our core features with increasing levels of access.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {[
+              {
+                name: "Starter",
+                price: "Free",
+                period: "Forever",
+                popular: false,
+                features: [
+                  "5 courses per month",
+                  "Basic AI assistant",
+                  "Community support",
+                  "Mobile app access",
+                  "Basic analytics"
+                ],
+                buttonText: "Get Started",
+                color: "from-gray-500 to-gray-700"
+              },
+              {
+                name: "Pro",
+                price: "$29",
+                period: "per month",
+                popular: true,
+                features: [
+                  "Unlimited courses",
+                  "Advanced AI assistant",
+                  "Priority support",
+                  "Offline downloads",
+                  "Advanced analytics",
+                  "Custom assessments",
+                  "Certificates"
+                ],
+                buttonText: "Start Pro Trial",
+                color: "from-blue-500 to-purple-600"
+              },
+              {
+                name: "Enterprise",
+                price: "$99",
+                period: "per month",
+                popular: false,
+                features: [
+                  "Everything in Pro",
+                  "Team management",
+                  "Custom branding",
+                  "API access",
+                  "SSO integration",
+                  "Dedicated support",
+                  "Custom training"
+                ],
+                buttonText: "Contact Sales",
+                color: "from-purple-600 to-pink-600"
+              }
+            ].map((plan, index) => (
+              <Card key={index} className={`relative overflow-hidden ${plan.popular ? 'ring-2 ring-blue-500 scale-105' : ''} bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-lg hover:shadow-2xl transition-all duration-700 hover:-translate-y-2 animate-slide-up group`} style={{animationDelay: `${index * 0.2}s`}}>
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-1 text-sm font-medium">
+                      Most Popular
+                    </Badge>
+                  </div>
+                )}
+                
+                <div className="p-8">
+                  <div className="text-center mb-8">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{plan.name}</h3>
+                    <div className="flex items-baseline justify-center gap-1">
+                      <span className="text-4xl font-bold text-gray-900 dark:text-white">{plan.price}</span>
+                      {plan.price !== "Free" && <span className="text-gray-600 dark:text-gray-400">/{plan.period}</span>}
+                    </div>
+                  </div>
+                  
+                  <ul className="space-y-4 mb-8">
+                    {plan.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-center gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                        <span className="text-gray-600 dark:text-gray-400">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <Button className={`w-full bg-gradient-to-r ${plan.color} hover:scale-105 transition-all duration-300 hover:shadow-lg text-white`}>
+                    {plan.buttonText}
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+          
+          <div className="text-center mt-12 animate-fade-in-delayed">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">All plans include 14-day free trial • No credit card required</p>
+            <div className="flex items-center justify-center gap-6 text-sm text-gray-500 dark:text-gray-500">
+              <div className="flex items-center gap-1">
+                <Shield className="h-4 w-4" />
+                <span>Secure payments</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <CheckCircle className="h-4 w-4" />
+                <span>Cancel anytime</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Heart className="h-4 w-4" />
+                <span>24/7 support</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1072,6 +1248,120 @@ export default function HomePage() {
               </div>
             </Card>
           </div>
+        </div>
+      </section>
+
+      {/* Application Form - NEW */}
+      <section className="py-20 bg-gradient-to-br from-blue-50/30 via-indigo-50/20 to-purple-50/30 dark:from-blue-900/20 dark:via-indigo-900/10 dark:to-purple-900/10 relative overflow-hidden">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16 animate-slide-up">
+            <Badge className="mb-4 bg-blue-100/80 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
+              🚀 Start Your Journey
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Ready to Transform Your Learning?
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+              Join thousands of learners who have already started their journey. Fill out this quick form to get personalized course recommendations.
+            </p>
+          </div>
+
+          <Card className="glass-card backdrop-blur-xl border border-white/20 dark:border-gray-700/20 shadow-2xl hover:shadow-3xl transition-all duration-500 p-8 animate-slide-up">
+            <form className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                    placeholder="Enter your first name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                    placeholder="Enter your last name"
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                    placeholder="Enter your email"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Learning Goal
+                  </label>
+                  <select className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300">
+                    <option>Career Advancement</option>
+                    <option>Skill Development</option>
+                    <option>Academic Support</option>
+                    <option>Personal Interest</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  What subject interests you most?
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {['Programming', 'Design', 'Business', 'Marketing', 'Data Science', 'AI/ML', 'Finance', 'Other'].map((subject) => (
+                    <label key={subject} className="flex items-center space-x-2 cursor-pointer group">
+                      <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">{subject}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Tell us about your learning preferences (optional)
+                </label>
+                <textarea
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  placeholder="e.g., I prefer video lessons, hands-on projects, evening study sessions..."
+                />
+              </div>
+
+              <div className="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  className="mt-1 rounded text-blue-600 focus:ring-blue-500"
+                />
+                <label className="text-sm text-gray-600 dark:text-gray-400">
+                  I agree to receive personalized course recommendations and updates via email. You can unsubscribe at any time.
+                </label>
+              </div>
+
+              <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg py-4 transform transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25">
+                Get My Personalized Learning Path
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </form>
+
+            <div className="mt-8 text-center">
+              <p className="text-sm text-gray-500 dark:text-gray-500">
+                🔒 Your information is secure and will never be shared with third parties
+              </p>
+            </div>
+          </Card>
         </div>
       </section>
 

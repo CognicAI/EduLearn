@@ -291,11 +291,6 @@ export function MobileAppSimulator() {
               description: 'Intuitive gestures and responsive design for seamless mobile learning.'
             },
             {
-              icon: '🔄',
-              title: 'Offline Synchronization',
-              description: 'Download courses and continue learning without internet connection.'
-            },
-            {
               icon: '🤖',
               title: 'AI Chat Assistant',
               description: 'Get instant help from our AI tutor directly in the mobile app.'
