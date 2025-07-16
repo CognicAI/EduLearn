@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { OptimizedImage, CourseThumbnail, UserAvatar } from '@/components/ui/optimized-image';
-import { getCourseImageUrl, getUserAvatarUrl } from '@/lib/utils/image-utils';
+import { getCourseImageUrl, getUserAvatarUrl, IMAGE_PATHS } from '@/lib/utils/image-utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, Image as ImageIcon, User, BookOpen } from 'lucide-react';
 
@@ -65,7 +65,7 @@ export default function ImageDemoPage() {
               <CardContent>
                 <ImageUpload
                   currentImage={uploadedImages.avatar}
-                  onUpload={(file: File) => handleUpload(file, 'avatar')}
+                  onUpload={(file) => handleUpload(file, 'avatar')}
                   onRemove={() => handleRemove('avatar')}
                   placeholder="Upload avatar"
                   aspectRatio="1/1"
@@ -89,7 +89,7 @@ export default function ImageDemoPage() {
               <CardContent>
                 <ImageUpload
                   currentImage={uploadedImages.course}
-                  onUpload={(file: File) => handleUpload(file, 'course')}
+                  onUpload={(file) => handleUpload(file, 'course')}
                   onRemove={() => handleRemove('course')}
                   placeholder="Upload course image"
                   aspectRatio="4/3"
@@ -113,7 +113,7 @@ export default function ImageDemoPage() {
               <CardContent>
                 <ImageUpload
                   currentImage={uploadedImages.banner}
-                  onUpload={(file: File) => handleUpload(file, 'banner')}
+                  onUpload={(file) => handleUpload(file, 'banner')}
                   onRemove={() => handleRemove('banner')}
                   placeholder="Upload banner"
                   aspectRatio="2/1"

@@ -1,0 +1,22 @@
+<svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="600" fill="url(#logo-gradient)"/>
+  
+  <!-- Logo symbol -->
+  <g transform="translate(300, 250)">
+    <!-- Book icon -->
+    <rect x="-60" y="-40" width="120" height="80" fill="white" rx="8"/>
+    <line x1="-40" y1="-20" x2="40" y2="-20" stroke="#2563eb" stroke-width="4"/>
+    <line x1="-40" y1="0" x2="40" y2="0" stroke="#2563eb" stroke-width="4"/>
+    <line x1="-40" y1="20" x2="20" y2="20" stroke="#2563eb" stroke-width="4"/>
+    <circle cx="50" cy="50" r="25" fill="rgba(255,255,255,0.2)"/>
+    <text x="50" y="58" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="20" font-weight="bold">AI</text>
+  </g>
+  
+  <text x="300" y="380" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="48" font-weight="bold">EduLearn</text>
+</svg>

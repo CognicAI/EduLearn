@@ -1,0 +1,33 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg-gradient)"/>
+  
+  <!-- Decorative elements -->
+  <circle cx="100" cy="100" r="50" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="1100" cy="530" r="80" fill="rgba(255,255,255,0.1)"/>
+  <rect x="900" y="50" width="60" height="60" fill="rgba(255,255,255,0.1)" rx="8"/>
+  
+  <!-- Main content -->
+  <text x="600" y="280" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="64" font-weight="bold">EduLearn</text>
+  <text x="600" y="340" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-family="Arial, sans-serif" font-size="28">Learning Management System</text>
+  <text x="600" y="400" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="Arial, sans-serif" font-size="20">Advanced AI-integrated platform for modern education</text>
+  
+  <!-- Features -->
+  <g transform="translate(300, 480)">
+    <circle cx="0" cy="0" r="8" fill="rgba(255,255,255,0.8)"/>
+    <text x="20" y="5" fill="rgba(255,255,255,0.8)" font-family="Arial, sans-serif" font-size="16">Interactive Courses</text>
+  </g>
+  <g transform="translate(500, 480)">
+    <circle cx="0" cy="0" r="8" fill="rgba(255,255,255,0.8)"/>
+    <text x="20" y="5" fill="rgba(255,255,255,0.8)" font-family="Arial, sans-serif" font-size="16">AI-Powered Analytics</text>
+  </g>
+  <g transform="translate(720, 480)">
+    <circle cx="0" cy="0" r="8" fill="rgba(255,255,255,0.8)"/>
+    <text x="20" y="5" fill="rgba(255,255,255,0.8)" font-family="Arial, sans-serif" font-size="16">Real-time Collaboration</text>
+  </g>
+</svg>
