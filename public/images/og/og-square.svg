@@ -10,13 +10,14 @@
   <!-- Logo symbol -->
   <g transform="translate(300, 250)">
     <!-- Book icon -->
-    <rect x="-60" y="-40" width="120" height="80" fill="white" rx="8"/>
-    <line x1="-40" y1="-20" x2="40" y2="-20" stroke="#2563eb" stroke-width="4"/>
-    <line x1="-40" y1="0" x2="40" y2="0" stroke="#2563eb" stroke-width="4"/>
-    <line x1="-40" y1="20" x2="20" y2="20" stroke="#2563eb" stroke-width="4"/>
-    <circle cx="50" cy="50" r="25" fill="rgba(255,255,255,0.2)"/>
-    <text x="50" y="58" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="20" font-weight="bold">AI</text>
+    <rect x="-80" y="-50" width="160" height="100" fill="white" rx="12"/>
+    <line x1="-50" y1="-25" x2="50" y2="-25" stroke="#2563eb" stroke-width="6"/>
+    <line x1="-50" y1="0" x2="50" y2="0" stroke="#2563eb" stroke-width="6"/>
+    <line x1="-50" y1="25" x2="30" y2="25" stroke="#2563eb" stroke-width="6"/>
+    <circle cx="70" cy="70" r="35" fill="rgba(255,255,255,0.2)"/>
+    <text x="70" y="85" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="28" font-weight="bold">AI</text>
   </g>
   
-  <text x="300" y="380" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="48" font-weight="bold">EduLearn</text>
+  <text x="300" y="420" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="56" font-weight="bold">EduLearn</text>
+  <text x="300" y="480" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="Arial, sans-serif" font-size="20">edulearn.studio</text>
 </svg>

@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://edulearn-app-jogu4.ondigitalocean.app/'), // Replace with your actual domain
+  metadataBase: new URL('https://edulearn.studio'),
   alternates: {
     canonical: '/',
   },
@@ -41,22 +41,14 @@ export const metadata: Metadata = {
     description: 'Advanced AI-integrated Learning Management System for modern education with intelligent features, interactive courses, and comprehensive analytics.',
     type: 'website',
     locale: 'en_US',
-    url: 'https://edulearn-app-jogu4.ondigitalocean.app/', // Replace with your actual domain
+    url: 'https://edulearn.studio',
     siteName: 'EduLearn',
     images: [
       {
-        url: '/images/og/og-default.svg',
+        url: 'https://edulearn.studio/images/og/og-default.svg',
         width: 1200,
         height: 630,
         alt: 'EduLearn - Learning Management System',
-        type: 'image/svg+xml',
-      },
-      {
-        url: '/images/og/og-square.svg',
-        width: 600,
-        height: 600,
-        alt: 'EduLearn Logo',
-        type: 'image/svg+xml',
       },
     ],
   },
@@ -64,7 +56,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'EduLearn - Learning Management System',
     description: 'Advanced AI-integrated Learning Management System for modern education',
-    images: ['/images/og/og-default.svg'],
+    images: ['https://edulearn.studio/images/og/og-default.svg'],
     creator: '@edulearn', // Replace with your actual Twitter handle
   },
   robots: {
@@ -101,6 +93,26 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        
+        {/* Additional Open Graph meta tags */}
+        <meta property="og:title" content="EduLearn - Learning Management System" />
+        <meta property="og:description" content="Advanced AI-integrated Learning Management System for modern education with intelligent features, interactive courses, and comprehensive analytics." />
+        <meta property="og:image" content="https://edulearn.studio/images/og/og-default.svg" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:url" content="https://edulearn.studio" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="EduLearn" />
+        
+        {/* Twitter Card meta tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="EduLearn - Learning Management System" />
+        <meta name="twitter:description" content="Advanced AI-integrated Learning Management System for modern education" />
+        <meta name="twitter:image" content="https://edulearn.studio/images/og/og-default.svg" />
+        
+        {/* Additional meta tags */}
+        <meta name="theme-color" content="#2563eb" />
+        <link rel="canonical" href="https://edulearn.studio" />
       </head>
       <body className={`${inter.className} flex flex-col min-h-screen`} suppressHydrationWarning>
         <ErrorSuppression />

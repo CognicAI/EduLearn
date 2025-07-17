@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Graph Image Generator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .og-image {
+            width: 1200px;
+            height: 630px;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            position: relative;
+            border-radius: 0;
+            overflow: hidden;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .og-image::before {
+            content: '';
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            width: 160px;
+            height: 160px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+        .og-image::after {
+            content: '';
+            position: absolute;
+            bottom: 50px;
+            right: 50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+        .title {
+            font-size: 72px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            z-index: 1;
+        }
+        .subtitle {
+            font-size: 32px;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            z-index: 1;
+        }
+        .description {
+            font-size: 24px;
+            margin-bottom: 80px;
+            opacity: 0.8;
+            z-index: 1;
+        }
+        .features {
+            display: flex;
+            gap: 60px;
+            z-index: 1;
+            margin-bottom: 40px;
+        }
+        .feature {
+            font-size: 20px;
+            opacity: 0.8;
+        }
+        .feature::before {
+            content: '●';
+            margin-right: 10px;
+        }
+        .url {
+            font-size: 18px;
+            opacity: 0.7;
+            z-index: 1;
+        }
+        .instructions {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .download-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .download-btn:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EduLearn Open Graph Image Generator</h1>
+        
+        <div class="og-image" id="ogImage">
+            <div class="title">EduLearn</div>
+            <div class="subtitle">Learning Management System</div>
+            <div class="description">Advanced AI-integrated platform for modern education</div>
+            <div class="features">
+                <div class="feature">Interactive Courses</div>
+                <div class="feature">AI-Powered Analytics</div>
+                <div class="feature">Real-time Collaboration</div>
+            </div>
+            <div class="url">edulearn.studio</div>
+        </div>
+        
+        <div class="instructions">
+            <h2>How to create PNG for social media:</h2>
+            <ol>
+                <li>Right-click on the image above</li>
+                <li>Select "Inspect Element" or "Inspect"</li>
+                <li>In the developer tools, right-click on the element with class "og-image"</li>
+                <li>Select "Capture node screenshot" or similar option</li>
+                <li>Save the image as "og-default.png"</li>
+                <li>Upload it to your server at "/public/images/og/og-default.png"</li>
+            </ol>
+            
+            <p><strong>Alternative method:</strong></p>
+            <ol>
+                <li>Take a screenshot of the blue image above</li>
+                <li>Crop it to exactly 1200x630 pixels</li>
+                <li>Save as PNG format</li>
+                <li>Upload to your server</li>
+            </ol>
+            
+            <p><strong>For best results:</strong> Use tools like <a href="https://www.canva.com" target="_blank">Canva</a> or <a href="https://www.figma.com" target="_blank">Figma</a> to create a professional 1200x630px PNG image.</p>
+        </div>
+    </div>
+    
+    <script>
+        // You can use this to download the canvas as PNG if needed
+        function downloadImage() {
+            const element = document.getElementById('ogImage');
+            
+            // Use html2canvas if available
+            if (typeof html2canvas !== 'undefined') {
+                html2canvas(element, {
+                    width: 1200,
+                    height: 630,
+                    scale: 1
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = 'og-default.png';
+                    link.href = canvas.toDataURL();
+                    link.click();
+                });
+            } else {
+                alert('Please use the manual screenshot method described above.');
+            }
+        }
+    </script>
+</body>
+</html>
