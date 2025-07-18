@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://edulearn.studio/sitemap.xml
+
+# Disallow admin pages from search engines
+User-agent: *
+Disallow: /admin/
+Disallow: /api/
+Disallow: /_next/
+Disallow: /dashboard/admin/
+
+# Allow public pages
+Allow: /
+Allow: /courses
+Allow: /auth/login
+Allow: /auth/register

@@ -72,12 +72,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/images/logos/icon-16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/images/logos/icon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon.svg', sizes: 'any', type: 'image/svg+xml' },
+      { url: '/icons/icon-16.svg', sizes: '16x16', type: 'image/svg+xml' },
+      { url: '/icons/icon-32.svg', sizes: '32x32', type: 'image/svg+xml' },
     ],
     apple: [
-      { url: '/images/logos/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/icons/apple-touch-icon.svg', sizes: '180x180', type: 'image/svg+xml' },
     ],
   },
   manifest: '/manifest.json',
@@ -113,6 +113,8 @@ export default function RootLayout({
         {/* Additional meta tags */}
         <meta name="theme-color" content="#2563eb" />
         <link rel="canonical" href="https://edulearn.studio" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="shortcut icon" href="/favicon.ico" />
       </head>
       <body className={`${inter.className} flex flex-col min-h-screen`} suppressHydrationWarning>
         <ErrorSuppression />
