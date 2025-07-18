@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     description: 'Advanced AI-integrated Learning Management System for modern education with intelligent features, interactive courses, and comprehensive analytics.',
     type: 'website',
     locale: 'en_US',
-    url: 'https://edulearn.studio',
+    url: 'https://edulearn.studio/',
     siteName: 'EduLearn',
     images: [
       {
@@ -55,9 +55,10 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'EduLearn - Learning Management System',
-    description: 'Advanced AI-integrated Learning Management System for modern education',
+    description: 'Advanced AI-integrated Learning Management System for modern education with intelligent features, interactive courses, and comprehensive analytics.',
     images: ['https://edulearn.studio/images/og/og-default.svg'],
-    creator: '@edulearn', // Replace with your actual Twitter handle
+    site: '@edulearn',
+    creator: '@edulearn',
   },
   robots: {
     index: true,
