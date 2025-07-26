@@ -10,6 +10,26 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 ---
 
 -- Drop indexes first
+DROP INDEX IF EXISTS idx_chat_messages_deleted;
+DROP INDEX IF EXISTS idx_chat_sessions_deleted;
+DROP INDEX IF EXISTS idx_chat_messages_created_at;
+DROP INDEX IF EXISTS idx_chat_messages_session_id;
+DROP INDEX IF EXISTS idx_chat_sessions_last_activity;
+DROP INDEX IF EXISTS idx_chat_sessions_status;
+DROP INDEX IF EXISTS idx_chat_sessions_user_id;
+DROP INDEX IF EXISTS idx_instructor_reviews_deleted;
+DROP INDEX IF EXISTS idx_course_reviews_deleted;
+DROP INDEX IF EXISTS idx_files_deleted;
+DROP INDEX IF EXISTS idx_announcements_deleted;
+DROP INDEX IF EXISTS idx_discussion_posts_deleted;
+DROP INDEX IF EXISTS idx_discussions_deleted;
+DROP INDEX IF EXISTS idx_course_lessons_deleted;
+DROP INDEX IF EXISTS idx_course_modules_deleted;
+DROP INDEX IF EXISTS idx_events_deleted;
+DROP INDEX IF EXISTS idx_assignments_deleted;
+DROP INDEX IF EXISTS idx_categories_deleted;
+DROP INDEX IF EXISTS idx_courses_deleted;
+DROP INDEX IF EXISTS idx_users_deleted;
 DROP INDEX IF EXISTS idx_platform_analytics_date;
 DROP INDEX IF EXISTS idx_events_course_user;
 DROP INDEX IF EXISTS idx_events_datetime_type;
@@ -32,6 +52,8 @@ DROP INDEX IF EXISTS idx_users_role_active;
 DROP INDEX IF EXISTS idx_users_email;
 
 -- Drop tables in reverse dependency order
+DROP TABLE IF EXISTS chat_messages CASCADE;
+DROP TABLE IF EXISTS chat_sessions CASCADE;
 DROP TABLE IF EXISTS instructor_reviews CASCADE;
 DROP TABLE IF EXISTS course_reviews CASCADE;
 DROP TABLE IF EXISTS file_associations CASCADE;
@@ -72,6 +94,8 @@ DROP TABLE IF EXISTS user_profiles CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- Drop custom types
+DROP TYPE IF EXISTS chat_message_sender;
+DROP TYPE IF EXISTS chat_session_status;
 DROP TYPE IF EXISTS review_status;
 DROP TYPE IF EXISTS virus_scan_status;
 DROP TYPE IF EXISTS coupon_discount_type;
@@ -166,6 +190,8 @@ CREATE TABLE users (
     language VARCHAR(10) DEFAULT 'en',
     is_active BOOLEAN DEFAULT true,
     email_verified BOOLEAN DEFAULT false,
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
     last_login TIMESTAMP,
     login_count INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -240,6 +266,8 @@ CREATE TABLE categories (
     sort_order INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT true,
     course_count INTEGER DEFAULT 0,
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -269,6 +297,8 @@ CREATE TABLE courses (
     enrollment_count INTEGER DEFAULT 0,
     completion_count INTEGER DEFAULT 0,
     view_count INTEGER DEFAULT 0,
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
     published_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -283,6 +313,8 @@ CREATE TABLE course_modules (
     duration_minutes INTEGER DEFAULT 0,
     is_free BOOLEAN DEFAULT false,
     lesson_count INTEGER DEFAULT 0,
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -298,6 +330,8 @@ CREATE TABLE course_lessons (
     is_free BOOLEAN DEFAULT false,
     attachments JSON,
     view_count INTEGER DEFAULT 0,
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -367,6 +401,8 @@ CREATE TABLE assignments (
     submission_count INTEGER DEFAULT 0,
     graded_count INTEGER DEFAULT 0,
     average_score DECIMAL(5,2) DEFAULT 0.00,
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -459,6 +495,8 @@ CREATE TABLE announcements (
     expires_at TIMESTAMP,
     is_published BOOLEAN DEFAULT false,
     view_count INTEGER DEFAULT 0,
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -474,6 +512,8 @@ CREATE TABLE discussions (
     post_count INTEGER DEFAULT 0,
     participant_count INTEGER DEFAULT 0,
     last_activity TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -488,6 +528,8 @@ CREATE TABLE discussion_posts (
     is_solution BOOLEAN DEFAULT false,
     vote_count INTEGER DEFAULT 0,
     reply_count INTEGER DEFAULT 0,
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -528,6 +570,8 @@ CREATE TABLE events (
     is_public BOOLEAN DEFAULT true,
     color VARCHAR(7) DEFAULT '#3B82F6',
     status event_status DEFAULT 'scheduled',
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -725,6 +769,8 @@ CREATE TABLE files (
     download_count INTEGER DEFAULT 0,
     virus_scan_status virus_scan_status DEFAULT 'pending',
     metadata JSON,
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -754,6 +800,8 @@ CREATE TABLE course_reviews (
     helpful_votes INTEGER DEFAULT 0,
     total_votes INTEGER DEFAULT 0,
     status review_status DEFAULT 'pending',
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(course_id, student_id)
@@ -768,6 +816,8 @@ CREATE TABLE instructor_reviews (
     comment TEXT,
     criteria_scores JSON,
     is_anonymous BOOLEAN DEFAULT false,
+    is_deleted BOOLEAN DEFAULT false,
+    deleted_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -780,12 +830,15 @@ CREATE TABLE instructor_reviews (
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role_active ON users(role, is_active);
 CREATE INDEX idx_users_last_login ON users(last_login);
+CREATE INDEX idx_users_deleted ON users(is_deleted);
 
 -- Course discovery and management
 CREATE INDEX idx_courses_instructor_status ON courses(instructor_id, status);
 CREATE INDEX idx_courses_category_featured ON courses(category_id, featured);
 CREATE INDEX idx_courses_status_published ON courses(status, published_at);
+CREATE INDEX idx_courses_deleted ON courses(is_deleted);
 CREATE INDEX idx_categories_slug ON categories(slug);
+CREATE INDEX idx_categories_deleted ON categories(is_deleted);
 
 -- Enrollment and progress tracking
 CREATE INDEX idx_enrollments_student_status ON enrollments(student_id, status);
@@ -794,6 +847,7 @@ CREATE INDEX idx_lesson_progress_enrollment ON lesson_progress(enrollment_id);
 
 -- Assignment and grading workflow
 CREATE INDEX idx_assignments_course_due ON assignments(course_id, due_date);
+CREATE INDEX idx_assignments_deleted ON assignments(is_deleted);
 CREATE INDEX idx_submissions_assignment_student ON submissions(assignment_id, student_id);
 CREATE INDEX idx_grades_submission_released ON grades(submission_id, released_at);
 
@@ -834,6 +888,8 @@ CREATE TABLE chat_sessions (
   ended_at TIMESTAMP,
   summary TEXT,
   metadata JSON,
+  is_deleted BOOLEAN DEFAULT false,
+  deleted_at TIMESTAMP,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -845,6 +901,8 @@ CREATE TABLE chat_messages (
   sender chat_message_sender NOT NULL,
   text TEXT NOT NULL,
   attachments JSON,
+  is_deleted BOOLEAN DEFAULT false,
+  deleted_at TIMESTAMP,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -852,15 +910,49 @@ CREATE TABLE chat_messages (
 CREATE INDEX idx_chat_sessions_user_id ON chat_sessions(user_id);
 CREATE INDEX idx_chat_sessions_status ON chat_sessions(status);
 CREATE INDEX idx_chat_sessions_last_activity ON chat_sessions(last_activity);
+CREATE INDEX idx_chat_sessions_deleted ON chat_sessions(is_deleted);
 CREATE INDEX idx_chat_messages_session_id ON chat_messages(session_id);
 CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at);
+CREATE INDEX idx_chat_messages_deleted ON chat_messages(is_deleted);
 
 -- Events and calendar
 CREATE INDEX idx_events_datetime_type ON events(start_datetime, event_type);
 CREATE INDEX idx_events_course_user ON events(course_id, created_by);
+CREATE INDEX idx_events_deleted ON events(is_deleted);
+
+-- Content and media
+CREATE INDEX idx_course_modules_deleted ON course_modules(is_deleted);
+CREATE INDEX idx_course_lessons_deleted ON course_lessons(is_deleted);
+CREATE INDEX idx_discussions_deleted ON discussions(is_deleted);
+CREATE INDEX idx_discussion_posts_deleted ON discussion_posts(is_deleted);
+CREATE INDEX idx_announcements_deleted ON announcements(is_deleted);
+CREATE INDEX idx_files_deleted ON files(is_deleted);
+CREATE INDEX idx_course_reviews_deleted ON course_reviews(is_deleted);
+CREATE INDEX idx_instructor_reviews_deleted ON instructor_reviews(is_deleted);
 
 ---
 -- Section 14: Database Reset Complete
 ---
 -- All tables have been dropped and recreated with proper indexes
 -- The database is now ready for use with the EduLearn application
+--
+-- SOFT DELETE FUNCTIONALITY:
+-- The following tables include soft delete functionality (is_deleted flag + deleted_at timestamp):
+-- - users: Soft delete for user accounts
+-- - categories: Soft delete for course categories
+-- - courses: Soft delete for courses
+-- - course_modules: Soft delete for course modules
+-- - course_lessons: Soft delete for lessons
+-- - assignments: Soft delete for assignments
+-- - announcements: Soft delete for announcements
+-- - discussions: Soft delete for discussion topics
+-- - discussion_posts: Soft delete for discussion posts
+-- - events: Soft delete for calendar events
+-- - files: Soft delete for uploaded files
+-- - course_reviews: Soft delete for course reviews
+-- - instructor_reviews: Soft delete for instructor reviews
+-- - chat_sessions: Soft delete for chat sessions
+-- - chat_messages: Soft delete for chat messages
+--
+-- Usage: Instead of DELETE, use UPDATE to set is_deleted=true and deleted_at=CURRENT_TIMESTAMP
+-- All queries should include WHERE is_deleted = false to exclude soft-deleted records
