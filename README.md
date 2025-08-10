@@ -7,7 +7,13 @@
   <img src="https://img.shields.io/badge/AI_Powered-🤖-purple?style=for-the-badge" alt="AI Powered">
 </div>
 
-## 🎓 Overview
+## � **Live Site**
+
+**🚀 EduLearn is now live at: [https://edulearn.studio](https://edulearn.studio)**
+
+Experience the future of education with our intelligent learning management system!
+
+## �🎓 Overview
 
 **EduLearn** is a next-generation Learning Management System (LMS) that combines traditional educational tools with cutting-edge AI technology. Our platform provides personalized learning experiences, intelligent analytics, and automated evaluation systems to enhance education for students, teachers, and administrators.
 
