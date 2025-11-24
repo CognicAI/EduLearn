@@ -62,6 +62,16 @@ router.delete('/courses/:id', adminCourseController.deleteCourse);
 router.post('/courses/bulk/update-status', adminCourseController.bulkUpdateCourseStatus);
 router.post('/courses/bulk/delete', adminCourseController.bulkDeleteCourses);
 
+// ===== TEACHER ASSIGNMENT ROUTES =====
+// Assign teachers to a course
+router.post('/courses/:id/teachers', adminCourseController.assignTeachersToCourse);
+
+// Get all teachers assigned to a course
+router.get('/courses/:id/teachers', adminCourseController.getCourseTeachers);
+
+// Remove a teacher from a course
+router.delete('/courses/:id/teachers/:teacherId', adminCourseController.removeTeacherFromCourse);
+
 // ===== ENROLLMENT MANAGEMENT ROUTES =====
 // List and filter enrollments
 router.get('/enrollments', adminEnrollmentController.getEnrollments);

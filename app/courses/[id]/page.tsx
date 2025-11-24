@@ -1,542 +1,735 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { useAuth } from '@/lib/auth/auth-context';
-import { AuthGuard } from '@/lib/auth/auth-guard';
-import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    BookOpen,
+    Clock,
+    Users,
+    Star,
+    FileText,
+    Download,
+    Megaphone,
+    CheckCircle,
+    PlayCircle,
+    Lock,
+    Calendar,
+    AlertCircle,
+    ChevronRight
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 import {
-  ArrowLeft,
-  Play,
-  FileText,
-  Download,
-  Clock,
-  CheckCircle,
-  BookOpenIcon,
-  Users,
-  Star,
-  Calendar,
-  Video,
-  File,
-  Link as LinkIcon
-} from 'lucide-react';
-import Link from 'next/link';
-import Image from 'next/image';
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { createModule, createAssignment, createFile, createAnnouncement } from '@/lib/services/courseAssignments';
+import { useToast } from '@/hooks/use-toast';
+import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
+import { AuthGuard } from '@/lib/auth/auth-guard';
 
-// Mock course data with detailed information
-const mockCourseDetails = {
-  '1': {
-    id: '1',
-    title: 'Introduction to Computer Science',
-    description: 'Learn the fundamentals of computer science including algorithms, data structures, and programming concepts. This comprehensive course covers everything from basic programming principles to advanced algorithmic thinking.',
-    instructor: 'Prof. Johnson',
-    instructorBio: 'Professor Johnson has over 15 years of experience in computer science education and has published numerous papers on algorithmic efficiency.',
-    thumbnail: 'https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&w=400',
-    progress: 75,
-    totalLessons: 24,
-    completedLessons: 18,
-    currentGrade: 88,
-    rating: 4.8,
-    totalStudents: 45,
-    duration: '12 weeks',
-    difficulty: 'Beginner',
-    modules: [
-      {
-        id: 'm1',
-        title: 'Introduction to Programming',
-        lessons: 6,
-        completed: 6,
-        status: 'completed'
-      },
-      {
-        id: 'm2',
-        title: 'Data Types and Variables',
-        lessons: 4,
-        completed: 4,
-        status: 'completed'
-      },
-      {
-        id: 'm3',
-        title: 'Control Structures',
-        lessons: 5,
-        completed: 5,
-        status: 'completed'
-      },
-      {
-        id: 'm4',
-        title: 'Functions and Methods',
-        lessons: 4,
-        completed: 3,
-        status: 'in-progress'
-      },
-      {
-        id: 'm5',
-        title: 'Data Structures',
-        lessons: 3,
-        completed: 0,
-        status: 'locked'
-      },
-      {
-        id: 'm6',
-        title: 'Algorithms',
-        lessons: 2,
-        completed: 0,
-        status: 'locked'
-      }
-    ],
-    files: [
-      {
-        id: 'f1',
-        name: 'Course Syllabus.pdf',
-        type: 'pdf',
-        size: '2.3 MB',
-        category: 'syllabus',
-        uploadDate: '2024-01-01'
-      },
-      {
-        id: 'f2',
-        name: 'Lecture Notes - Week 1.pdf',
-        type: 'pdf',
-        size: '1.8 MB',
-        category: 'notes',
-        uploadDate: '2024-01-08'
-      },
-      {
-        id: 'f3',
-        name: 'Assignment Template.docx',
-        type: 'doc',
-        size: '0.5 MB',
-        category: 'template',
-        uploadDate: '2024-01-10'
-      },
-      {
-        id: 'f4',
-        name: 'Code Examples.zip',
-        type: 'zip',
-        size: '5.2 MB',
-        category: 'code',
-        uploadDate: '2024-01-15'
-      }
-    ],
-    assignments: [
-      {
-        id: 'a1',
-        title: 'Data Structures Quiz',
-        dueDate: '2024-01-18',
-        status: 'submitted',
-        grade: 92,
-        maxPoints: 100,
-        submittedAt: '2024-01-17',
-        feedback: 'Excellent work! Your understanding of linked lists is very clear.'
-      },
-      {
-        id: 'a2',
-        title: 'Algorithm Analysis',
-        dueDate: '2024-01-25',
-        status: 'pending',
-        grade: null,
-        maxPoints: 100,
-        description: 'Analyze the time complexity of various sorting algorithms and provide detailed explanations.'
-      },
-    ],
-    announcements: [
-      {
-        id: 'an1',
-        title: 'Midterm Exam Schedule',
-        content: 'The midterm exam will be held on February 15th. Please review chapters 1-6.',
-        date: '2024-01-20',
-        important: true
-      },
-      {
-        id: 'an2',
-        title: 'Office Hours Update',
-        content: 'Office hours have been moved to Tuesdays and Thursdays 2-4 PM.',
-        date: '2024-01-18',
-        important: false
-      }
-    ]
-  }
-};
+export default function CourseDetailsPage() {
+    const params = useParams();
+    const courseId = params.id as string;
+    const { toast } = useToast();
+    const [course, setCourse] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('overview');
 
-export default function CourseDetailPage() {
-  const params = useParams();
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+    const [modules, setModules] = useState<any[]>([]);
+    const [assignments, setAssignments] = useState<any[]>([]);
+    const [files, setFiles] = useState<any[]>([]);
+    const [announcements, setAnnouncements] = useState<any[]>([]);
 
-  const courseId = params.id as string;
-  const course = mockCourseDetails[courseId as keyof typeof mockCourseDetails];
+    // Edit Mode State
+    const [isEditing, setIsEditing] = useState(false);
+    const [canEdit, setCanEdit] = useState(false);
+    const [userRole, setUserRole] = useState<string>('');
 
-  if (!course) {
+    // Dialog States
+    const [isModuleDialogOpen, setIsModuleDialogOpen] = useState(false);
+    const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
+    const [isFileDialogOpen, setIsFileDialogOpen] = useState(false);
+    const [isAnnouncementDialogOpen, setIsAnnouncementDialogOpen] = useState(false);
+
+    // Form States
+    const [newModule, setNewModule] = useState({ title: '', description: '' });
+    const [newAssignment, setNewAssignment] = useState({ title: '', description: '', due_date: '', max_points: 100, assignment_type: 'essay' });
+    const [newFile, setNewFile] = useState({ filename: '', file_size: 1024 * 1024, mime_type: 'application/pdf', file_path: '/tmp/placeholder.pdf' });
+    const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '', priority: 'medium' });
+
+    useEffect(() => {
+        if (courseId) {
+            fetchCourseDetails();
+            fetchCourseContent();
+        }
+    }, [courseId]);
+
+    const fetchCourseDetails = async () => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/${courseId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                setCourse(data.data);
+                // Check if user has edit permissions (admin or instructor/assigned teacher)
+                // Check if user has edit permissions (admin or instructor/assigned teacher)
+                const role = JSON.parse(atob(token?.split('.')[1] || '{}')).role;
+                setUserRole(role);
+                setCanEdit(role === 'admin' || data.data.can_edit || data.data.is_owner);
+            } else {
+                throw new Error(data.message || 'Failed to load course');
+            }
+        } catch (error: any) {
+            toast({
+                title: 'Error',
+                description: error.message || 'Failed to load course details',
+                variant: 'destructive'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchCourseContent = async () => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const headers = { 'Authorization': `Bearer ${token}` };
+            const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+
+            const [modulesRes, assignmentsRes, filesRes, announcementsRes] = await Promise.all([
+                fetch(`${baseUrl}/courses/${courseId}/modules`, { headers }),
+                fetch(`${baseUrl}/courses/${courseId}/assignments`, { headers }),
+                fetch(`${baseUrl}/courses/${courseId}/files`, { headers }),
+                fetch(`${baseUrl}/courses/${courseId}/announcements`, { headers })
+            ]);
+
+            const [modulesData, assignmentsData, filesData, announcementsData] = await Promise.all([
+                modulesRes.json(),
+                assignmentsRes.json(),
+                filesRes.json(),
+                announcementsRes.json()
+            ]);
+
+            if (modulesData.success) setModules(modulesData.data);
+            if (assignmentsData.success) setAssignments(assignmentsData.data);
+            if (filesData.success) setFiles(filesData.data);
+            if (announcementsData.success) setAnnouncements(announcementsData.data);
+
+        } catch (error) {
+            console.error('Error fetching course content:', error);
+        }
+    };
+
+    const handleCreateModule = async () => {
+        try {
+            await createModule(courseId, newModule);
+            toast({ title: 'Success', description: 'Module created successfully' });
+            setIsModuleDialogOpen(false);
+            setNewModule({ title: '', description: '' });
+            fetchCourseContent();
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        }
+    };
+
+    const handleCreateAssignment = async () => {
+        try {
+            await createAssignment(courseId, newAssignment);
+            toast({ title: 'Success', description: 'Assignment created successfully' });
+            setIsAssignmentDialogOpen(false);
+            setNewAssignment({ title: '', description: '', due_date: '', max_points: 100, assignment_type: 'essay' });
+            fetchCourseContent();
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        }
+    };
+
+    const handleCreateFile = async () => {
+        try {
+            await createFile(courseId, newFile);
+            toast({ title: 'Success', description: 'File added successfully' });
+            setIsFileDialogOpen(false);
+            setNewFile({ filename: '', file_size: 1024 * 1024, mime_type: 'application/pdf', file_path: '/tmp/placeholder.pdf' });
+            fetchCourseContent();
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        }
+    };
+
+    const handleCreateAnnouncement = async () => {
+        try {
+            await createAnnouncement(courseId, newAnnouncement);
+            toast({ title: 'Success', description: 'Announcement posted successfully' });
+            setIsAnnouncementDialogOpen(false);
+            setNewAnnouncement({ title: '', content: '', priority: 'medium' });
+            fetchCourseContent();
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (!course) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <p className="text-muted-foreground">Course not found</p>
+            </div>
+        );
+    }
+
     return (
-      <AuthGuard>
-        <div className="flex h-screen bg-background">
-          <DashboardSidebar />
-          <main className="flex-1 overflow-y-auto">
-            <div className="p-6">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-destructive mb-2">Course Not Found</h1>
-                <p className="text-muted-foreground">The course you're looking for doesn't exist.</p>
-                <Button asChild className="mt-4">
-                  <Link href="/courses">Back to Courses</Link>
-                </Button>
-              </div>
-            </div>
-          </main>
-        </div>
-      </AuthGuard>
-    );
-  }
+        <AuthGuard allowedRoles={['student', 'teacher', 'admin']}>
+            <div className="flex h-screen bg-background">
+                <DashboardSidebar />
 
-  const getFileIcon = (type: string) => {
-    switch (type) {
-      case 'pdf':
-        return <FileText className="h-4 w-4 text-red-500" />;
-      case 'doc':
-      case 'docx':
-        return <FileText className="h-4 w-4 text-blue-500" />;
-      case 'zip':
-        return <File className="h-4 w-4 text-yellow-500" />;
-      case 'video':
-        return <Video className="h-4 w-4 text-purple-500" />;
-      default:
-        return <File className="h-4 w-4 text-gray-500" />;
-    }
-  };
-
-  const getModuleStatus = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'in-progress':
-        return <Play className="h-4 w-4 text-blue-500" />;
-      case 'locked':
-        return <Clock className="h-4 w-4 text-gray-400" />;
-      default:
-        return <Clock className="h-4 w-4 text-gray-400" />;
-    }
-  };
-
-  return (
-    <AuthGuard>
-      <div className="flex h-screen bg-background">
-        <DashboardSidebar />
-
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex items-center gap-4 mb-6">
-              <Button variant="outline" size="icon" asChild>
-                <Link href="/courses">
-                  <ArrowLeft className="h-4 w-4" />
-                </Link>
-              </Button>
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold text-foreground">{course.title}</h1>
-                <p className="text-muted-foreground">Instructor: {course.instructor}</p>
-              </div>
-              <Button asChild>
-                <Link href={`/courses/${course.id}/learn`}>
-                  <Play className="h-4 w-4 mr-2" />
-                  Continue Learning
-                </Link>
-              </Button>
-            </div>
-
-            {/* Course Hero */}
-            <Card className="mb-6">
-              <CardContent className="p-6">
-                <div className="flex gap-6">
-                  <Image
-                    src={course.thumbnail}
-                    alt={course.title}
-                    width={192}
-                    height={128}
-                    className="w-48 h-32 rounded-lg object-cover"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-4">
-                      <Badge variant="outline">{course.difficulty}</Badge>
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium">{course.rating}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{course.totalStudents} students</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{course.duration}</span>
-                      </div>
-                    </div>
-
-                    <p className="text-muted-foreground mb-4">{course.description}</p>
-
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Progress</span>
-                        <span>{course.completedLessons}/{course.totalLessons} lessons completed</span>
-                      </div>
-                      <Progress value={course.progress} className="h-2" />
-                      <div className="flex justify-between text-sm">
-                        <span>Current Grade: <span className="font-medium">{course.currentGrade}%</span></span>
-                        <span>{course.progress}% complete</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="modules">Modules</TabsTrigger>
-                <TabsTrigger value="assignments">Assignments</TabsTrigger>
-                <TabsTrigger value="files">Files</TabsTrigger>
-                <TabsTrigger value="announcements">Announcements</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="overview" className="mt-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Course Description</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-muted-foreground leading-relaxed">
-                          {course.description}
-                        </p>
-                        <div className="mt-6">
-                          <h4 className="font-medium mb-2">About the Instructor</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {course.instructorBio}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  <div>
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Course Stats</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">Total Lessons</span>
-                          <span className="font-medium">{course.totalLessons}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">Completed</span>
-                          <span className="font-medium">{course.completedLessons}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">Current Grade</span>
-                          <span className="font-medium">{course.currentGrade}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">Duration</span>
-                          <span className="font-medium">{course.duration}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">Difficulty</span>
-                          <span className="font-medium">{course.difficulty}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="modules" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Course Modules</CardTitle>
-                    <CardDescription>
-                      Track your progress through each module
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {course.modules.map((module, index) => (
-                        <div key={module.id} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div className="flex items-center gap-4">
-                            {getModuleStatus(module.status)}
+                <main className="flex-1 overflow-y-auto">
+                    <div className="container mx-auto py-8 space-y-8">
+                        {/* Header Section */}
+                        <div className="flex justify-between items-start">
                             <div>
-                              <h4 className="font-medium">
-                                Module {index + 1}: {module.title}
-                              </h4>
-                              <p className="text-sm text-muted-foreground">
-                                {module.completed}/{module.lessons} lessons completed
-                              </p>
+                                <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
+                                <div className="flex items-center text-muted-foreground">
+                                    <span>Instructor: {course.instructor_name || 'Unknown Instructor'}</span>
+                                </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <Progress
-                              value={(module.completed / module.lessons) * 100}
-                              className="w-24 h-2"
-                            />
-                            <Button
-                              size="sm"
-                              disabled={module.status === 'locked'}
-                              variant={module.status === 'completed' ? 'outline' : 'default'}
-                            >
-                              {module.status === 'completed' ? 'Review' :
-                                module.status === 'in-progress' ? 'Continue' :
-                                  'Locked'}
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="assignments" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Assignments</CardTitle>
-                    <CardDescription>
-                      View and submit your assignments
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {course.assignments.map((assignment) => (
-                        <div key={assignment.id} className="p-4 border rounded-lg">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <h4 className="font-medium">{assignment.title}</h4>
-                              <p className="text-sm text-muted-foreground">
-                                Due: {new Date(assignment.dueDate).toLocaleDateString()}
-                              </p>
-                              {assignment.description && (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {assignment.description}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {assignment.grade !== null && (
-                                <Badge variant="outline">
-                                  {assignment.grade}/{assignment.maxPoints}
-                                </Badge>
-                              )}
-                              <Badge
-                                className={
-                                  assignment.status === 'submitted'
-                                    ? 'bg-green-100 text-green-800 border-green-200'
-                                    : 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                                }
-                              >
-                                {assignment.status}
-                              </Badge>
-                            </div>
-                          </div>
-
-                          {assignment.feedback && (
-                            <div className="mt-3 p-3 bg-muted/50 rounded-lg">
-                              <h5 className="text-sm font-medium mb-1">Teacher Feedback:</h5>
-                              <p className="text-sm text-muted-foreground">{assignment.feedback}</p>
-                            </div>
-                          )}
-
-                          <div className="flex gap-2 mt-3">
-                            <Button size="sm" variant="outline" asChild>
-                              <Link href={`/assignments/${assignment.id}`}>
-                                View Details
-                              </Link>
-                            </Button>
-                            {assignment.status === 'pending' && (
-                              <Button size="sm" asChild>
-                                <Link href={`/assignments/${assignment.id}/submit`}>
-                                  Submit Assignment
-                                </Link>
-                              </Button>
+                            {canEdit ? (
+                                <Button
+                                    size="lg"
+                                    className={isEditing ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/90"}
+                                    onClick={() => setIsEditing(!isEditing)}
+                                >
+                                    {isEditing ? 'Exit Edit Mode' : 'Edit Course'}
+                                </Button>
+                            ) : (
+                                <Button size="lg" className="bg-primary hover:bg-primary/90">
+                                    <PlayCircle className="mr-2 h-5 w-5" />
+                                    Continue Learning
+                                </Button>
                             )}
-                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
 
-              <TabsContent value="files" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Course Files</CardTitle>
-                    <CardDescription>
-                      Download course materials and resources
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {course.files.map((file) => (
-                        <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center gap-3">
-                            {getFileIcon(file.type)}
-                            <div>
-                              <p className="font-medium">{file.name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {file.size} • Uploaded {new Date(file.uploadDate).toLocaleDateString()}
-                              </p>
+                        {/* Course Hero Card */}
+                        <Card className="overflow-hidden">
+                            <div className="flex flex-col md:flex-row">
+                                <div className="w-full md:w-1/3 h-48 md:h-auto relative bg-muted">
+                                    {course.thumbnail ? (
+                                        <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                                            <BookOpen className="h-12 w-12" />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-6 flex-1 space-y-4">
+                                    <div className="flex flex-wrap gap-4 text-sm">
+                                        <Badge variant="secondary" className="capitalize">{course.level}</Badge>
+                                        <div className="flex items-center text-yellow-500">
+                                            <Star className="h-4 w-4 fill-current mr-1" />
+                                            <span className="font-medium">{course.rating_average || '0.0'}</span>
+                                        </div>
+                                        <div className="flex items-center text-muted-foreground">
+                                            <Users className="h-4 w-4 mr-1" />
+                                            <span>{course.enrollment_count || 0} students</span>
+                                        </div>
+                                        <div className="flex items-center text-muted-foreground">
+                                            <Clock className="h-4 w-4 mr-1" />
+                                            <span>{course.duration_weeks} weeks</span>
+                                        </div>
+                                    </div>
+
+                                    <p className="text-muted-foreground">
+                                        {course.short_description || course.description}
+                                    </p>
+
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="font-medium">Progress</span>
+                                            <span className="text-muted-foreground">0% completed</span>
+                                        </div>
+                                        <Progress value={0} className="h-2" />
+                                        <div className="flex justify-between text-xs text-muted-foreground">
+                                            <span>Current Grade: N/A</span>
+                                            <span>0% complete</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                          </div>
-                          <Button size="sm" variant="outline">
-                            <Download className="h-4 w-4 mr-1" />
-                            Download
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                        </Card>
 
-              <TabsContent value="announcements" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Announcements</CardTitle>
-                    <CardDescription>
-                      Important updates from your instructor
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
+                        {/* Tabs Navigation */}
+                        <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
+                            <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
+                                {['Overview', 'Modules', 'Assignments', 'Files', 'Announcements'].map((tab) => (
+                                    <TabsTrigger
+                                        key={tab}
+                                        value={tab.toLowerCase()}
+                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
+                                    >
+                                        {tab}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+
+                            {/* Overview Tab */}
+                            <TabsContent value="overview" className="mt-6">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="md:col-span-2 space-y-6">
+                                        <section>
+                                            <h3 className="text-xl font-semibold mb-3">Course Description</h3>
+                                            <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                                                {course.description}
+                                            </p>
+                                        </section>
+
+                                        <section>
+                                            <h3 className="text-xl font-semibold mb-3">About the Instructor</h3>
+                                            <div className="flex items-start gap-4">
+                                                <Avatar className="h-12 w-12">
+                                                    <AvatarFallback>{course.instructor_name?.charAt(0) || 'I'}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <p className="font-medium">{course.instructor_name}</p>
+                                                    <p className="text-sm text-muted-foreground mt-1">
+                                                        Instructor for this course.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </section>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle>Course Stats</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Total Modules</span>
+                                                    <span className="font-medium">{modules.length}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Assignments</span>
+                                                    <span className="font-medium">{assignments.length}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Duration</span>
+                                                    <span className="font-medium">{course.duration_weeks} weeks</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Difficulty</span>
+                                                    <span className="font-medium capitalize">{course.level}</span>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                </div>
+                            </TabsContent>
+
+                            {/* Modules Tab */}
+                            <TabsContent value="modules" className="mt-6 space-y-6">
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-xl font-semibold">Course Modules</h3>
+                                            <p className="text-muted-foreground">Track your progress through each module</p>
+                                        </div>
+                                        {isEditing && (
+                                            <Button onClick={() => setIsModuleDialogOpen(true)}>Add Module</Button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {modules.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        No modules available yet.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {modules.map((module) => (
+                                            <Card key={module.id}>
+                                                <CardContent className="p-6 flex items-center justify-between">
+                                                    <div className="flex items-start gap-4">
+                                                        <div className="mt-1">
+                                                            <PlayCircle className="h-5 w-5 text-blue-500" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-medium text-lg">{module.title}</h4>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {module.lessons?.length || 0} lessons
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <Button>
+                                                        Continue
+                                                    </Button>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                )}
+                            </TabsContent>
+
+                            {/* Assignments Tab */}
+                            <TabsContent value="assignments" className="mt-6 space-y-6">
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-xl font-semibold">Assignments</h3>
+                                            <p className="text-muted-foreground">View and submit your assignments</p>
+                                        </div>
+                                        {isEditing && (
+                                            <Button onClick={() => setIsAssignmentDialogOpen(true)}>Add Assignment</Button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {assignments.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        No assignments due.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {assignments.map((assignment) => (
+                                            <Card key={assignment.id}>
+                                                <CardContent className="p-6 space-y-4">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <h4 className="font-medium text-lg">{assignment.title}</h4>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                Due: {assignment.due_date ? new Date(assignment.due_date).toLocaleDateString() : 'No due date'}
+                                                            </p>
+                                                        </div>
+                                                        {assignment.submission_status === 'submitted' ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-bold">{assignment.points_earned}/{assignment.max_points}</span>
+                                                                <Badge className="bg-blue-600">submitted</Badge>
+                                                            </div>
+                                                        ) : (
+                                                            <Badge variant="secondary">pending</Badge>
+                                                        )}
+                                                    </div>
+
+                                                    {assignment.description && (
+                                                        <p className="text-sm text-muted-foreground">{assignment.description}</p>
+                                                    )}
+
+                                                    {assignment.feedback && (
+                                                        <div className="bg-muted p-4 rounded-lg text-sm">
+                                                            <p className="font-medium mb-1">Teacher Feedback:</p>
+                                                            <p className="text-muted-foreground">{assignment.feedback}</p>
+                                                        </div>
+                                                    )}
+
+                                                    <div className="flex gap-3">
+                                                        <Button variant="outline" size="sm">View Details</Button>
+                                                        {assignment.submission_status !== 'submitted' && userRole === 'student' && (
+                                                            <Button size="sm">Submit Assignment</Button>
+                                                        )}
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                )}
+                            </TabsContent>
+
+                            {/* Files Tab */}
+                            <TabsContent value="files" className="mt-6 space-y-6">
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-xl font-semibold">Course Files</h3>
+                                            <p className="text-muted-foreground">Download course materials and resources</p>
+                                        </div>
+                                        {isEditing && (
+                                            <Button onClick={() => setIsFileDialogOpen(true)}>Upload File</Button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {files.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        No files available.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {files.map((file) => (
+                                            <Card key={file.id}>
+                                                <CardContent className="p-4 flex items-center justify-between">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="p-2 bg-muted rounded">
+                                                            <FileText className="h-6 w-6 text-blue-500" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium">{file.filename}</p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {(file.file_size / 1024 / 1024).toFixed(2)} MB • Uploaded {new Date(file.created_at).toLocaleDateString()}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <Button variant="outline" size="sm">
+                                                        <Download className="h-4 w-4 mr-2" />
+                                                        Download
+                                                    </Button>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                )}
+                            </TabsContent>
+
+                            {/* Announcements Tab */}
+                            <TabsContent value="announcements" className="mt-6 space-y-6">
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h3 className="text-xl font-semibold">Announcements</h3>
+                                            <p className="text-muted-foreground">Important updates from your instructor</p>
+                                        </div>
+                                        {isEditing && (
+                                            <Button onClick={() => setIsAnnouncementDialogOpen(true)}>Post Announcement</Button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {announcements.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        No announcements yet.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {announcements.map((announcement) => (
+                                            <Card key={announcement.id}>
+                                                <CardContent className="p-6 space-y-2">
+                                                    <div className="flex justify-between items-start">
+                                                        <h4 className="font-medium text-lg">{announcement.title}</h4>
+                                                        <div className="flex items-center gap-2">
+                                                            {announcement.priority === 'high' && (
+                                                                <Badge variant="destructive">Important</Badge>
+                                                            )}
+                                                            <span className="text-sm text-muted-foreground">{new Date(announcement.created_at).toLocaleDateString()}</span>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-muted-foreground">{announcement.content}</p>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                )}
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+                </main>
+            </div>
+
+            {/* Dialogs */}
+            <Dialog open={isModuleDialogOpen} onOpenChange={setIsModuleDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add New Module</DialogTitle>
+                        <DialogDescription>Create a new module for this course.</DialogDescription>
+                    </DialogHeader>
                     <div className="space-y-4">
-                      {course.announcements.map((announcement) => (
-                        <div key={announcement.id} className="p-4 border rounded-lg">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-medium">{announcement.title}</h4>
-                            <div className="flex items-center gap-2">
-                              {announcement.important && (
-                                <Badge variant="destructive">Important</Badge>
-                              )}
-                              <span className="text-sm text-muted-foreground">
-                                {new Date(announcement.date).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-muted-foreground">{announcement.content}</p>
+                        <div className="space-y-2">
+                            <Label>Title</Label>
+                            <Input
+                                value={newModule.title}
+                                onChange={(e) => setNewModule({ ...newModule, title: e.target.value })}
+                                placeholder="Module Title"
+                            />
                         </div>
-                      ))}
+                        <div className="space-y-2">
+                            <Label>Description</Label>
+                            <Textarea
+                                value={newModule.description}
+                                onChange={(e) => setNewModule({ ...newModule, description: e.target.value })}
+                                placeholder="Module Description"
+                            />
+                        </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </main>
-      </div>
-    </AuthGuard>
-  );
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsModuleDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateModule}>Create Module</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isAssignmentDialogOpen} onOpenChange={setIsAssignmentDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add New Assignment</DialogTitle>
+                        <DialogDescription>Create a new assignment for students.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Title</Label>
+                            <Input
+                                value={newAssignment.title}
+                                onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
+                                placeholder="Assignment Title"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Description</Label>
+                            <Textarea
+                                value={newAssignment.description}
+                                onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
+                                placeholder="Assignment Instructions"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Due Date</Label>
+                                <Input
+                                    type="date"
+                                    value={newAssignment.due_date}
+                                    onChange={(e) => setNewAssignment({ ...newAssignment, due_date: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Max Points</Label>
+                                <Input
+                                    type="number"
+                                    value={newAssignment.max_points}
+                                    onChange={(e) => setNewAssignment({ ...newAssignment, max_points: parseInt(e.target.value) })}
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Type</Label>
+                            <Select
+                                value={newAssignment.assignment_type}
+                                onValueChange={(val) => setNewAssignment({ ...newAssignment, assignment_type: val })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="essay">Essay</SelectItem>
+                                    <SelectItem value="quiz">Quiz</SelectItem>
+                                    <SelectItem value="project">Project</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAssignmentDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateAssignment}>Create Assignment</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isFileDialogOpen} onOpenChange={setIsFileDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Upload File</DialogTitle>
+                        <DialogDescription>Add a resource file to this course.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Filename</Label>
+                            <Input
+                                value={newFile.filename}
+                                onChange={(e) => setNewFile({ ...newFile, filename: e.target.value })}
+                                placeholder="e.g. Course Syllabus.pdf"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>File Path (Simulation)</Label>
+                            <Input
+                                value={newFile.file_path}
+                                onChange={(e) => setNewFile({ ...newFile, file_path: e.target.value })}
+                                placeholder="/path/to/file"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsFileDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateFile}>Add File</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isAnnouncementDialogOpen} onOpenChange={setIsAnnouncementDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Post Announcement</DialogTitle>
+                        <DialogDescription>Share an update with your students.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Title</Label>
+                            <Input
+                                value={newAnnouncement.title}
+                                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
+                                placeholder="Announcement Title"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Content</Label>
+                            <Textarea
+                                value={newAnnouncement.content}
+                                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
+                                placeholder="Write your announcement here..."
+                                className="min-h-[100px]"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Priority</Label>
+                            <Select
+                                value={newAnnouncement.priority}
+                                onValueChange={(val) => setNewAnnouncement({ ...newAnnouncement, priority: val })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select priority" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="low">Low</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAnnouncementDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateAnnouncement}>Post Announcement</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </AuthGuard>
+    );
 }

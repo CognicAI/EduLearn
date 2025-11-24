@@ -61,12 +61,6 @@ const mockAssignments = [
   }
 ];
 
-const mockCourses = [
-  { id: '1', title: 'Introduction to Computer Science' },
-  { id: '2', title: 'Advanced Web Development' },
-  { id: '3', title: 'Database Design Fundamentals' }
-];
-
 export function AssignmentManagement() {
   const [assignments, setAssignments] = useState(mockAssignments);
   const [searchTerm, setSearchTerm] = useState('');
@@ -125,10 +119,9 @@ export function AssignmentManagement() {
       return;
     }
 
-    const course = mockCourses.find(c => c.id === formData.courseId);
     const assignmentData = {
       ...formData,
-      courseName: course?.title || '',
+      courseName: 'General Assignment',
       dueDate: format(formData.dueDate, 'yyyy-MM-dd'),
       maxPoints: parseInt(formData.maxPoints) || 100,
       submissions: editingAssignment?.submissions || 0,
@@ -216,21 +209,7 @@ export function AssignmentManagement() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="course">Course *</Label>
-                  <Select value={formData.courseId} onValueChange={(value) => setFormData(prev => ({ ...prev, courseId: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select course" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockCourses.map((course) => (
-                        <SelectItem key={course.id} value={course.id}>
-                          {course.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+
               </div>
               
               <div className="space-y-2">
@@ -314,19 +293,7 @@ export function AssignmentManagement() {
             className="pl-10"
           />
         </div>
-        <Select value={courseFilter} onValueChange={setCourseFilter}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="All Courses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Courses</SelectItem>
-            {mockCourses.map((course) => (
-              <SelectItem key={course.id} value={course.id}>
-                {course.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-32">
             <Filter className="h-4 w-4 mr-2" />

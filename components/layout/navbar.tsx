@@ -13,13 +13,11 @@ import { BookOpenIcon, Menu, LogOut, User, Settings } from 'lucide-react';
 const navigationItems = {
   student: [
     { name: 'Dashboard', href: '/dashboard/student' },
-    { name: 'My Courses', href: '/courses' },
     { name: 'Assignments', href: '/assignments' },
     { name: 'Calendar', href: '/calendar' },
   ],
   teacher: [
     { name: 'Dashboard', href: '/dashboard/teacher' },
-    { name: 'My Courses', href: '/courses' },
     { name: 'Students', href: '/students' },
     { name: 'Analytics', href: '/analytics' },
     { name: 'Calendar', href: '/calendar' },
@@ -27,7 +25,6 @@ const navigationItems = {
   admin: [
     { name: 'Dashboard', href: '/dashboard/admin' },
     { name: 'Users', href: '/users' },
-    { name: 'Courses', href: '/courses' },
     { name: 'Analytics', href: '/analytics' },
     { name: 'Settings', href: '/settings' },
   ],

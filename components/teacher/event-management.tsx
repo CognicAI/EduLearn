@@ -75,12 +75,6 @@ const mockEvents = [
   }
 ];
 
-const mockCourses = [
-  { id: '1', title: 'Introduction to Computer Science' },
-  { id: '2', title: 'Advanced Web Development' },
-  { id: '3', title: 'Database Design Fundamentals' }
-];
-
 const eventTypes = [
   { value: 'class', label: 'Class/Lecture' },
   { value: 'workshop', label: 'Workshop' },
@@ -143,10 +137,9 @@ export function EventManagement() {
       return;
     }
 
-    const course = mockCourses.find(c => c.id === formData.courseId);
     const eventData = {
       ...formData,
-      courseName: course?.title || (formData.type === 'office-hours' ? 'All Courses' : 'Administration'),
+      courseName: formData.type === 'office-hours' ? 'All Courses' : 'General Event',
       date: format(formData.date, 'yyyy-MM-dd'),
       duration: formData.duration || '60',
       attendees: editingEvent?.attendees || 0,
@@ -273,22 +266,7 @@ export function EventManagement() {
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="course">Course (Optional)</Label>
-                <Select value={formData.courseId} onValueChange={(value) => setFormData(prev => ({ ...prev, courseId: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select course (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No specific course</SelectItem>
-                    {mockCourses.map((course) => (
-                      <SelectItem key={course.id} value={course.id}>
-                        {course.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+
               
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">

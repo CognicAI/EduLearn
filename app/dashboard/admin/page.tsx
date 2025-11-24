@@ -338,14 +338,7 @@ export default function AdminDashboard() {
                         <Users className="h-4 w-4 mr-2" />
                         Manage Users
                       </Button>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start"
-                        onClick={() => handleNavigation('/courses')}
-                      >
-                        <BookOpenIcon className="h-4 w-4 mr-2" />
-                        Course Overview
-                      </Button>
+
                       <Button
                         variant="outline"
                         className="w-full justify-start"

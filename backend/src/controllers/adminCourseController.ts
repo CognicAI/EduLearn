@@ -392,6 +392,229 @@ export class AdminCourseController {
             return res.status(500).json({ success: false, message: 'Failed to bulk delete courses' });
         }
     }
+
+    /**
+     * Assign teachers to a course
+     */
+    async assignTeachersToCourse(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id: courseId } = req.params;
+            const { teacherIds, canEdit = true, canDelete = false, notes } = req.body;
+
+            // Validate input
+            if (!Array.isArray(teacherIds) || teacherIds.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Teacher IDs must be a non-empty array'
+                });
+            }
+
+            // Check if course exists
+            const courseCheck = await query(
+                'SELECT id, instructor_id FROM courses WHERE id = $1 AND is_deleted = false',
+                [courseId]
+            );
+
+            if (courseCheck.rows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Course not found' });
+            }
+
+            const instructorId = courseCheck.rows[0].instructor_id;
+
+            // Validate that all users exist and have teacher role
+            const usersCheck = await query(
+                `SELECT id, role FROM users WHERE id = ANY($1::uuid[]) AND is_deleted = false`,
+                [teacherIds]
+            );
+
+            if (usersCheck.rows.length !== teacherIds.length) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Some user IDs are invalid or deleted'
+                });
+            }
+
+            const nonTeachers = usersCheck.rows.filter(u => u.role !== 'teacher');
+            if (nonTeachers.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'All assigned users must have teacher role'
+                });
+            }
+
+            // Prevent assigning the course instructor as a teacher
+            const instructorInList = teacherIds.includes(instructorId);
+            if (instructorInList) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cannot assign the course instructor as a teacher'
+                });
+            }
+
+            // Insert assignments (ON CONFLICT UPDATE in case of duplicate)
+            const assignments = [];
+            for (const teacherId of teacherIds) {
+                const result = await query(`
+                    INSERT INTO course_teachers (
+                        course_id, teacher_id, assigned_by, can_edit, can_delete, notes
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    ON CONFLICT (course_id, teacher_id) 
+                    DO UPDATE SET 
+                        can_edit = EXCLUDED.can_edit,
+                        can_delete = EXCLUDED.can_delete,
+                        notes = EXCLUDED.notes,
+                        updated_at = NOW()
+                    RETURNING *
+                `, [courseId, teacherId, req.user!.userId, canEdit, canDelete, notes]);
+
+                assignments.push(result.rows[0]);
+            }
+
+            await activityLogService.logActivity({
+                userId: req.user!.userId,
+                activityType: 'course_access',
+                description: `Admin assigned ${teacherIds.length} teacher(s) to course ${courseId}`,
+                metadata: { courseId, teacherIds }
+            });
+
+            return res.status(201).json({
+                success: true,
+                message: `${assignments.length} teacher(s) assigned successfully`,
+                data: assignments
+            });
+        } catch (error) {
+            console.error('Error assigning teachers to course:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to assign teachers to course'
+            });
+        }
+    }
+
+    /**
+     * Remove a teacher from a course
+     */
+    async removeTeacherFromCourse(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id: courseId, teacherId } = req.params;
+
+            // Check if course exists
+            const courseCheck = await query(
+                'SELECT id, instructor_id FROM courses WHERE id = $1 AND is_deleted = false',
+                [courseId]
+            );
+
+            if (courseCheck.rows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Course not found' });
+            }
+
+            // Prevent removing the course instructor
+            if (courseCheck.rows[0].instructor_id === teacherId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cannot remove the course instructor'
+                });
+            }
+
+            // Remove the assignment
+            const result = await query(
+                'DELETE FROM course_teachers WHERE course_id = $1 AND teacher_id = $2 RETURNING *',
+                [courseId, teacherId]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Teacher assignment not found'
+                });
+            }
+
+            await activityLogService.logActivity({
+                userId: req.user!.userId,
+                activityType: 'course_access',
+                description: `Admin removed teacher ${teacherId} from course ${courseId}`,
+                metadata: { courseId, teacherId }
+            });
+
+            return res.json({
+                success: true,
+                message: 'Teacher removed from course successfully'
+            });
+        } catch (error) {
+            console.error('Error removing teacher from course:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to remove teacher from course'
+            });
+        }
+    }
+
+    /**
+     * Get all teachers assigned to a course
+     */
+    async getCourseTeachers(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id: courseId } = req.params;
+
+            // Check if course exists and get instructor
+            const courseCheck = await query(`
+                SELECT 
+                    c.id,
+                    c.title,
+                    c.instructor_id,
+                    u.first_name || ' ' || u.last_name as instructor_name,
+                    u.email as instructor_email
+                FROM courses c
+                LEFT JOIN users u ON c.instructor_id = u.id
+                WHERE c.id = $1 AND c.is_deleted = false
+            `, [courseId]);
+
+            if (courseCheck.rows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Course not found' });
+            }
+
+            const course = courseCheck.rows[0];
+
+            // Get assigned teachers
+            const assignedTeachers = await query(`
+                SELECT 
+                    ct.*,
+                    u.first_name || ' ' || u.last_name as teacher_name,
+                    u.email as teacher_email,
+                    assigned_by_user.first_name || ' ' || assigned_by_user.last_name as assigned_by_name
+                FROM course_teachers ct
+                LEFT JOIN users u ON ct.teacher_id = u.id
+                LEFT JOIN users assigned_by_user ON ct.assigned_by = assigned_by_user.id
+                WHERE ct.course_id = $1
+                ORDER BY ct.assigned_at DESC
+            `, [courseId]);
+
+            return res.json({
+                success: true,
+                data: {
+                    course: {
+                        id: course.id,
+                        title: course.title,
+                        instructor: {
+                            id: course.instructor_id,
+                            name: course.instructor_name,
+                            email: course.instructor_email,
+                            isOwner: true
+                        }
+                    },
+                    assignedTeachers: assignedTeachers.rows
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching course teachers:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to fetch course teachers'
+            });
+        }
+    }
 }
 
 export const adminCourseController = new AdminCourseController();
+
