@@ -10,9 +10,8 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Users, BookOpenIcon, TrendingUp, AlertTriangle, Settings, UserPlus, CheckCircle, Info } from 'lucide-react';
-import { useDashboardData } from '@/lib/hooks/use-dashboard-data';
-import { useUserProfile } from '@/lib/hooks/use-user';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const mockUserBreakdown = [
   { role: 'Students', count: 1089, percentage: 87 },
@@ -33,7 +32,7 @@ function DashboardSkeleton() {
           <Skeleton className="h-10 w-24" />
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
@@ -51,43 +50,48 @@ function DashboardSkeleton() {
   );
 }
 
+
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const { data: profileData, isLoading: profileLoading } = useUserProfile();
-  const { data: dashboardData, isLoading: dashboardLoading, error } = useDashboardData('admin');
   const router = useRouter();
+  const [platformData, setPlatformData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const isLoading = profileLoading || dashboardLoading;
+  useEffect(() => {
+    const fetchPlatformStats = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/admin/analytics/platform', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setPlatformData(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching platform stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlatformStats();
+  }, []);
 
   const handleNavigation = (path: string) => {
     router.push(path);
   };
 
-  if (error) {
-    return (
-      <AuthGuard allowedRoles={['admin']}>
-        <div className="flex h-screen bg-background">
-          <DashboardSidebar />
-          <main className="flex-1 overflow-y-auto">
-            <div className="p-6">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold text-destructive mb-2">Error Loading Dashboard</h1>
-                <p className="text-muted-foreground">Please try refreshing the page.</p>
-              </div>
-            </div>
-          </main>
-        </div>
-      </AuthGuard>
-    );
-  }
+
 
   return (
     <AuthGuard allowedRoles={['admin']}>
       <div className="flex h-screen bg-background">
         <DashboardSidebar />
-        
+
         <main className="flex-1 overflow-y-auto">
-          {isLoading ? (
+          {loading ? (
             <DashboardSkeleton />
           ) : (
             <div className="p-6">
@@ -121,8 +125,8 @@ export default function AdminDashboard() {
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{dashboardData?.stats.totalUsers || 0}</div>
-                    <p className="text-xs text-green-600">+12%</p>
+                    <div className="text-2xl font-bold">{platformData?.stats.totalUsers || 0}</div>
+                    <p className="text-xs text-muted-foreground">+{platformData?.stats.newUsers30d || 0} this month</p>
                   </CardContent>
                 </Card>
 
@@ -132,8 +136,8 @@ export default function AdminDashboard() {
                     <BookOpenIcon className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{dashboardData?.stats.totalCourses || 0}</div>
-                    <p className="text-xs text-green-600">+5%</p>
+                    <div className="text-2xl font-bold">{platformData?.stats.activeCourses || 0}</div>
+                    <p className="text-xs text-muted-foreground">{platformData?.stats.totalCourses || 0} total</p>
                   </CardContent>
                 </Card>
 
@@ -143,8 +147,8 @@ export default function AdminDashboard() {
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">456</div>
-                    <p className="text-xs text-green-600">+8%</p>
+                    <div className="text-2xl font-bold">{platformData?.stats.totalEnrollments || 0}</div>
+                    <p className="text-xs text-muted-foreground">{platformData?.stats.activeEnrollments || 0} active</p>
                   </CardContent>
                 </Card>
 
@@ -154,7 +158,7 @@ export default function AdminDashboard() {
                     <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{dashboardData?.stats.systemUptime || '99.9%'}</div>
+                    <div className="text-2xl font-bold">{platformData?.stats.systemUptime || '99.9%'}</div>
                     <p className="text-xs text-muted-foreground">Stable</p>
                   </CardContent>
                 </Card>
@@ -194,13 +198,12 @@ export default function AdminDashboard() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {dashboardData?.recentActivity?.map((activity) => (
+                      {platformData?.recentActivity?.map((activity: any) => (
                         <div key={activity.id} className="flex items-start space-x-3">
-                          <div className={`w-2 h-2 rounded-full mt-2 ${
-                            activity.type === 'alert' ? 'bg-red-500' : 
-                            activity.type === 'system' ? 'bg-blue-500' : 
-                            'bg-green-500'
-                          }`}></div>
+                          <div className={`w-2 h-2 rounded-full mt-2 ${activity.type === 'alert' ? 'bg-red-500' :
+                            activity.type === 'system' ? 'bg-blue-500' :
+                              'bg-green-500'
+                            }`}></div>
                           <div className="flex-1">
                             <p className="text-sm font-medium">{activity.title}</p>
                             {activity.user && (
@@ -210,10 +213,10 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       )) || (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-muted-foreground">No recent activity.</p>
-                        </div>
-                      )}
+                          <div className="text-center py-4">
+                            <p className="text-sm text-muted-foreground">No recent activity.</p>
+                          </div>
+                        )}
                     </CardContent>
                   </Card>
                 </div>
@@ -229,9 +232,9 @@ export default function AdminDashboard() {
                           </div>
                           System Alerts
                         </div>
-                        {dashboardData?.systemAlerts && dashboardData.systemAlerts.length > 0 && (
+                        {platformData?.systemAlerts && platformData.systemAlerts.length > 0 && (
                           <Badge variant="outline" className="ml-2">
-                            {dashboardData.systemAlerts.length}
+                            {platformData.systemAlerts.length}
                           </Badge>
                         )}
                       </CardTitle>
@@ -240,69 +243,68 @@ export default function AdminDashboard() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="p-0">
-                      {dashboardData?.systemAlerts && dashboardData.systemAlerts.length > 0 ? (
+                      {platformData?.systemAlerts && platformData.systemAlerts.length > 0 ? (
                         <ScrollArea className="h-[400px]">
                           <div className="divide-y divide-border/50">
-                            {dashboardData.systemAlerts.map((alert, index) => (
-                            <div key={index} className="p-4 hover:bg-accent/30 transition-all duration-200 group relative">
-                              {/* Priority indicator */}
-                              <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                                alert.priority === 'high' ? 'bg-destructive' :
-                                alert.priority === 'medium' ? 'bg-warning' : 'bg-muted'
-                              }`}></div>
-                              <div className="flex items-start gap-3 ml-3">
-                                <div className="flex-shrink-0 mt-1">
-                                  <Badge 
-                                    variant={
-                                      alert.type === 'warning' ? 'warning' : 
-                                      alert.type === 'success' ? 'success' : 'info'
-                                    } 
-                                    className="shadow-sm group-hover:shadow-md transition-shadow duration-200"
-                                  >
-                                    {alert.type === 'warning' ? (
-                                      <AlertTriangle className="h-3 w-3 mr-1" />
-                                    ) : alert.type === 'success' ? (
-                                      <CheckCircle className="h-3 w-3 mr-1" />
-                                    ) : (
-                                      <Info className="h-3 w-3 mr-1" />
-                                    )}
-                                    {alert.type === 'warning' ? 'Warning' : 
-                                     alert.type === 'success' ? 'Success' : 'Info'}
-                                  </Badge>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-2 mb-1">
-                                    <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors duration-200">
-                                      {alert.title}
-                                    </p>
-                                    <span className="text-xs text-muted-foreground/80 font-medium bg-muted/50 px-2 py-1 rounded-md whitespace-nowrap">
-                                      {alert.time}
-                                    </span>
+                            {platformData.systemAlerts.map((alert: any, index: number) => (
+                              <div key={index} className="p-4 hover:bg-accent/30 transition-all duration-200 group relative">
+                                {/* Priority indicator */}
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${alert.priority === 'high' ? 'bg-destructive' :
+                                  alert.priority === 'medium' ? 'bg-warning' : 'bg-muted'
+                                  }`}></div>
+                                <div className="flex items-start gap-3 ml-3">
+                                  <div className="flex-shrink-0 mt-1">
+                                    <Badge
+                                      variant={
+                                        alert.type === 'warning' ? 'warning' :
+                                          alert.type === 'success' ? 'success' : 'info'
+                                      }
+                                      className="shadow-sm group-hover:shadow-md transition-shadow duration-200"
+                                    >
+                                      {alert.type === 'warning' ? (
+                                        <AlertTriangle className="h-3 w-3 mr-1" />
+                                      ) : alert.type === 'success' ? (
+                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                      ) : (
+                                        <Info className="h-3 w-3 mr-1" />
+                                      )}
+                                      {alert.type === 'warning' ? 'Warning' :
+                                        alert.type === 'success' ? 'Success' : 'Info'}
+                                    </Badge>
                                   </div>
-                                  <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-                                    {alert.description}
-                                  </p>
-                                  {alert.type === 'warning' && (
-                                    <div className="flex items-center gap-2">
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="h-7 px-3 text-xs bg-background/50 hover:bg-success/10 hover:text-success hover:border-success/30 transition-all duration-200"
-                                      >
-                                        Resolve
-                                      </Button>
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="h-7 px-3 text-xs text-muted-foreground hover:text-foreground"
-                                      >
-                                        Details
-                                      </Button>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-2 mb-1">
+                                      <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors duration-200">
+                                        {alert.title}
+                                      </p>
+                                      <span className="text-xs text-muted-foreground/80 font-medium bg-muted/50 px-2 py-1 rounded-md whitespace-nowrap">
+                                        {alert.time}
+                                      </span>
                                     </div>
-                                  )}
+                                    <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                                      {alert.description}
+                                    </p>
+                                    {alert.type === 'warning' && (
+                                      <div className="flex items-center gap-2">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-7 px-3 text-xs bg-background/50 hover:bg-success/10 hover:text-success hover:border-success/30 transition-all duration-200"
+                                        >
+                                          Resolve
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-7 px-3 text-xs text-muted-foreground hover:text-foreground"
+                                        >
+                                          Details
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            </div>                            ))}
+                              </div>))}
                           </div>
                         </ScrollArea>
                       ) : (
@@ -324,32 +326,32 @@ export default function AdminDashboard() {
                       <CardTitle>Quick Actions</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start" 
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start"
                         onClick={() => handleNavigation('/admin/users')}
                       >
                         <Users className="h-4 w-4 mr-2" />
                         Manage Users
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="w-full justify-start"
                         onClick={() => handleNavigation('/courses')}
                       >
                         <BookOpenIcon className="h-4 w-4 mr-2" />
                         Course Overview
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="w-full justify-start"
                         onClick={() => handleNavigation('/admin/analytics')}
                       >
                         <TrendingUp className="h-4 w-4 mr-2" />
                         View Analytics
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="w-full justify-start"
                         onClick={() => handleNavigation('/settings')}
                       >

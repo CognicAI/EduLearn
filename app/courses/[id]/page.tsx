@@ -10,13 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  ArrowLeft, 
-  Play, 
-  FileText, 
-  Download, 
-  Clock, 
-  CheckCircle, 
+import {
+  ArrowLeft,
+  Play,
+  FileText,
+  Download,
+  Clock,
+  CheckCircle,
   BookOpenIcon,
   Users,
   Star,
@@ -26,6 +26,7 @@ import {
   Link as LinkIcon
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // Mock course data with detailed information
 const mockCourseDetails = {
@@ -89,55 +90,55 @@ const mockCourseDetails = {
       }
     ],
     files: [
-      { 
+      {
         id: 'f1',
-        name: 'Course Syllabus.pdf', 
-        type: 'pdf', 
+        name: 'Course Syllabus.pdf',
+        type: 'pdf',
         size: '2.3 MB',
         category: 'syllabus',
         uploadDate: '2024-01-01'
       },
-      { 
+      {
         id: 'f2',
-        name: 'Lecture Notes - Week 1.pdf', 
-        type: 'pdf', 
+        name: 'Lecture Notes - Week 1.pdf',
+        type: 'pdf',
         size: '1.8 MB',
         category: 'notes',
         uploadDate: '2024-01-08'
       },
-      { 
+      {
         id: 'f3',
-        name: 'Assignment Template.docx', 
-        type: 'doc', 
+        name: 'Assignment Template.docx',
+        type: 'doc',
         size: '0.5 MB',
         category: 'template',
         uploadDate: '2024-01-10'
       },
-      { 
+      {
         id: 'f4',
-        name: 'Code Examples.zip', 
-        type: 'zip', 
+        name: 'Code Examples.zip',
+        type: 'zip',
         size: '5.2 MB',
         category: 'code',
         uploadDate: '2024-01-15'
       }
     ],
     assignments: [
-      { 
-        id: 'a1', 
-        title: 'Data Structures Quiz', 
-        dueDate: '2024-01-18', 
-        status: 'submitted', 
+      {
+        id: 'a1',
+        title: 'Data Structures Quiz',
+        dueDate: '2024-01-18',
+        status: 'submitted',
         grade: 92,
         maxPoints: 100,
         submittedAt: '2024-01-17',
         feedback: 'Excellent work! Your understanding of linked lists is very clear.'
       },
-      { 
-        id: 'a2', 
-        title: 'Algorithm Analysis', 
-        dueDate: '2024-01-25', 
-        status: 'pending', 
+      {
+        id: 'a2',
+        title: 'Algorithm Analysis',
+        dueDate: '2024-01-25',
+        status: 'pending',
         grade: null,
         maxPoints: 100,
         description: 'Analyze the time complexity of various sorting algorithms and provide detailed explanations.'
@@ -166,7 +167,7 @@ export default function CourseDetailPage() {
   const params = useParams();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
-  
+
   const courseId = params.id as string;
   const course = mockCourseDetails[courseId as keyof typeof mockCourseDetails];
 
@@ -224,7 +225,7 @@ export default function CourseDetailPage() {
     <AuthGuard>
       <div className="flex h-screen bg-background">
         <DashboardSidebar />
-        
+
         <main className="flex-1 overflow-y-auto">
           <div className="p-6">
             {/* Header */}
@@ -250,9 +251,11 @@ export default function CourseDetailPage() {
             <Card className="mb-6">
               <CardContent className="p-6">
                 <div className="flex gap-6">
-                  <img
+                  <Image
                     src={course.thumbnail}
                     alt={course.title}
+                    width={192}
+                    height={128}
                     className="w-48 h-32 rounded-lg object-cover"
                   />
                   <div className="flex-1">
@@ -271,9 +274,9 @@ export default function CourseDetailPage() {
                         <span className="text-sm">{course.duration}</span>
                       </div>
                     </div>
-                    
+
                     <p className="text-muted-foreground mb-4">{course.description}</p>
-                    
+
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Progress</span>
@@ -320,7 +323,7 @@ export default function CourseDetailPage() {
                       </CardContent>
                     </Card>
                   </div>
-                  
+
                   <div>
                     <Card>
                       <CardHeader>
@@ -377,18 +380,18 @@ export default function CourseDetailPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
-                            <Progress 
-                              value={(module.completed / module.lessons) * 100} 
-                              className="w-24 h-2" 
+                            <Progress
+                              value={(module.completed / module.lessons) * 100}
+                              className="w-24 h-2"
                             />
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               disabled={module.status === 'locked'}
                               variant={module.status === 'completed' ? 'outline' : 'default'}
                             >
-                              {module.status === 'completed' ? 'Review' : 
-                               module.status === 'in-progress' ? 'Continue' : 
-                               'Locked'}
+                              {module.status === 'completed' ? 'Review' :
+                                module.status === 'in-progress' ? 'Continue' :
+                                  'Locked'}
                             </Button>
                           </div>
                         </div>
@@ -428,9 +431,9 @@ export default function CourseDetailPage() {
                                   {assignment.grade}/{assignment.maxPoints}
                                 </Badge>
                               )}
-                              <Badge 
+                              <Badge
                                 className={
-                                  assignment.status === 'submitted' 
+                                  assignment.status === 'submitted'
                                     ? 'bg-green-100 text-green-800 border-green-200'
                                     : 'bg-yellow-100 text-yellow-800 border-yellow-200'
                                 }
@@ -439,14 +442,14 @@ export default function CourseDetailPage() {
                               </Badge>
                             </div>
                           </div>
-                          
+
                           {assignment.feedback && (
                             <div className="mt-3 p-3 bg-muted/50 rounded-lg">
                               <h5 className="text-sm font-medium mb-1">Teacher Feedback:</h5>
                               <p className="text-sm text-muted-foreground">{assignment.feedback}</p>
                             </div>
                           )}
-                          
+
                           <div className="flex gap-2 mt-3">
                             <Button size="sm" variant="outline" asChild>
                               <Link href={`/assignments/${assignment.id}`}>

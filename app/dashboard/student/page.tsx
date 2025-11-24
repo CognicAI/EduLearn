@@ -12,6 +12,7 @@ import { BookOpenIcon, Clock, Trophy, TrendingUp, Calendar, Play, FileText, Down
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data';
 import { useUserProfile } from '@/lib/hooks/use-user';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // Enhanced mock data for student courses
 const mockEnrolledCourses = [
@@ -90,7 +91,7 @@ function DashboardSkeleton() {
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-4 w-96" />
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
@@ -104,7 +105,7 @@ function DashboardSkeleton() {
           </Card>
         ))}
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Card>
@@ -124,7 +125,7 @@ function DashboardSkeleton() {
             </CardContent>
           </Card>
         </div>
-        
+
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -179,7 +180,7 @@ export default function StudentDashboard() {
     <AuthGuard allowedRoles={['student']}>
       <div className="flex h-screen bg-background">
         <DashboardSidebar />
-        
+
         <main className="flex-1 overflow-y-auto">
           {isLoading ? (
             <DashboardSkeleton />
@@ -209,7 +210,7 @@ export default function StudentDashboard() {
                     </p>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Avg. Progress</CardTitle>
@@ -224,7 +225,7 @@ export default function StudentDashboard() {
                     </p>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Pending Assignments</CardTitle>
@@ -232,7 +233,7 @@ export default function StudentDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {mockEnrolledCourses.reduce((acc, course) => 
+                      {mockEnrolledCourses.reduce((acc, course) =>
                         acc + course.assignments.filter(a => a.status === 'pending' || a.status === 'in-progress').length, 0
                       )}
                     </div>
@@ -241,7 +242,7 @@ export default function StudentDashboard() {
                     </p>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Current GPA</CardTitle>
@@ -272,12 +273,14 @@ export default function StudentDashboard() {
                       {mockEnrolledCourses.map((course) => (
                         <div key={course.id} className="border rounded-lg p-6 hover:shadow-md transition-shadow">
                           <div className="flex items-start gap-4">
-                            <img
+                            <Image
                               src={course.thumbnail}
                               alt={course.title}
+                              width={80}
+                              height={80}
                               className="w-20 h-20 rounded-lg object-cover"
                             />
-                            
+
                             <div className="flex-1">
                               <div className="flex items-start justify-between mb-2">
                                 <div>
@@ -290,7 +293,7 @@ export default function StudentDashboard() {
                                   {course.progress}% complete
                                 </Badge>
                               </div>
-                              
+
                               <div className="space-y-3">
                                 <div>
                                   <div className="flex justify-between text-sm mb-1">
@@ -299,7 +302,7 @@ export default function StudentDashboard() {
                                   </div>
                                   <Progress value={course.progress} className="h-2" />
                                 </div>
-                                
+
                                 <div className="flex items-center justify-between text-sm">
                                   <div className="flex items-center gap-4">
                                     <span className="text-muted-foreground">
@@ -311,11 +314,11 @@ export default function StudentDashboard() {
                                     </span>
                                   </div>
                                 </div>
-                                
+
                                 <p className="text-sm text-muted-foreground">
                                   Recent: {course.recentActivity}
                                 </p>
-                                
+
                                 <div className="flex gap-2 pt-2">
                                   <Button size="sm" asChild>
                                     <Link href={`/courses/${course.id}`}>
@@ -355,7 +358,7 @@ export default function StudentDashboard() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {mockEnrolledCourses.flatMap(course => 
+                      {mockEnrolledCourses.flatMap(course =>
                         course.assignments.filter(a => a.status === 'pending' || a.status === 'in-progress')
                           .map(assignment => ({ ...assignment, courseName: course.title }))
                       ).slice(0, 5).map((assignment) => (
@@ -394,10 +397,10 @@ export default function StudentDashboard() {
                           </div>
                         </div>
                       )) || (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-muted-foreground">No recent activity.</p>
-                        </div>
-                      )}
+                          <div className="text-center py-4">
+                            <p className="text-sm text-muted-foreground">No recent activity.</p>
+                          </div>
+                        )}
                     </CardContent>
                   </Card>
 

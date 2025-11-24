@@ -139,6 +139,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     if (isOpen && isAuthenticated && user && messages.length === 0) {
       initializeChatSession();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isAuthenticated, user]);
 
   // Handle click outside to close chatbot
@@ -146,18 +147,18 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       // Only proceed if chatbot is open
       if (!isOpen) return;
-      
+
       const target = event.target as Element;
-      
+
       // Make sure we have valid refs
       if (!chatWidgetRef.current) return;
-      
+
       // Check if click is inside the chat widget
       const isInsideWidget = chatWidgetRef.current.contains(target);
-      
+
       // Check if click is on the chat button (when it's not visible, this won't matter)
       const isOnButton = chatButtonRef.current && chatButtonRef.current.contains(target);
-      
+
       // If click is outside both widget and button, close the chat
       if (!isInsideWidget && !isOnButton) {
         setIsOpen(false);
@@ -167,7 +168,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     // Add both mouse and touch event listeners for better mobile support
     document.addEventListener('mousedown', handleClickOutside, true);
     document.addEventListener('touchstart', handleClickOutside, true);
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside, true);
       document.removeEventListener('touchstart', handleClickOutside, true);
@@ -291,8 +292,8 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     })) : [];
 
     // Add user message
-    addMessage({ 
-      text: text || (attachments.length > 0 ? `Sent ${attachments.length} file(s)` : ''), 
+    addMessage({
+      text: text || (attachments.length > 0 ? `Sent ${attachments.length} file(s)` : ''),
       sender: 'user',
       attachments: messageAttachments.length > 0 ? messageAttachments : undefined
     });
@@ -304,9 +305,9 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
 
     // Add typing indicator
     const typingId = `typing_${Date.now()}`;
-    addMessage({ 
-      text: 'typing...', 
-      sender: 'bot', 
+    addMessage({
+      text: 'typing...',
+      sender: 'bot',
       isTyping: true,
       id: typingId
     } as any);
@@ -339,16 +340,16 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
         throw new Error('API URL not configured. Please set NEXT_PUBLIC_API_URL.');
       }
       const response = await fetch(`${apiUrl}/chatbot/query`, {
-         method: 'POST',
-         headers: {
-           'Content-Type': 'application/json',
-           'Accept': 'application/json',
-           'Authorization': `Bearer ${token}`,
-           'X-User-Role': user.role,
-           'X-User-ID': user.id
-         },
-         body: JSON.stringify(payload)
-       });
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-User-Role': user.role,
+          'X-User-ID': user.id
+        },
+        body: JSON.stringify(payload)
+      });
 
       // Remove typing indicator
       setMessages(prev => prev.filter(msg => !msg.isTyping));
@@ -362,13 +363,13 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
       }
 
       const responseData = await response.json();
-      
+
       if (!responseData.success) {
         throw new Error(responseData.message || 'Chatbot request failed');
       }
-      
+
       const data = responseData.data;
-      
+
       // Get role-specific quick replies
       const defaultQuickReplies = getRoleSpecificContent().quickReplies;
       const quickReplies = data.quick_replies || defaultQuickReplies;
@@ -392,14 +393,14 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     } catch (error) {
       // Remove typing indicator
       setMessages(prev => prev.filter(msg => !msg.isTyping));
-      
+
       console.error('Chatbot error:', error);
-      const errorMessage = error instanceof Error 
+      const errorMessage = error instanceof Error
         ? error.message.includes('Authentication failed')
           ? 'Your session has expired. Please refresh the page and log in again.'
           : `Error: ${error.message}`
         : 'An unexpected error occurred. Please try again.';
-      
+
       addMessage({
         text: errorMessage,
         sender: 'error'
@@ -425,7 +426,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
         });
         return;
       }
-      
+
       resetTranscript();
       startListening();
       setIsRecording(true);
@@ -508,7 +509,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     if (!files) return;
 
     await processFiles(Array.from(files));
-    
+
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -558,7 +559,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
       file: File;
       base64: string;
     }> = [];
-    
+
     for (const file of files) {
       // Validate file type
       if (!isValidFileType(file)) {
@@ -613,7 +614,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
           "fixed w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full shadow-lg transition-all duration-300 flex items-center justify-center hover:scale-110 hover:shadow-xl",
           className
         )}
-        style={{ 
+        style={{
           zIndex: 9999,
           bottom: '24px',
           right: '24px',
@@ -627,7 +628,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
   }
 
   return (
-    <div 
+    <div
       ref={chatWidgetRef}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -637,7 +638,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
         isDragOver && "border-blue-500 border-2 bg-blue-50/50",
         className
       )}
-      style={{ 
+      style={{
         zIndex: 9999,
         bottom: '24px',
         right: '24px',
@@ -685,15 +686,15 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
                   message.sender === 'user'
                     ? "bg-blue-500 text-white rounded-br-md"
                     : message.sender === 'error'
-                    ? "bg-red-50 text-red-800 border border-red-200 rounded-bl-md"
-                    : "bg-white text-gray-800 border border-gray-300 rounded-bl-md shadow-sm"
+                      ? "bg-red-50 text-red-800 border border-red-200 rounded-bl-md"
+                      : "bg-white text-gray-800 border border-gray-300 rounded-bl-md shadow-sm"
                 )}
               >
                 {message.isTyping ? (
                   <div className="flex space-x-1 py-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                 ) : (
                   <div>
@@ -709,8 +710,8 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
                               <div className="text-xs text-gray-500">{formatFileSize(attachment.size)}</div>
                             </div>
                             {attachment.url && (
-                              <a 
-                                href={attachment.url} 
+                              <a
+                                href={attachment.url}
                                 download={attachment.name}
                                 className="p-1 text-blue-500 hover:text-blue-700"
                               >
@@ -725,7 +726,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
                 )}
               </div>
             </div>
-            
+
             {/* Quick replies */}
             {message.quickReplies && message.quickReplies.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3 chatbot-fade-in">

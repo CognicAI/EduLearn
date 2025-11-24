@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Edit, Trash2, Users, BookOpenIcon, Search, Filter } from 'lucide-react';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 // Mock courses data
 const mockCourses = [
@@ -69,7 +70,7 @@ export function CourseManagement() {
 
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.description.toLowerCase().includes(searchTerm.toLowerCase());
+      course.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = !statusFilter || statusFilter === 'all' || course.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -102,7 +103,7 @@ export function CourseManagement() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim() || !formData.description.trim()) {
       toast.error('Please fill in all required fields');
       return;
@@ -118,8 +119,8 @@ export function CourseManagement() {
     };
 
     if (editingCourse) {
-      setCourses(prev => prev.map(course => 
-        course.id === editingCourse.id 
+      setCourses(prev => prev.map(course =>
+        course.id === editingCourse.id
           ? { ...course, ...courseData }
           : course
       ));
@@ -206,7 +207,7 @@ export function CourseManagement() {
                   </Select>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="description">Description *</Label>
                 <Textarea
@@ -218,7 +219,7 @@ export function CourseManagement() {
                   required
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="duration">Duration</Label>
@@ -240,7 +241,7 @@ export function CourseManagement() {
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="tags">Tags (comma-separated)</Label>
                 <Input
@@ -250,7 +251,7 @@ export function CourseManagement() {
                   placeholder="Programming, Algorithms, Data Structures"
                 />
               </div>
-              
+
               <div className="flex justify-end space-x-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancel
@@ -294,10 +295,11 @@ export function CourseManagement() {
         {filteredCourses.map((course) => (
           <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow">
             <div className="aspect-video relative overflow-hidden">
-              <img
+              <Image
                 src={course.thumbnail}
                 alt={course.title}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
               <div className="absolute top-4 right-4">
                 <Badge className={getStatusColor(course.status)}>
@@ -305,14 +307,14 @@ export function CourseManagement() {
                 </Badge>
               </div>
             </div>
-            
+
             <CardHeader className="pb-3">
               <CardTitle className="text-lg line-clamp-2">{course.title}</CardTitle>
               <CardDescription className="line-clamp-2">
                 {course.description}
               </CardDescription>
             </CardHeader>
-            
+
             <CardContent className="pt-0">
               <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
                 <div className="flex items-center gap-1">
@@ -321,7 +323,7 @@ export function CourseManagement() {
                 </div>
                 <span>{course.duration}</span>
               </div>
-              
+
               <div className="flex flex-wrap gap-1 mb-4">
                 {course.tags.slice(0, 3).map((tag, index) => (
                   <Badge key={index} variant="outline" className="text-xs">
@@ -334,15 +336,15 @@ export function CourseManagement() {
                   </Badge>
                 )}
               </div>
-              
+
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" onClick={() => handleEditCourse(course)}>
                   <Edit className="h-4 w-4 mr-1" />
                   Edit
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
+                <Button
+                  size="sm"
+                  variant="outline"
                   onClick={() => handleDeleteCourse(course.id)}
                   className="text-destructive hover:text-destructive"
                 >

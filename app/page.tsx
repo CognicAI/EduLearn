@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { BookOpenIcon, Users, Award, TrendingUp, ArrowRight, Play, Star, CheckCircle, Globe, Zap, Shield, Heart, Clock } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { ClientOnly } from '@/components/client-only';
 import { AssessmentBuilder } from '@/components/demo/assessment-builder';
@@ -133,7 +134,7 @@ export default function HomePage() {
         teacher: '/dashboard/teacher',
         admin: '/dashboard/admin',
       };
-      
+
       setTimeout(() => {
         router.push(dashboardMap[user.role]);
       }, 100);
@@ -175,42 +176,42 @@ export default function HomePage() {
   }
 
   return (
-      <div className="relative overflow-hidden min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900">
-        {/* Animated Grid Background */}
-        <div className="absolute inset-0 opacity-10 dark:opacity-20">
-          <div className="grid-background animate-grid-move"></div>
-        </div>
-        
-        {/* Floating Particles - Only render on client */}
-        {mounted && (
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {Array.from({ length: 20 }, (_, i) => (
-              <div
-                key={i}
-                className="floating-particle"
-                style={{
-                  left: `${(i * 5.26) % 100}%`, // Deterministic positioning
-                  animationDelay: `${i * 1}s`,
-                  animationDuration: `${15 + (i % 10)}s`
-                }}
-              />
-            ))}
-          </div>
-        )}
+    <div className="relative overflow-hidden min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900">
+      {/* Animated Grid Background */}
+      <div className="absolute inset-0 opacity-10 dark:opacity-20">
+        <div className="grid-background animate-grid-move"></div>
+      </div>
 
-        {/* Futuristic moving lines */}
-        {[15, 35, 55, 75, 95].map((pos) => (
-          <div
-            key={pos}
-            className="cyber-line"
-            style={{ top: `${pos}%`, animationDelay: `${pos/30}s` }}
-          />
-        ))}
-        
-        {/* Glowing orbs */}
-        <div className="absolute top-20 left-10 w-32 h-32 bg-blue-500/20 rounded-full blur-xl animate-pulse"></div>
-        <div className="absolute bottom-40 right-20 w-48 h-48 bg-purple-500/20 rounded-full blur-2xl animate-bounce-slow"></div>
-        
+      {/* Floating Particles - Only render on client */}
+      {mounted && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {Array.from({ length: 20 }, (_, i) => (
+            <div
+              key={i}
+              className="floating-particle"
+              style={{
+                left: `${(i * 5.26) % 100}%`, // Deterministic positioning
+                animationDelay: `${i * 1}s`,
+                animationDuration: `${15 + (i % 10)}s`
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Futuristic moving lines */}
+      {[15, 35, 55, 75, 95].map((pos) => (
+        <div
+          key={pos}
+          className="cyber-line"
+          style={{ top: `${pos}%`, animationDelay: `${pos / 30}s` }}
+        />
+      ))}
+
+      {/* Glowing orbs */}
+      <div className="absolute top-20 left-10 w-32 h-32 bg-blue-500/20 rounded-full blur-xl animate-pulse"></div>
+      <div className="absolute bottom-40 right-20 w-48 h-48 bg-purple-500/20 rounded-full blur-2xl animate-bounce-slow"></div>
+
       {/* Navigation */}
       <nav className="sticky top-0 z-50 border-b border-white/20 bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -246,7 +247,7 @@ export default function HomePage() {
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-blue-400/30 to-purple-400/30 rounded-full blur-3xl animate-float"></div>
           <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-purple-400/30 to-pink-400/30 rounded-full blur-3xl animate-float-delayed"></div>
         </div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left space-y-8 animate-slide-up">
@@ -260,7 +261,7 @@ export default function HomePage() {
                 </span>
               </h1>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl animate-fade-in-delayed">
-                Master in-demand skills with our AI-powered learning platform. Get personalized courses, 
+                Master in-demand skills with our AI-powered learning platform. Get personalized courses,
                 expert mentorship, and industry-recognized certificates.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-slide-up-delayed">
@@ -288,7 +289,7 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-            
+
             <div className="relative animate-slide-up-delayed">
               <div className="relative z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/20 dark:border-gray-700/20 hover:shadow-3xl transition-all duration-500 hover:scale-105 group">
                 <div className="flex items-center gap-3 mb-6">
@@ -306,12 +307,12 @@ export default function HomePage() {
                     <span className="text-sm font-medium dark:text-white">78%</span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full animate-progress-fill" style={{width: '78%'}}></div>
+                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full animate-progress-fill" style={{ width: '78%' }}></div>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex -space-x-2">
-                      {[1,2,3,4].map(i => (
-                        <div key={i} className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center text-white text-xs font-medium hover:scale-110 transition-transform duration-300 animate-bounce-in" style={{animationDelay: `${i * 0.1}s`}}>
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full border-2 border-white dark:border-gray-800 flex items-center justify-center text-white text-xs font-medium hover:scale-110 transition-transform duration-300 animate-bounce-in" style={{ animationDelay: `${i * 0.1}s` }}>
                           {i}
                         </div>
                       ))}
@@ -320,7 +321,7 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Animated background shapes */}
               <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full opacity-20 animate-pulse-slow"></div>
               <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-r from-green-400 to-blue-400 rounded-full opacity-20 animate-spin-slow"></div>
@@ -336,11 +337,11 @@ export default function HomePage() {
         <div className="absolute inset-0 opacity-5 dark:opacity-10">
           <div className="grid-background animate-grid-move"></div>
         </div>
-        
+
         {/* Floating design elements */}
         <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-r from-blue-400/10 to-purple-400/10 rounded-full blur-2xl animate-float"></div>
         <div className="absolute bottom-20 right-20 w-40 h-40 bg-gradient-to-r from-purple-400/10 to-pink-400/10 rounded-full blur-3xl animate-float-delayed"></div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 animate-slide-up">
             <Badge className="mb-4 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/50 dark:to-emerald-900/50 text-green-700 dark:text-green-300 border-green-200/50 dark:border-green-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300 shadow-sm">
@@ -358,21 +359,22 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {popularCourses.map((course, index) => (
-              <Card key={index} className="group overflow-hidden bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-lg hover:shadow-2xl transition-all duration-700 hover:-translate-y-4 hover:scale-[1.02] animate-slide-up relative" style={{animationDelay: `${index * 0.15}s`}}>
+              <Card key={index} className="group overflow-hidden bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-lg hover:shadow-2xl transition-all duration-700 hover:-translate-y-4 hover:scale-[1.02] animate-slide-up relative" style={{ animationDelay: `${index * 0.15}s` }}>
                 {/* Enhanced gradient border effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-sm"></div>
                 <div className="absolute inset-[1px] bg-white dark:bg-gray-800 rounded-lg"></div>
-                
+
                 <div className="relative z-10">
                   <div className="aspect-video relative overflow-hidden rounded-t-lg">
-                    <img
+                    <Image
                       src={course.image}
                       alt={course.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-1000"
                     />
                     {/* Enhanced overlay with smooth gradient */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent group-hover:from-black/50 transition-all duration-500"></div>
-                    
+
                     {/* Badges with better positioning */}
                     <div className="absolute top-3 left-3">
                       <Badge className="bg-white/95 dark:bg-gray-800/95 text-gray-700 dark:text-gray-300 backdrop-blur-sm hover:scale-105 transition-transform duration-300 shadow-sm">
@@ -384,7 +386,7 @@ export default function HomePage() {
                         {course.price}
                       </Badge>
                     </div>
-                    
+
                     {/* Enhanced play button */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
                       <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 hover:scale-110 transition-transform duration-300 group-hover:bg-white/30">
@@ -392,7 +394,7 @@ export default function HomePage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 dark:text-white">
                       {course.title}
@@ -401,7 +403,7 @@ export default function HomePage() {
                       by {course.instructor}
                     </p>
                   </CardHeader>
-                  
+
                   <CardContent className="pt-0">
                     <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-4">
                       <div className="flex items-center gap-1 group-hover:scale-105 transition-transform duration-300">
@@ -413,7 +415,7 @@ export default function HomePage() {
                         <span className="font-medium">{course.rating}</span>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -456,7 +458,7 @@ export default function HomePage() {
                 color: "from-blue-500 to-cyan-500"
               },
               {
-                step: "02", 
+                step: "02",
                 title: "Learn Interactively",
                 description: "Engage with AI-powered lessons, upload materials, and get instant feedback on your progress.",
                 icon: "🧠",
@@ -470,15 +472,15 @@ export default function HomePage() {
                 color: "from-emerald-500 to-teal-500"
               }
             ].map((step, index) => (
-              <Card key={index} className="relative group overflow-hidden bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-lg hover:shadow-2xl transition-all duration-700 hover:-translate-y-4 animate-slide-up p-8" style={{animationDelay: `${index * 0.2}s`}}>
+              <Card key={index} className="relative group overflow-hidden bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-lg hover:shadow-2xl transition-all duration-700 hover:-translate-y-4 animate-slide-up p-8" style={{ animationDelay: `${index * 0.2}s` }}>
                 <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-bl-3xl flex items-start justify-end pr-4 pt-4">
                   <span className="text-2xl font-bold text-gray-400 dark:text-gray-500">{step.step}</span>
                 </div>
-                
+
                 <div className={`w-16 h-16 bg-gradient-to-r ${step.color} rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform duration-300`}>
                   {step.icon}
                 </div>
-                
+
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
                   {step.title}
                 </h3>
@@ -513,52 +515,52 @@ export default function HomePage() {
         <div className="absolute top-20 left-10 w-40 h-40 bg-pink-400/10 rounded-full blur-3xl animate-pulse-slow"></div>
         <div className="absolute bottom-20 right-10 w-60 h-60 bg-orange-400/10 rounded-full blur-3xl animate-float-delayed"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-rose-400/5 rounded-full blur-3xl animate-spin-slow"></div>
-        
+
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Centered Mobile App Simulator with enhanced animations */}
           <div className="flex justify-center items-center animate-slide-up">
             <div className="relative">
               {/* Animated rings around the mobile simulator */}
               <div className="absolute inset-0 -m-8">
-                <div className="absolute inset-0 border-2 border-pink-300/20 rounded-full animate-ping" style={{animationDuration: '3s'}}></div>
-                <div className="absolute inset-0 border-2 border-orange-300/20 rounded-full animate-ping" style={{animationDuration: '4s', animationDelay: '1s'}}></div>
-                <div className="absolute inset-0 border-2 border-rose-300/20 rounded-full animate-ping" style={{animationDuration: '5s', animationDelay: '2s'}}></div>
+                <div className="absolute inset-0 border-2 border-pink-300/20 rounded-full animate-ping" style={{ animationDuration: '3s' }}></div>
+                <div className="absolute inset-0 border-2 border-orange-300/20 rounded-full animate-ping" style={{ animationDuration: '4s', animationDelay: '1s' }}></div>
+                <div className="absolute inset-0 border-2 border-rose-300/20 rounded-full animate-ping" style={{ animationDuration: '5s', animationDelay: '2s' }}></div>
               </div>
-              
+
               {/* Enhanced glow effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 via-rose-500/20 to-orange-500/20 rounded-3xl blur-2xl animate-pulse"></div>
-              
+
               {/* Main simulator with enhanced styling */}
               <div className="relative transform hover:scale-105 transition-all duration-700 hover:rotate-1">
                 <MobileAppSimulator />
               </div>
-              
+
               {/* Floating tags/badges around the simulator */}
-              <div className="absolute -top-8 -left-8 animate-bounce-in" style={{animationDelay: '0.5s'}}>
+              <div className="absolute -top-8 -left-8 animate-bounce-in" style={{ animationDelay: '0.5s' }}>
                 <div className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:scale-110 transition-transform duration-300">
                   📱 Mobile First
                 </div>
               </div>
-              
-              <div className="absolute -top-8 -right-8 animate-bounce-in" style={{animationDelay: '1s'}}>
+
+              <div className="absolute -top-8 -right-8 animate-bounce-in" style={{ animationDelay: '1s' }}>
                 <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:scale-110 transition-transform duration-300">
                   🤖 AI Powered
                 </div>
               </div>
-              
-              <div className="absolute -bottom-8 -right-8 animate-bounce-in" style={{animationDelay: '2s'}}>
+
+              <div className="absolute -bottom-8 -right-8 animate-bounce-in" style={{ animationDelay: '2s' }}>
                 <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:scale-110 transition-transform duration-300">
                   🔄 Real-time Sync
                 </div>
               </div>
-              
-              <div className="absolute top-1/2 -left-16 transform -translate-y-1/2 animate-bounce-in" style={{animationDelay: '2.5s'}}>
+
+              <div className="absolute top-1/2 -left-16 transform -translate-y-1/2 animate-bounce-in" style={{ animationDelay: '2.5s' }}>
                 <div className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:scale-110 transition-transform duration-300">
                   🎯 Smart Learning
                 </div>
               </div>
-              
-              <div className="absolute top-1/2 -right-16 transform -translate-y-1/2 animate-bounce-in" style={{animationDelay: '3s'}}>
+
+              <div className="absolute top-1/2 -right-16 transform -translate-y-1/2 animate-bounce-in" style={{ animationDelay: '3s' }}>
                 <div className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:scale-110 transition-transform duration-300">
                   📊 Progress Tracking
                 </div>
@@ -571,7 +573,7 @@ export default function HomePage() {
             <div className="inline-flex items-center gap-3 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-full px-8 py-4 border border-white/20 dark:border-gray-700/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
               <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
               <span className="text-lg font-semibold text-gray-900 dark:text-white">Mobile App Coming Soon</span>
-              <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+              <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
             </div>
           </div>
         </div>
@@ -594,7 +596,7 @@ export default function HomePage() {
             />
           ))}
         </div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 animate-slide-up">
             <Badge className="mb-4 bg-cyan-100/80 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300 border-cyan-200/50 dark:border-cyan-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
@@ -624,7 +626,7 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-4 max-h-80 overflow-y-auto">
                   <div className="flex gap-3">
                     <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs">AI</div>
@@ -632,14 +634,14 @@ export default function HomePage() {
                       <p className="text-sm">Hi! I'm your AI learning assistant. Upload any document and I'll help you understand it better. What would you like to learn today?</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-3 flex-row-reverse">
                     <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs">You</div>
                     <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3 flex-1">
                       <p className="text-sm">Can you help me understand this research paper about machine learning?</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-3">
                     <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs">AI</div>
                     <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 flex-1">
@@ -647,7 +649,7 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 text-center">
                   <p className="text-sm text-gray-600 dark:text-gray-400">📎 Drag & drop files here or click to upload</p>
                   <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">Supports PDF, DOCX, TXT, and more</p>
@@ -683,7 +685,7 @@ export default function HomePage() {
                   color: 'from-orange-500 to-red-500'
                 }
               ].map((feature, index) => (
-                <Card key={index} className="glass-card p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 group" style={{animationDelay: `${index * 0.1}s`}}>
+                <Card key={index} className="glass-card p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 group" style={{ animationDelay: `${index * 0.1}s` }}>
                   <div className="flex items-start gap-4">
                     <div className={`w-12 h-12 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center text-white text-xl group-hover:scale-110 transition-transform duration-300`}>
                       {feature.icon}
@@ -705,7 +707,7 @@ export default function HomePage() {
         <div className="absolute inset-0 opacity-5 dark:opacity-10">
           <div className="grid-background animate-grid-move"></div>
         </div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 animate-slide-up">
             <Badge className="mb-4 bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border-emerald-200/50 dark:border-emerald-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
@@ -726,7 +728,7 @@ export default function HomePage() {
               { title: 'Course Completion', value: '89.3%', change: '+5.2%', color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/30' },
               { title: 'Avg. Study Time', value: '4.2h', change: '+0.8h', color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/30' }
             ].map((metric, index) => (
-              <Card key={index} className="glass-card p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 animate-bounce-in" style={{animationDelay: `${index * 0.1}s`}}>
+              <Card key={index} className="glass-card p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 animate-bounce-in" style={{ animationDelay: `${index * 0.1}s` }}>
                 <div className={`w-12 h-12 ${metric.bg} rounded-lg flex items-center justify-center mb-4`}>
                   <TrendingUp className={`h-6 w-6 ${metric.color}`} />
                 </div>
@@ -749,7 +751,7 @@ export default function HomePage() {
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
               </div>
             </div>
-            
+
             <div className="grid md:grid-cols-2 gap-6">
               {/* Progress Chart */}
               <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6">
@@ -759,9 +761,9 @@ export default function HomePage() {
                     <div key={skill} className="flex items-center gap-3">
                       <span className="text-sm text-gray-600 dark:text-gray-400 w-20">{skill}</span>
                       <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div 
+                        <div
                           className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-1000 ease-out"
-                          style={{width: `${85 - index * 15}%`, animationDelay: `${index * 0.2}s`}}
+                          style={{ width: `${85 - index * 15}%`, animationDelay: `${index * 0.2}s` }}
                         ></div>
                       </div>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">{85 - index * 15}%</span>
@@ -777,12 +779,11 @@ export default function HomePage() {
                   {Array.from({ length: 49 }, (_, i) => (
                     <div
                       key={i}
-                      className={`w-6 h-6 rounded-sm ${
-                        Math.random() > 0.3 
-                          ? 'bg-green-400 hover:bg-green-500' 
-                          : 'bg-gray-200 dark:bg-gray-700'
-                      } transition-colors duration-200 cursor-pointer`}
-                      style={{animationDelay: `${i * 0.01}s`}}
+                      className={`w-6 h-6 rounded-sm ${Math.random() > 0.3
+                        ? 'bg-green-400 hover:bg-green-500'
+                        : 'bg-gray-200 dark:bg-gray-700'
+                        } transition-colors duration-200 cursor-pointer`}
+                      style={{ animationDelay: `${i * 0.01}s` }}
                     ></div>
                   ))}
                 </div>
@@ -859,7 +860,7 @@ export default function HomePage() {
                 color: "from-purple-600 to-pink-600"
               }
             ].map((plan, index) => (
-              <Card key={index} className={`relative overflow-hidden ${plan.popular ? 'ring-2 ring-blue-500 scale-105' : ''} bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-lg hover:shadow-2xl transition-all duration-700 hover:-translate-y-2 animate-slide-up group`} style={{animationDelay: `${index * 0.2}s`}}>
+              <Card key={index} className={`relative overflow-hidden ${plan.popular ? 'ring-2 ring-blue-500 scale-105' : ''} bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-lg hover:shadow-2xl transition-all duration-700 hover:-translate-y-2 animate-slide-up group`} style={{ animationDelay: `${index * 0.2}s` }}>
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                     <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-1 text-sm font-medium">
@@ -867,7 +868,7 @@ export default function HomePage() {
                     </Badge>
                   </div>
                 )}
-                
+
                 <div className="p-8">
                   <div className="text-center mb-8">
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{plan.name}</h3>
@@ -876,7 +877,7 @@ export default function HomePage() {
                       {plan.price !== "Free" && <span className="text-gray-600 dark:text-gray-400">/{plan.period}</span>}
                     </div>
                   </div>
-                  
+
                   <ul className="space-y-4 mb-8">
                     {plan.features.map((feature, featureIndex) => (
                       <li key={featureIndex} className="flex items-center gap-3">
@@ -885,7 +886,7 @@ export default function HomePage() {
                       </li>
                     ))}
                   </ul>
-                  
+
                   <Button className={`w-full bg-gradient-to-r ${plan.color} hover:scale-105 transition-all duration-300 hover:shadow-lg text-white`}>
                     {plan.buttonText}
                   </Button>
@@ -893,7 +894,7 @@ export default function HomePage() {
               </Card>
             ))}
           </div>
-          
+
           <div className="text-center mt-12 animate-fade-in-delayed">
             <p className="text-gray-600 dark:text-gray-400 mb-4">All plans include 14-day free trial • No credit card required</p>
             <div className="flex items-center justify-center gap-6 text-sm text-gray-500 dark:text-gray-500">
@@ -968,7 +969,7 @@ export default function HomePage() {
                 ]
               }
             ].map((solution, index) => (
-              <Card key={index} className="glass-card backdrop-blur-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 animate-slide-up group overflow-hidden" style={{animationDelay: `${index * 0.2}s`}}>
+              <Card key={index} className="glass-card backdrop-blur-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 animate-slide-up group overflow-hidden" style={{ animationDelay: `${index * 0.2}s` }}>
                 <div className={`h-2 bg-gradient-to-r ${solution.color}`}></div>
                 <CardHeader className="text-center pb-4">
                   <div className={`w-16 h-16 bg-gradient-to-r ${solution.color} rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform duration-300`}>
@@ -1001,7 +1002,7 @@ export default function HomePage() {
         <div className="absolute top-10 left-10 w-20 h-20 bg-blue-400/20 rounded-full blur-xl animate-float"></div>
         <div className="absolute bottom-10 right-10 w-32 h-32 bg-purple-400/20 rounded-full blur-2xl animate-float-delayed"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-300/10 to-purple-300/10 rounded-full blur-3xl animate-pulse-slow"></div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 animate-slide-up">
             <Badge className="mb-4 bg-blue-100/80 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
@@ -1017,11 +1018,11 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="glass-card backdrop-blur-xl border border-white/20 dark:border-gray-700/20 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:scale-105 animate-slide-up group" style={{animationDelay: `${index * 0.2}s`}}>
+              <Card key={index} className="glass-card backdrop-blur-xl border border-white/20 dark:border-gray-700/20 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 hover:scale-105 animate-slide-up group" style={{ animationDelay: `${index * 0.2}s` }}>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-1 mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400 group-hover:scale-110 transition-transform duration-300" style={{animationDelay: `${i * 0.1}s`}} />
+                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400 group-hover:scale-110 transition-transform duration-300" style={{ animationDelay: `${i * 0.1}s` }} />
                     ))}
                   </div>
                   <p className="text-gray-700 dark:text-gray-300 mb-6 italic group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors duration-300">"{testimonial.content}"</p>
@@ -1035,7 +1036,7 @@ export default function HomePage() {
                     </div>
                   </div>
                 </CardContent>
-                
+
                 {/* Glowing border effect */}
                 <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none blur-sm"></div>
               </Card>
@@ -1067,7 +1068,7 @@ export default function HomePage() {
               { title: 'AI Excellence Award', year: '2023', org: 'Education Technology Review' },
               { title: 'Top 50 EdTech Companies', year: '2023', org: 'EdTech Digest' }
             ].map((award, index) => (
-              <Card key={index} className="glass-card p-6 text-center hover:shadow-xl transition-all duration-300 hover:scale-105 animate-bounce-in group" style={{animationDelay: `${index * 0.1}s`}}>
+              <Card key={index} className="glass-card p-6 text-center hover:shadow-xl transition-all duration-300 hover:scale-105 animate-bounce-in group" style={{ animationDelay: `${index * 0.1}s` }}>
                 <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Award className="h-6 w-6 text-white" />
                 </div>
@@ -1138,7 +1139,7 @@ export default function HomePage() {
                 person: 'Prof. Emma Williams, Head of Digital Learning'
               }
             ].map((story, index) => (
-              <Card key={index} className="glass-card p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 animate-slide-up group" style={{animationDelay: `${index * 0.2}s`}}>
+              <Card key={index} className="glass-card p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 animate-slide-up group" style={{ animationDelay: `${index * 0.2}s` }}>
                 <div className="text-center mb-4">
                   <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
                     <span className="text-white text-xl">🎓</span>
@@ -1178,24 +1179,24 @@ export default function HomePage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Number of Students</label>
                   <div className="relative">
-                    <input 
-                      type="range" 
-                      min="100" 
-                      max="10000" 
+                    <input
+                      type="range"
+                      min="100"
+                      max="10000"
                       defaultValue="1000"
                       className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                     />
                     <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-2 py-1 rounded text-xs">1,000</span>
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Number of Teachers</label>
                   <div className="relative">
-                    <input 
-                      type="range" 
-                      min="10" 
-                      max="500" 
+                    <input
+                      type="range"
+                      min="10"
+                      max="500"
                       defaultValue="50"
                       className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                     />
@@ -1206,10 +1207,10 @@ export default function HomePage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Current Manual Grading Hours/Week</label>
                   <div className="relative">
-                    <input 
-                      type="range" 
-                      min="5" 
-                      max="40" 
+                    <input
+                      type="range"
+                      min="5"
+                      max="40"
                       defaultValue="20"
                       className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                     />
@@ -1226,12 +1227,12 @@ export default function HomePage() {
                   <span className="text-gray-700 dark:text-gray-300">Time Saved Per Year</span>
                   <span className="text-2xl font-bold text-green-600">520 hours</span>
                 </div>
-                
+
                 <div className="flex justify-between items-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                   <span className="text-gray-700 dark:text-gray-300">Cost Savings Per Year</span>
                   <span className="text-2xl font-bold text-blue-600">$26,000</span>
                 </div>
-                
+
                 <div className="flex justify-between items-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                   <span className="text-gray-700 dark:text-gray-300">ROI in First Year</span>
                   <span className="text-2xl font-bold text-purple-600">340%</span>
@@ -1381,7 +1382,7 @@ export default function HomePage() {
             />
           ))}
         </div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <AssessmentBuilder />
         </div>
@@ -1405,13 +1406,13 @@ export default function HomePage() {
             />
           ))}
         </div>
-        
+
         <div className="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 animate-slide-up">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 animate-text-shimmer">
             Ready to Start Your Learning Journey?
           </h2>
           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto animate-fade-in-delayed">
-            Join thousands of students who are already transforming their careers with EduLearn. 
+            Join thousands of students who are already transforming their careers with EduLearn.
             Start your free trial today!
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up-delayed">
@@ -1447,7 +1448,7 @@ export default function HomePage() {
         <div className="absolute inset-0 opacity-10">
           <div className="grid-background animate-grid-move"></div>
         </div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div className="animate-slide-up">
@@ -1470,14 +1471,14 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-            
+
             {[
               {
                 title: "Platform",
                 links: ["Browse Courses", "For Business", "Become Instructor", "Mobile App"]
               },
               {
-                title: "Support", 
+                title: "Support",
                 links: ["Help Center", "Contact Us", "System Status", "Bug Reports"]
               },
               {
@@ -1485,7 +1486,7 @@ export default function HomePage() {
                 links: ["About Us", "Careers", "Privacy Policy", "Terms of Service"]
               }
             ].map((section, index) => (
-              <div key={index} className="animate-slide-up" style={{animationDelay: `${(index + 1) * 0.1}s`}}>
+              <div key={index} className="animate-slide-up" style={{ animationDelay: `${(index + 1) * 0.1}s` }}>
                 <h3 className="font-semibold mb-4 hover:text-blue-400 transition-colors duration-300">{section.title}</h3>
                 <ul className="space-y-2 text-gray-400">
                   {section.links.map((link, linkIndex) => (
@@ -1497,7 +1498,7 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          
+
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 animate-fade-in-delayed">
             <p className="hover:text-gray-300 transition-colors duration-300">© 2024 EduLearn. Empowering education through technology.</p>
           </div>

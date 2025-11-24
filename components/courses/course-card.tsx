@@ -8,6 +8,7 @@ import { CourseWithEnrollment } from '@/lib/types/course';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useEnrollInCourse, useUnenrollFromCourse } from '@/lib/hooks/use-courses';
 import { BookOpenIcon, Users, Clock, Star, Play, UserMinus } from 'lucide-react';
+import Image from 'next/image';
 
 interface CourseCardProps {
   course: CourseWithEnrollment;
@@ -41,11 +42,11 @@ export function CourseCard({ course, onEdit, onDelete }: CourseCardProps) {
     if (user?.role === 'teacher') {
       return 'Manage';
     }
-    
+
     if (course.isEnrolled) {
       return course.enrollment?.progress === 100 ? 'Review' : 'Continue';
     }
-    
+
     return 'Enroll';
   };
 
@@ -73,10 +74,11 @@ export function CourseCard({ course, onEdit, onDelete }: CourseCardProps) {
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       <div className="aspect-video relative overflow-hidden">
-        <img
+        <Image
           src={course.thumbnail || 'https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg?auto=compress&cs=tinysrgb&w=400'}
           alt={course.title}
-          className="w-full h-full object-cover"
+          fill
+          className="object-cover"
         />
         <div className="absolute top-4 right-4">
           <Badge className={getStatusColor(course.isEnrolled ? 'active' : course.status)}>
@@ -84,7 +86,7 @@ export function CourseCard({ course, onEdit, onDelete }: CourseCardProps) {
           </Badge>
         </div>
       </div>
-      
+
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -103,12 +105,12 @@ export function CourseCard({ course, onEdit, onDelete }: CourseCardProps) {
           )}
         </div>
       </CardHeader>
-      
+
       <CardContent className="pt-0">
         <CardDescription className="line-clamp-2 mb-4">
           {course.description}
         </CardDescription>
-        
+
         <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
           <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
@@ -129,7 +131,7 @@ export function CourseCard({ course, onEdit, onDelete }: CourseCardProps) {
             <Progress value={course.enrollment.progress} className="h-2" />
           </div>
         )}
-        
+
         <div className="flex gap-2">
           <Button className="flex-1" onClick={handleAction}>
             {user?.role === 'student' && course.isEnrolled && (
@@ -140,7 +142,7 @@ export function CourseCard({ course, onEdit, onDelete }: CourseCardProps) {
             )}
             {getButtonText()}
           </Button>
-          
+
           {user?.role === 'student' && course.isEnrolled && (
             <Button
               variant="outline"
@@ -151,7 +153,7 @@ export function CourseCard({ course, onEdit, onDelete }: CourseCardProps) {
               <UserMinus className="h-4 w-4" />
             </Button>
           )}
-          
+
           {user?.role === 'teacher' && onDelete && (
             <Button
               variant="outline"
