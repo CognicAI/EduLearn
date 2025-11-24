@@ -10,7 +10,7 @@ This document outlines the current limitations and drawbacks of the EduLearn Lea
 - **Limited Error Handling**: Some edge cases may not be properly handled throughout the application
 - **Frontend-Backend Separation**: API contract between frontend and backend is not formally documented
 - **Limited Test Coverage**: Automated tests are not comprehensive across all system components
-- **Development Environment Only**: The system lacks production-ready deployment configurations and optimizations
+- **Limited Observability**: Missing distributed tracing and advanced performance monitoring
 
 ### Performance Issues
 
@@ -84,7 +84,7 @@ This document outlines the current limitations and drawbacks of the EduLearn Lea
 - **Institution Settings**: Limited customization for organizational needs
 - **Role Management**: Inflexible role assignment system
 - **Data Import/Export**: Basic tools for data migration
-- **System Health Monitoring**: Limited visibility into system performance
+- **Advanced Observability**: No distributed tracing or real-time dashboards
 
 ## Integration & Scalability
 
@@ -101,7 +101,7 @@ This document outlines the current limitations and drawbacks of the EduLearn Lea
 - **Dependency Management**: Potential for dependency conflicts and vulnerabilities
 - **Database Migrations**: Limited tools for managing database schema changes
 - **Backup & Restore**: Incomplete data backup solutions
-- **Monitoring & Alerting**: Basic system health monitoring
+- **Real-Time Alerting**: No automated alerts for system issues or performance degradation
 
 ---
 
