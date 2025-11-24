@@ -64,7 +64,6 @@ DROP TABLE IF EXISTS payment_methods CASCADE;
 DROP TABLE IF EXISTS system_logs CASCADE;
 DROP TABLE IF EXISTS platform_analytics CASCADE;
 DROP TABLE IF EXISTS course_analytics CASCADE;
-DROP TABLE IF EXISTS user_analytics CASCADE;
 DROP TABLE IF EXISTS email_logs CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS calendar_preferences CASCADE;
@@ -637,23 +636,7 @@ CREATE TABLE email_logs (
 ---
 -- Section 9: Analytics & Tracking Tables (4 tables)
 ---
-CREATE TABLE user_analytics (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    event_type VARCHAR(100) NOT NULL,
-    event_category VARCHAR(100) NOT NULL,
-    event_action VARCHAR(100) NOT NULL,
-    page_url VARCHAR(500),
-    referrer_url VARCHAR(500),
-    user_agent TEXT,
-    ip_address VARCHAR(45),
-    session_id VARCHAR(255),
-    device_type device_type,
-    browser_name VARCHAR(100),
-    os_name VARCHAR(100),
-    metadata JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+
 
 CREATE TABLE course_analytics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -856,7 +839,7 @@ CREATE INDEX idx_notifications_user_unread ON notifications(user_id, is_read);
 CREATE INDEX idx_messages_recipient_read ON messages(recipient_id, is_read);
 
 -- Analytics and reporting
-CREATE INDEX idx_user_analytics_user_created ON user_analytics(user_id, created_at);
+CREATE INDEX idx_user_activity_logs_user_date ON user_activity_logs(user_id, created_at DESC);
 CREATE INDEX idx_course_analytics_course_date ON course_analytics(course_id, metric_date);
 CREATE INDEX idx_platform_analytics_date ON platform_analytics(metric_date);
 -- Section 13.1: Chatbot Logging Schema

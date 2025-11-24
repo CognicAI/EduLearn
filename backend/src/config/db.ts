@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import logger from './logger';
 
 dotenv.config();
 
@@ -17,26 +18,72 @@ const pool = new Pool({
 
 // Test database connection
 pool.on('connect', () => {
-  console.log('✅ Connected to PostgreSQL database');
+  logger.info('Connected to PostgreSQL database');
 });
 
 pool.on('error', (err) => {
-  console.error('❌ PostgreSQL connection error:', err);
+  logger.error('PostgreSQL connection error', {
+    error: {
+      message: err.message,
+      stack: err.stack,
+    },
+  });
 });
 
 // Test the connection on startup
 export const testConnection = async () => {
   try {
     const client = await pool.connect();
-    console.log('🔍 Testing database connection...');
+    logger.info('Testing database connection...');
     const result = await client.query('SELECT NOW()');
-    console.log('✅ Database connection successful:', result.rows[0]);
+    logger.info('Database connection successful', {
+      timestamp: result.rows[0].now,
+    });
     client.release();
     return true;
-  } catch (error) {
-    console.error('❌ Database connection failed:', error);
-    return false;
+  } catch (error: any) {
+    logger.error('Database connection failed', {
+      error: {
+        message: error.message,
+        stack: error.stack,
+      },
+    });
+    throw error;
   }
 };
 
-export const query = (text: string, params?: any[]) => pool.query(text, params);
+// Enhanced query function with performance logging
+export const query = async (text: string, params?: any[]) => {
+  const start = Date.now();
+  try {
+    const result = await pool.query(text, params);
+    const duration = Date.now() - start;
+
+    // Log slow queries (> 1 second)
+    if (duration > 1000) {
+      logger.warn('Slow query detected', {
+        query: text.substring(0, 100), // Truncate long queries
+        duration: `${duration}ms`,
+        params: params?.length,
+      });
+    }
+
+    logger.debug('Database query executed', {
+      duration: `${duration}ms`,
+      rows: result.rowCount,
+    });
+
+    return result;
+  } catch (error: any) {
+    const duration = Date.now() - start;
+    logger.error('Database query failed', {
+      query: text.substring(0, 100),
+      duration: `${duration}ms`,
+      error: {
+        message: error.message,
+        code: error.code,
+      },
+    });
+    throw error;
+  }
+};

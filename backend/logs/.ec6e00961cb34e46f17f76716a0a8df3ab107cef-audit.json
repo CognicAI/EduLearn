@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/home/harsha/Documents/GitHub/EduLearn/backend/logs/.ec6e00961cb34e46f17f76716a0a8df3ab107cef-audit.json",
+    "files": [
+        {
+            "date": 1763977841159,
+            "name": "/home/harsha/Documents/GitHub/EduLearn/backend/logs/app-2025-11-24.log",
+            "hash": "fa0d53b11a0dcd418959a134ec35848a020e3fd187b22cd3d66a63bd2eee11e0"
+        }
+    ],
+    "hashType": "sha256"
+}

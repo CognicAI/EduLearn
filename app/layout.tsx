@@ -8,9 +8,20 @@ import { Toaster } from '@/components/ui/sonner';
 import { ChatbotWidget } from '@/components/chatbot/chatbot-widget';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { ErrorSuppression } from '@/components/error-suppression';
+import { PHProvider } from './providers/PostHogProvider';
+import dynamic from 'next/dynamic'
+
+const PostHogPageView = dynamic(() => import('./providers/PostHogPageView'), {
+  ssr: false,
+})
+
+// ... existing imports
+
+// Inside RootLayout
 
 
-const inter = Inter({ 
+
+const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter'
@@ -94,7 +105,7 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        
+
         {/* Additional Open Graph meta tags */}
         <meta property="og:title" content="EduLearn - Learning Management System" />
         <meta property="og:description" content="Advanced AI-integrated Learning Management System for modern education with intelligent features, interactive courses, and comprehensive analytics." />
@@ -104,13 +115,13 @@ export default function RootLayout({
         <meta property="og:url" content="https://edulearn.studio" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="EduLearn" />
-        
+
         {/* Twitter Card meta tags */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="EduLearn - Learning Management System" />
         <meta name="twitter:description" content="Advanced AI-integrated Learning Management System for modern education" />
         <meta name="twitter:image" content="https://edulearn.studio/images/og/og-default.svg" />
-        
+
         {/* Additional meta tags */}
         <meta name="theme-color" content="#2563eb" />
         <link rel="canonical" href="https://edulearn.studio" />
@@ -127,9 +138,12 @@ export default function RootLayout({
                 enableSystem={true}
                 disableTransitionOnChange={false}
               >
-                <main className="flex-grow">{children}</main>
-                <ChatbotWidget />
-                <Toaster position="top-right" />
+                <PHProvider>
+                  <PostHogPageView />
+                  <main className="flex-grow">{children}</main>
+                  <ChatbotWidget />
+                  <Toaster position="top-right" />
+                </PHProvider>
               </ThemeProvider>
             </AuthProvider>
           </QueryProvider>
