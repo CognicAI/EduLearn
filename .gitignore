@@ -38,3 +38,6 @@ next-env.d.ts
 
 # Chrome DevTools
 .well-known/
+
+# logs
+/backend/logs
