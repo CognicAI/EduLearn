@@ -69,7 +69,8 @@ export default function AdminUsersPage() {
     });
 
     // Fetch users from API
-    const fetchUsers = async () => {
+    const fetchUsers = async (customFilters?: typeof filters, page = pagination.page) => {
+        const currentFilters = customFilters || filters;
         try {
             const token = authService.getAccessToken();
             if (!token) {
@@ -78,11 +79,11 @@ export default function AdminUsersPage() {
             }
             setLoading(true);
             const params = new URLSearchParams({
-                page: pagination.page.toString(),
+                page: page.toString(),
                 limit: pagination.limit.toString(),
-                ...(filters.role && filters.role !== 'all' && { role: filters.role }),
-                ...(filters.status && filters.status !== 'all' && { status: filters.status }),
-                ...(filters.search && { search: filters.search })
+                ...(currentFilters.role && currentFilters.role !== 'all' && { role: currentFilters.role }),
+                ...(currentFilters.status && currentFilters.status !== 'all' && { status: currentFilters.status }),
+                ...(currentFilters.search && { search: currentFilters.search })
             });
 
             const response = await fetch(`http://localhost:3001/api/admin/users?${params}`, {
@@ -115,6 +116,13 @@ export default function AdminUsersPage() {
     const handleSearch = () => {
         setPagination(prev => ({ ...prev, page: 1 }));
         fetchUsers();
+    };
+
+    const handleClearFilters = () => {
+        const clearedFilters = { search: '', role: 'all', status: 'all' };
+        setFilters(clearedFilters);
+        setPagination(prev => ({ ...prev, page: 1 }));
+        fetchUsers(clearedFilters, 1);
     };
 
     const handleSelectAll = (checked: boolean) => {
@@ -197,7 +205,8 @@ export default function AdminUsersPage() {
         try {
             const params = new URLSearchParams({
                 ...(filters.role && filters.role !== 'all' && { role: filters.role }),
-                ...(filters.status && filters.status !== 'all' && { status: filters.status })
+                ...(filters.status && filters.status !== 'all' && { status: filters.status }),
+                ...(filters.search && { search: filters.search })
             });
 
             const response = await fetch(`http://localhost:3001/api/admin/users/export/csv?${params}`, {
@@ -299,6 +308,9 @@ export default function AdminUsersPage() {
                                     <Button onClick={handleSearch}>
                                         <Search className="h-4 w-4 mr-2" />
                                         Search
+                                    </Button>
+                                    <Button variant="outline" onClick={handleClearFilters}>
+                                        Clear
                                     </Button>
                                 </div>
                             </CardContent>

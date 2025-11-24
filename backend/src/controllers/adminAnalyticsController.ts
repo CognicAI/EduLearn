@@ -67,14 +67,17 @@ export class AdminAnalyticsController {
             // Get recent activity
             const recentActivity = await query(`
         SELECT 
-          id,
-          user_id,
-          activity_type,
-          description,
-          created_at
-        FROM user_activity_logs
-        ORDER BY created_at DESC
-        LIMIT 20
+          ual.id,
+          ual.user_id,
+          ual.activity_type,
+          ual.description,
+          ual.created_at,
+          u.first_name,
+          u.last_name
+        FROM user_activity_logs ual
+        LEFT JOIN users u ON ual.user_id = u.id
+        ORDER BY ual.created_at DESC
+        LIMIT 50
       `);
 
             // Log admin access
@@ -112,10 +115,10 @@ export class AdminAnalyticsController {
                     },
                     recentActivity: recentActivity.rows.map(activity => ({
                         id: activity.id,
-                        userId: activity.user_id,
-                        type: activity.activity_type,
-                        description: activity.description,
-                        timestamp: activity.created_at
+                        user: activity.first_name ? `${activity.first_name} ${activity.last_name}` : 'Unknown User',
+                        title: activity.description || formatActivityType(activity.activity_type),
+                        time: new Date(activity.created_at).toLocaleString(),
+                        type: mapActivityTypeToColorType(activity.activity_type)
                     }))
                 }
             });
@@ -402,6 +405,26 @@ export class AdminAnalyticsController {
             console.error('Error fetching system health:', error);
             res.status(500).json({ success: false, message: 'Failed to fetch system health metrics' });
         }
+    }
+}
+
+function formatActivityType(type: string): string {
+    if (!type) return 'Unknown Activity';
+    return type.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
+
+function mapActivityTypeToColorType(type: string): string {
+    switch (type) {
+        case 'login':
+        case 'logout':
+            return 'system';
+        case 'assignment_submit':
+        case 'discussion_post':
+            return 'success';
+        case 'profile_update':
+            return 'system';
+        default:
+            return 'success';
     }
 }
 

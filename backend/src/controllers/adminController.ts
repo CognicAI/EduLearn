@@ -9,7 +9,9 @@ export class AdminController {
   async getUsers(req: AuthenticatedRequest, res: Response) {
     try {
       const { role, status, search, page = 1, limit = 50 } = req.query;
-      const offset = (Number(page) - 1) * Number(limit);
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      const offset = (pageNum - 1) * limitNum;
 
       let whereConditions = ['u.is_deleted = false'];
       const params: any[] = [];
@@ -52,7 +54,7 @@ export class AdminController {
       GROUP BY u.id, up.id
       ORDER BY u.created_at DESC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-        [...params, limit, offset]
+        [...params, limitNum, offset]
       );
 
       const users = result.rows.map((u: any) => ({
@@ -91,7 +93,7 @@ export class AdminController {
         userId: req.user!.userId,
         activityType: 'profile_update',
         description: 'Admin viewed users list',
-        metadata: { filters: { role, status, search } }
+        metadata: { filters: { role, status, search }, pagination: { page: pageNum, limit: limitNum } }
       });
 
       return res.json({
@@ -99,9 +101,9 @@ export class AdminController {
         data: users,
         pagination: {
           total: totalCount,
-          page: Number(page),
-          limit: Number(limit),
-          totalPages: Math.ceil(totalCount / Number(limit))
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(totalCount / limitNum)
         }
       });
     } catch (error) {
@@ -287,7 +289,7 @@ export class AdminController {
   /** Export users to CSV */
   async exportUsers(req: AuthenticatedRequest, res: Response) {
     try {
-      const { role, status } = req.query;
+      const { role, status, search } = req.query;
       let whereConditions = ['is_deleted = false'];
       const params: any[] = [];
       let paramIndex = 1;
@@ -301,6 +303,11 @@ export class AdminController {
         params.push(status === 'active');
         paramIndex++;
       }
+      if (search) {
+        whereConditions.push(`(email ILIKE $${paramIndex} OR first_name ILIKE $${paramIndex} OR last_name ILIKE $${paramIndex})`);
+        params.push(`%${search}%`);
+        paramIndex++;
+      }
       const whereClause = whereConditions.join(' AND ');
       const result = await query(
         `SELECT id, email, first_name, last_name, role, phone, is_active, email_verified, created_at, last_login, login_count FROM users WHERE ${whereClause} ORDER BY created_at DESC`,
@@ -310,7 +317,7 @@ export class AdminController {
         userId: req.user!.userId,
         activityType: 'profile_update',
         description: `Admin exported ${result.rows.length} users`,
-        metadata: { filters: { role, status } }
+        metadata: { filters: { role, status, search } }
       });
       return res.json({ success: true, data: result.rows });
     } catch (err) {

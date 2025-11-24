@@ -197,26 +197,30 @@ export default function AdminDashboard() {
                         Latest system and user activities
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                      {platformData?.recentActivity?.map((activity: any) => (
-                        <div key={activity.id} className="flex items-start space-x-3">
-                          <div className={`w-2 h-2 rounded-full mt-2 ${activity.type === 'alert' ? 'bg-red-500' :
-                            activity.type === 'system' ? 'bg-blue-500' :
-                              'bg-green-500'
-                            }`}></div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{activity.title}</p>
-                            {activity.user && (
-                              <p className="text-xs text-muted-foreground">{activity.user}</p>
+                    <CardContent>
+                      <ScrollArea className="h-[400px] pr-4">
+                        <div className="space-y-4">
+                          {platformData?.recentActivity?.map((activity: any) => (
+                            <div key={activity.id} className="flex items-start space-x-3">
+                              <div className={`w-2 h-2 rounded-full mt-2 ${activity.type === 'alert' ? 'bg-red-500' :
+                                activity.type === 'system' ? 'bg-blue-500' :
+                                  'bg-green-500'
+                                }`}></div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">{activity.title}</p>
+                                {activity.user && (
+                                  <p className="text-xs text-muted-foreground">{activity.user}</p>
+                                )}
+                                <p className="text-xs text-muted-foreground">{activity.time}</p>
+                              </div>
+                            </div>
+                          )) || (
+                              <div className="text-center py-4">
+                                <p className="text-sm text-muted-foreground">No recent activity.</p>
+                              </div>
                             )}
-                            <p className="text-xs text-muted-foreground">{activity.time}</p>
-                          </div>
                         </div>
-                      )) || (
-                          <div className="text-center py-4">
-                            <p className="text-sm text-muted-foreground">No recent activity.</p>
-                          </div>
-                        )}
+                      </ScrollArea>
                     </CardContent>
                   </Card>
                 </div>
