@@ -1,0 +1,598 @@
+import { Response } from 'express';
+import { AuthenticatedRequest } from '../middleware/auth';
+import { query } from '../config/db';
+import { activityLogService } from '../services/activityLogService';
+import { courseAuthService } from '../services/courseAuthService';
+
+export class CourseController {
+    /**
+     * Get courses for the current user (Teacher)
+     */
+    async getTeacherCourses(req: AuthenticatedRequest, res: Response) {
+        try {
+            const userId = req.user!.userId;
+            const { status, search, page = 1, limit = 50 } = req.query;
+            const offset = (Number(page) - 1) * Number(limit);
+
+            // Build WHERE conditions for courses where teacher is owner OR assigned
+            let whereConditions = ['c.is_deleted = false'];
+            let havingConditions = ['(c.instructor_id = $1 OR COUNT(ct.id) > 0)'];
+            const params: any[] = [userId];
+            let paramIndex = 2;
+
+            if (status) {
+                whereConditions.push(`c.status = $${paramIndex}`);
+                params.push(status);
+                paramIndex++;
+            }
+
+            if (search) {
+                whereConditions.push(`(c.title ILIKE $${paramIndex} OR c.description ILIKE $${paramIndex})`);
+                params.push(`%${search}%`);
+                paramIndex++;
+            }
+
+            const whereClause = whereConditions.join(' AND ');
+            const havingClause = havingConditions.join(' AND ');
+
+            // Get total count
+            const countResult = await query(`
+                SELECT COUNT(DISTINCT c.id) as count
+                FROM courses c
+                LEFT JOIN course_teachers ct ON c.id = ct.course_id AND ct.teacher_id = $1
+                WHERE ${whereClause}
+                GROUP BY c.id
+                HAVING ${havingClause}
+            `, params);
+            const totalCount = countResult.rows.length;
+
+            // Get courses (both owned and assigned)
+            const result = await query(`
+                SELECT 
+                    c.*,
+                    cat.name as category_name,
+                    COUNT(DISTINCT cm.id) as module_count,
+                    COUNT(DISTINCT cl.id) as lesson_count,
+                    COUNT(DISTINCT e.id) as enrollment_count,
+                    CASE WHEN c.instructor_id = $1 THEN true ELSE false END as is_owner,
+                    COALESCE(ct.can_edit, false) as can_edit,
+                    COALESCE(ct.can_delete, false) as can_delete
+                FROM courses c
+                LEFT JOIN categories cat ON c.category_id = cat.id
+                LEFT JOIN course_modules cm ON c.id = cm.course_id AND cm.is_deleted = false
+                LEFT JOIN course_lessons cl ON cm.id = cl.module_id AND cl.is_deleted = false
+                LEFT JOIN enrollments e ON c.id = e.course_id
+                LEFT JOIN course_teachers ct ON c.id = ct.course_id AND ct.teacher_id = $1
+                WHERE ${whereClause}
+                GROUP BY c.id, cat.name, ct.can_edit, ct.can_delete
+                HAVING ${havingClause}
+                ORDER BY c.created_at DESC
+                LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+            `, [...params, limit, offset]);
+
+            return res.json({
+                success: true,
+                data: result.rows,
+                pagination: {
+                    total: totalCount,
+                    page: Number(page),
+                    limit: Number(limit),
+                    totalPages: Math.ceil(totalCount / Number(limit))
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching teacher courses:', error);
+            return res.status(500).json({ success: false, message: 'Failed to fetch courses' });
+        }
+    }
+
+    /**
+     * Create a new course
+     */
+    async createCourse(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { title, description, categoryId, level, price, durationWeeks, durationHours } = req.body;
+            const instructorId = req.user!.userId; // The creator is the instructor
+
+            // Generate slug from title
+            const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') + '-' + Date.now();
+
+            const result = await query(
+                `INSERT INTO courses (
+          title, slug, description, instructor_id, category_id, 
+          level, price, duration_weeks, duration_hours, status
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'draft') 
+        RETURNING *`,
+                [title, slug, description, instructorId, categoryId, level, price || 0, durationWeeks, durationHours]
+            );
+
+            await activityLogService.logActivity({
+                userId: req.user!.userId,
+                activityType: 'course_access', // Using existing type, maybe should add 'course_create'
+                description: `Created course: ${title}`,
+                metadata: { courseId: result.rows[0].id }
+            });
+
+            return res.status(201).json({
+                success: true,
+                message: 'Course created successfully',
+                data: result.rows[0]
+            });
+        } catch (error) {
+            console.error('Error creating course:', error);
+            return res.status(500).json({ success: false, message: 'Failed to create course' });
+        }
+    }
+
+    /**
+     * Get course details
+     */
+    async getCourseById(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+
+            const result = await query(`
+        SELECT 
+          c.*,
+          u.first_name || ' ' || u.last_name as instructor_name,
+          cat.name as category_name
+        FROM courses c
+        LEFT JOIN users u ON c.instructor_id = u.id
+        LEFT JOIN categories cat ON c.category_id = cat.id
+        WHERE c.id = $1 AND c.is_deleted = false
+      `, [id]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Course not found' });
+            }
+
+            const course = result.rows[0];
+
+            // Check access using authorization service
+            const hasAccess = await courseAuthService.canAccessCourse(userId, id, userRole);
+            if (!hasAccess) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            // Set permission flags
+            course.is_owner = course.instructor_id === userId;
+            course.can_edit = false;
+
+            if (userRole === 'admin') {
+                course.can_edit = true;
+            } else if (userRole === 'teacher') {
+                if (course.is_owner) {
+                    course.can_edit = true;
+                } else {
+                    const permissions = await courseAuthService.getTeacherPermissions(userId, id);
+                    course.permissions = permissions;
+                    course.can_edit = permissions.canEdit;
+                }
+            }
+
+            return res.json({
+                success: true,
+                data: course
+            });
+        } catch (error) {
+            console.error('Error fetching course:', error);
+            return res.status(500).json({ success: false, message: 'Failed to fetch course' });
+        }
+    }
+
+    /**
+     * Update course
+     */
+    async updateCourse(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+            const updates = req.body;
+
+            // Check if course exists
+            const check = await query('SELECT id FROM courses WHERE id = $1 AND is_deleted = false', [id]);
+            if (check.rows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Course not found' });
+            }
+
+            // Check edit permission using authorization service
+            const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
+            if (!canEdit) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            // Build update query dynamically
+            const allowedFields = ['title', 'description', 'short_description', 'category_id', 'level', 'price', 'duration_weeks', 'duration_hours', 'status', 'thumbnail', 'cover_image'];
+            const updateParts: string[] = [];
+            const params: any[] = [id];
+            let paramIndex = 2;
+
+            for (const field of allowedFields) {
+                if (updates[field] !== undefined) {
+                    updateParts.push(`${field} = $${paramIndex}`);
+                    params.push(updates[field]);
+                    paramIndex++;
+                }
+            }
+
+            if (updateParts.length === 0) {
+                return res.json({ success: true, message: 'No changes made' });
+            }
+
+            updateParts.push(`updated_at = NOW()`);
+
+            const result = await query(
+                `UPDATE courses SET ${updateParts.join(', ')} WHERE id = $1 RETURNING *`,
+                params
+            );
+
+            return res.json({
+                success: true,
+                message: 'Course updated successfully',
+                data: result.rows[0]
+            });
+        } catch (error) {
+            console.error('Error updating course:', error);
+            return res.status(500).json({ success: false, message: 'Failed to update course' });
+        }
+    }
+
+    /**
+     * Delete course (soft delete)
+     */
+    async deleteCourse(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+
+            // Check if course exists
+            const check = await query('SELECT id FROM courses WHERE id = $1 AND is_deleted = false', [id]);
+            if (check.rows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Course not found' });
+            }
+
+            // Check delete permission using authorization service
+            const canDelete = await courseAuthService.canDeleteCourse(userId, id, userRole);
+            if (!canDelete) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            await query('UPDATE courses SET is_deleted = true, deleted_at = NOW() WHERE id = $1', [id]);
+
+            return res.json({ success: true, message: 'Course deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting course:', error);
+            return res.status(500).json({ success: false, message: 'Failed to delete course' });
+        }
+    }
+
+    /**
+     * Get all categories (helper for course creation)
+     */
+    async getCategories(req: AuthenticatedRequest, res: Response) {
+        try {
+            const result = await query('SELECT * FROM categories WHERE is_deleted = false ORDER BY name');
+            return res.json({ success: true, data: result.rows });
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+            return res.status(500).json({ success: false, message: 'Failed to fetch categories' });
+        }
+    }
+    /**
+     * Get course modules
+     */
+    async getCourseModules(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+
+            // Check access
+            const hasAccess = await courseAuthService.canAccessCourse(userId, id, userRole);
+            if (!hasAccess) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            // Fetch modules with lessons
+            const modulesResult = await query(`
+                SELECT 
+                    cm.*,
+                    (
+                        SELECT json_agg(
+                            json_build_object(
+                                'id', cl.id,
+                                'title', cl.title,
+                                'duration_minutes', cl.video_duration,
+                                'is_free', cl.is_free,
+                                'type', 'video',
+                                'completed', CASE WHEN lp.completed THEN true ELSE false END
+                            ) ORDER BY cl.sort_order
+                        )
+                        FROM course_lessons cl
+                        LEFT JOIN enrollments e ON e.course_id = cm.course_id AND e.student_id = $2
+                        LEFT JOIN lesson_progress lp ON lp.lesson_id = cl.id AND lp.enrollment_id = e.id
+                        WHERE cl.module_id = cm.id AND cl.is_deleted = false
+                    ) as lessons
+                FROM course_modules cm
+                WHERE cm.course_id = $1 AND cm.is_deleted = false
+                ORDER BY cm.sort_order
+            `, [id, userId]);
+
+            return res.json({
+                success: true,
+                data: modulesResult.rows
+            });
+        } catch (error) {
+            console.error('Error fetching course modules:', error);
+            return res.status(500).json({ success: false, message: 'Failed to fetch modules' });
+        }
+    }
+
+    /**
+     * Get course assignments
+     */
+    async getCourseAssignments(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+
+            // Check access
+            const hasAccess = await courseAuthService.canAccessCourse(userId, id, userRole);
+            if (!hasAccess) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            // Fetch assignments with submission status
+            const assignmentsResult = await query(`
+                SELECT 
+                    a.*,
+                    s.status as submission_status,
+                    s.submitted_at,
+                    g.points_earned,
+                    g.feedback
+                FROM assignments a
+                LEFT JOIN submissions s ON s.assignment_id = a.id AND s.student_id = $2
+                LEFT JOIN grades g ON g.submission_id = s.id
+                WHERE a.course_id = $1 AND a.is_deleted = false
+                ORDER BY a.due_date ASC
+            `, [id, userId]);
+
+            return res.json({
+                success: true,
+                data: assignmentsResult.rows
+            });
+        } catch (error) {
+            console.error('Error fetching course assignments:', error);
+            return res.status(500).json({ success: false, message: 'Failed to fetch assignments' });
+        }
+    }
+
+    /**
+     * Get course files
+     */
+    async getCourseFiles(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+
+            // Check access
+            const hasAccess = await courseAuthService.canAccessCourse(userId, id, userRole);
+            if (!hasAccess) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            // Fetch files (assuming file_associations table links files to courses)
+            // Or if files are directly linked or via modules. 
+            // Based on schema, files table doesn't have course_id directly.
+            // But let's assume for now we might need a way to link them.
+            // Checking schema again... file_associations table exists.
+            // entity_type = 'course', entity_id = course_id
+
+            const filesResult = await query(`
+                SELECT 
+                    f.*
+                FROM files f
+                JOIN file_associations fa ON fa.file_id = f.id
+                WHERE fa.entity_type = 'course' AND fa.entity_id = $1 AND f.is_deleted = false
+                ORDER BY fa.created_at DESC
+            `, [id]);
+
+            return res.json({
+                success: true,
+                data: filesResult.rows
+            });
+        } catch (error) {
+            console.error('Error fetching course files:', error);
+            return res.status(500).json({ success: false, message: 'Failed to fetch files' });
+        }
+    }
+
+    /**
+     * Get course announcements
+     */
+    async getCourseAnnouncements(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+
+            // Check access
+            const hasAccess = await courseAuthService.canAccessCourse(userId, id, userRole);
+            if (!hasAccess) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            const announcementsResult = await query(`
+                SELECT 
+                    a.*,
+                    u.first_name || ' ' || u.last_name as author_name,
+                    u.profile_image as author_image
+                FROM announcements a
+                JOIN users u ON a.author_id = u.id
+                WHERE a.course_id = $1 AND a.is_deleted = false
+                ORDER BY a.created_at DESC
+            `, [id]);
+
+            return res.json({
+                success: true,
+                data: announcementsResult.rows
+            });
+        } catch (error) {
+            console.error('Error fetching course announcements:', error);
+            return res.status(500).json({ success: false, message: 'Failed to fetch announcements' });
+        }
+    }
+    /**
+     * Create a new module
+     */
+    async createModule(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+            const { title, description, sort_order } = req.body;
+
+            // Check edit permission
+            const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
+            if (!canEdit) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            const result = await query(
+                `INSERT INTO course_modules (course_id, title, description, sort_order) 
+                 VALUES ($1, $2, $3, $4) 
+                 RETURNING *`,
+                [id, title, description, sort_order || 0]
+            );
+
+            return res.status(201).json({
+                success: true,
+                message: 'Module created successfully',
+                data: result.rows[0]
+            });
+        } catch (error) {
+            console.error('Error creating module:', error);
+            return res.status(500).json({ success: false, message: 'Failed to create module' });
+        }
+    }
+
+    /**
+     * Create a new assignment
+     */
+    async createAssignment(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+            const { title, description, due_date, max_points, assignment_type } = req.body;
+
+            // Check edit permission
+            const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
+            if (!canEdit) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            const result = await query(
+                `INSERT INTO assignments (course_id, title, description, due_date, max_points, assignment_type, status) 
+                 VALUES ($1, $2, $3, $4, $5, $6, 'published') 
+                 RETURNING *`,
+                [id, title, description, due_date, max_points || 100, assignment_type || 'essay']
+            );
+
+            return res.status(201).json({
+                success: true,
+                message: 'Assignment created successfully',
+                data: result.rows[0]
+            });
+        } catch (error) {
+            console.error('Error creating assignment:', error);
+            return res.status(500).json({ success: false, message: 'Failed to create assignment' });
+        }
+    }
+
+    /**
+     * Create a file record (simulating upload)
+     */
+    async createFile(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+            const { filename, file_size, mime_type, file_path } = req.body;
+
+            // Check edit permission
+            const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
+            if (!canEdit) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            // 1. Create file record
+            const fileResult = await query(
+                `INSERT INTO files (uploader_id, filename, original_filename, file_path, file_size, mime_type, is_public) 
+                 VALUES ($1, $2, $2, $3, $4, $5, true) 
+                 RETURNING *`,
+                [userId, filename, file_path || '/tmp/placeholder', file_size || 0, mime_type || 'application/octet-stream']
+            );
+
+            const fileId = fileResult.rows[0].id;
+
+            // 2. Associate with course
+            await query(
+                `INSERT INTO file_associations (file_id, entity_type, entity_id, association_type) 
+                 VALUES ($1, 'course', $2, 'resource')`,
+                [fileId, id]
+            );
+
+            return res.status(201).json({
+                success: true,
+                message: 'File added successfully',
+                data: fileResult.rows[0]
+            });
+        } catch (error) {
+            console.error('Error adding file:', error);
+            return res.status(500).json({ success: false, message: 'Failed to add file' });
+        }
+    }
+
+    /**
+     * Create a new announcement
+     */
+    async createAnnouncement(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+            const { title, content, priority } = req.body;
+
+            // Check edit permission
+            const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
+            if (!canEdit) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            const result = await query(
+                `INSERT INTO announcements (course_id, author_id, title, content, priority, is_published) 
+                 VALUES ($1, $2, $3, $4, $5, true) 
+                 RETURNING *`,
+                [id, userId, title, content, priority || 'medium']
+            );
+
+            return res.status(201).json({
+                success: true,
+                message: 'Announcement posted successfully',
+                data: result.rows[0]
+            });
+        } catch (error) {
+            console.error('Error posting announcement:', error);
+            return res.status(500).json({ success: false, message: 'Failed to post announcement' });
+        }
+    }
+}
+
+export const courseController = new CourseController();

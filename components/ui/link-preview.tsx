@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, Globe, ImageIcon, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 interface LinkPreviewData {
   title: string;
@@ -19,11 +20,11 @@ interface LinkPreviewProps {
   compact?: boolean;
 }
 
-export function LinkPreview({ 
-  url, 
-  className = '', 
+export function LinkPreview({
+  url,
+  className = '',
   showBadge = true,
-  compact = false 
+  compact = false
 }: LinkPreviewProps) {
   const [previewData, setPreviewData] = useState<LinkPreviewData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,19 +36,19 @@ export function LinkPreview({
       try {
         setLoading(true);
         setError(null);
-        
+
         const response = await fetch(`/api/preview?url=${encodeURIComponent(url)}`);
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         if (data.error) {
           throw new Error(data.error);
         }
-        
+
         setPreviewData(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load preview');
@@ -107,16 +108,18 @@ export function LinkPreview({
 
   if (compact) {
     return (
-      <Card 
+      <Card
         className={`w-full max-w-md cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] ${className}`}
         onClick={handleClick}
       >
         <CardContent className="p-3">
           <div className="flex items-center space-x-3">
             {image && !imageError ? (
-              <img
+              <Image
                 src={image}
                 alt={title}
+                width={48}
+                height={48}
                 className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
                 onError={handleImageError}
               />
@@ -137,7 +140,7 @@ export function LinkPreview({
   }
 
   return (
-    <Card 
+    <Card
       className={`w-full max-w-2xl cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.01] ${className}`}
       onClick={handleClick}
     >
@@ -146,9 +149,11 @@ export function LinkPreview({
           {/* Image Section */}
           <div className="w-48 flex-shrink-0">
             {image && !imageError ? (
-              <img
+              <Image
                 src={image}
                 alt={title}
+                width={192}
+                height={128}
                 className="w-full h-32 object-cover rounded-l-lg"
                 onError={handleImageError}
               />
@@ -158,7 +163,7 @@ export function LinkPreview({
               </div>
             )}
           </div>
-          
+
           {/* Content Section */}
           <div className="flex-1 p-4 flex flex-col justify-between">
             <div>
@@ -168,12 +173,12 @@ export function LinkPreview({
                 </h3>
                 <ExternalLink className="h-4 w-4 text-gray-400 ml-2 flex-shrink-0" />
               </div>
-              
+
               <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                 {description}
               </p>
             </div>
-            
+
             <div className="flex items-center justify-between">
               {showBadge && (
                 <Badge variant="secondary" className="text-xs">
@@ -181,7 +186,7 @@ export function LinkPreview({
                   {site_name}
                 </Badge>
               )}
-              
+
               <div className="text-xs text-gray-400">
                 {new URL(url).hostname}
               </div>

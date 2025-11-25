@@ -7,13 +7,13 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { 
-  BookOpenIcon, 
-  LayoutDashboard, 
-  Users, 
-  FileText, 
-  Calendar, 
-  BarChart3, 
+import {
+  BookOpenIcon,
+  LayoutDashboard,
+  Users,
+  FileText,
+  Calendar,
+  BarChart3,
   Settings,
   GraduationCap,
   UserCheck,
@@ -28,7 +28,6 @@ import {
 const sidebarItems = {
   student: [
     { name: 'Dashboard', href: '/dashboard/student', icon: LayoutDashboard },
-    { name: 'My Courses', href: '/courses', icon: BookOpenIcon },
     { name: 'Assignments', href: '/assignments', icon: FileText },
     { name: 'Calendar', href: '/calendar', icon: Calendar },
     { name: 'Progress', href: '/progress', icon: BarChart3 },
@@ -36,8 +35,7 @@ const sidebarItems = {
   ],
   teacher: [
     { name: 'Dashboard', href: '/dashboard/teacher', icon: LayoutDashboard },
-    { name: 'My Courses', href: '/courses', icon: BookOpenIcon },
-    { name: 'Students', href: '/students', icon: GraduationCap },
+    { name: 'My Courses', href: '/dashboard/teacher/courses', icon: BookOpenIcon },
     { name: 'Assignments', href: '/assignments', icon: FileText },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Calendar', href: '/calendar', icon: Calendar },
@@ -46,7 +44,7 @@ const sidebarItems = {
   admin: [
     { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/admin/users', icon: Users },
-    { name: 'Courses', href: '/courses', icon: BookOpenIcon },
+    { name: 'Courses', href: '/admin/courses', icon: BookOpenIcon },
     { name: 'Announcements', href: '/admin/announcements', icon: Megaphone },
     { name: 'Events', href: '/admin/events', icon: CalendarDays },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
@@ -103,7 +101,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
           {items.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
-            
+
             return (
               <Link key={item.href} href={item.href}>
                 <Button
@@ -141,7 +139,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
             </div>
           </div>
         )}
-        
+
         {/* Logout Button */}
         <Button
           variant="outline"

@@ -20,7 +20,7 @@ class AuthService {
 
   private async request<T>(endpoint: string, options: RequestInit, retryOnAuth = true): Promise<T> {
     const res = await fetch(`${API_URL}${endpoint}`, options);
-    
+
     // Handle 403 Forbidden - try to refresh token once
     if (res.status === 403 && retryOnAuth && this.refreshToken && endpoint !== '/auth/refresh') {
       try {
@@ -92,7 +92,7 @@ class AuthService {
 
   async getCurrentUser(): Promise<User | null> {
     if (!this.accessToken) return null;
-    
+
     try {
       const data = await this.request<User>('/auth/me', {
         method: 'GET',
@@ -166,6 +166,8 @@ class AuthService {
     if (typeof window !== 'undefined') {
       localStorage.setItem('accessToken', tokens.accessToken);
       localStorage.setItem('refreshToken', tokens.refreshToken);
+      // Backward‑compatible key used by older code paths
+      localStorage.setItem('token', tokens.accessToken);
     }
   }
 
@@ -181,6 +183,12 @@ class AuthService {
   }
 
   getAccessToken(): string | null {
+    // Prefer the in‑memory token, but fall back to localStorage (including legacy key)
+    if (this.accessToken) return this.accessToken;
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      this.accessToken = stored || null;
+    }
     return this.accessToken;
   }
 

@@ -1,601 +1,458 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
-import { useAuth } from '@/lib/auth/auth-context';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { AuthGuard } from '@/lib/auth/auth-guard';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { authService } from '@/lib/auth/auth-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { 
-  Search, 
-  Filter, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Users, 
-  UserCheck, 
-  UserX,
-  Shield,
-  GraduationCap,
-  BookOpenIcon
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Search,
+    UserPlus,
+    Download,
+    Trash2,
+    Edit,
+    MoreHorizontal,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { authService } from '@/lib/auth/auth-service';
+
+interface User {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    status: string;
+    createdAt: string;
+    lastLogin?: string;
+    coursesEnrolled: number;
+    coursesCreated: number;
+}
 
 export default function AdminUsersPage() {
-  useAuth(); // initialize auth context
-  const [users, setUsers] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<typeof users[0] | null>(null);
-  const [formData, setFormData] = useState({
-    email: '',
-    firstName: '',
-    lastName: '',
-    role: 'student',
-    status: 'active'
-  });
+    const router = useRouter();
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+    const [filters, setFilters] = useState({
+        search: '',
+        role: '',
+        status: ''
+    });
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 50,
+        total: 0,
+        totalPages: 1
+    });
 
-  // Load users from API
-  useEffect(() => {
-    async function fetchUsers() {
-      try {
-        const token = authService.getAccessToken();
-        if (!token) {
-          throw new Error('Access token required');
+    // Fetch users from API
+    const fetchUsers = async (customFilters?: typeof filters, page = pagination.page) => {
+        const currentFilters = customFilters || filters;
+        try {
+            const token = authService.getAccessToken();
+            if (!token) {
+                toast.error('Not authenticated. Please log in.');
+                return;
+            }
+            setLoading(true);
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: pagination.limit.toString(),
+                ...(currentFilters.role && currentFilters.role !== 'all' && { role: currentFilters.role }),
+                ...(currentFilters.status && currentFilters.status !== 'all' && { status: currentFilters.status }),
+                ...(currentFilters.search && { search: currentFilters.search })
+            });
+
+            const response = await fetch(`http://localhost:3001/api/admin/users?${params}`, {
+                headers: {
+                    'Authorization': `Bearer ${authService.getAccessToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch users');
+
+            const data = await response.json();
+            setUsers(data.data);
+            if (data.pagination) {
+                setPagination(prev => ({ ...prev, ...data.pagination }));
+            }
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            toast.error('Failed to load users');
+        } finally {
+            setLoading(false);
         }
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`, {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          }
-        });
-        const json = await res.json();
-        if (json.success) {
-          setUsers(json.data);
+    };
+
+    useEffect(() => {
+        fetchUsers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pagination.page, filters.role, filters.status]);
+
+    const handleSearch = () => {
+        setPagination(prev => ({ ...prev, page: 1 }));
+        fetchUsers();
+    };
+
+    const handleClearFilters = () => {
+        const clearedFilters = { search: '', role: 'all', status: 'all' };
+        setFilters(clearedFilters);
+        setPagination(prev => ({ ...prev, page: 1 }));
+        fetchUsers(clearedFilters, 1);
+    };
+
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedUsers(new Set(users.map(u => u.id)));
         } else {
-          console.error('Failed to fetch users:', json.message);
+            setSelectedUsers(new Set());
         }
-      } catch (err) {
-        console.error('Error fetching users:', err);
-      }
-    }
-    fetchUsers();
-  }, []);
+    };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = 
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesRole = !roleFilter || roleFilter === 'all' || user.role === roleFilter;
-    const matchesStatus = !statusFilter || statusFilter === 'all' || user.status === statusFilter;
-    
-    return matchesSearch && matchesRole && matchesStatus;
-  });
-
-  const handleRoleChange = async (userId: string, newRole: string) => {
-    try {
-      const token = authService.getAccessToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ role: newRole })
-      });
-      const json = await res.json();
-      if (json.success) {
-        setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
-        toast.success('User role updated successfully');
-      } else {
-        throw new Error(json.message);
-      }
-    } catch (error) {
-      console.error('Error updating role:', error);
-      toast.error('Failed to update user role');
-    }
-  };
-
-  const handleStatusToggle = async (userId: string) => {
-    const newStatus = users.find(u => u.id === userId)?.status === 'active' ? 'inactive' : 'active';
-    try {
-      const token = authService.getAccessToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-      const json = await res.json();
-      if (json.success) {
-        setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
-        toast.success('User status updated successfully');
-      } else {
-        throw new Error(json.message);
-      }
-    } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Failed to update user status');
-    }
-  };
-
-  const handleCreateUser = () => {
-    setEditingUser(null);
-    setFormData({
-      email: '',
-      firstName: '',
-      lastName: '',
-      role: 'student',
-      status: 'active'
-    });
-    setIsCreateDialogOpen(true);
-  };
-
-  const handleEditUser = (user: typeof users[0]) => {
-    setEditingUser(user);
-    setFormData({
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      status: user.status
-    });
-    setIsCreateDialogOpen(true);
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!formData.email.trim() || !formData.firstName.trim() || !formData.lastName.trim()) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    const token = authService.getAccessToken();
-    try {
-      let res: Response;
-      let json: any;
-      if (editingUser) {
-        res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${editingUser.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(formData)
-        });
-        json = await res.json();
-        if (json.success) {
-          setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...formData } : u));
-          toast.success('User updated successfully!');
+    const handleSelectUser = (userId: string, checked: boolean) => {
+        const newSelected = new Set(selectedUsers);
+        if (checked) {
+            newSelected.add(userId);
+        } else {
+            newSelected.delete(userId);
         }
-      } else {
-        res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(formData)
-        });
-        json = await res.json();
-        if (json.success) {
-          setUsers(prev => [...prev, json.data]);
-          toast.success('User created successfully!');
+        setSelectedUsers(newSelected);
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedUsers.size === 0) {
+            toast.error('No users selected');
+            return;
         }
-      }
-      if (!json.success) throw new Error(json.message);
-      setIsCreateDialogOpen(false);
-    } catch (error) {
-      console.error('Error saving user:', error);
-      toast.error('Failed to save user');
-    }
-  };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
-    try {
-      const token = authService.getAccessToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
+        if (!confirm(`Are you sure you want to delete ${selectedUsers.size} users?`)) {
+            return;
         }
-      });
-      const json = await res.json();
-      if (json.success) {
-        setUsers(prev => prev.filter(u => u.id !== userId));
-        toast.success('User deleted successfully!');
-      } else {
-        throw new Error(json.message);
-      }
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      toast.error('Failed to delete user');
-    }
-  };
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'student':
-        return <GraduationCap className="h-4 w-4" />;
-      case 'teacher':
-        return <BookOpenIcon className="h-4 w-4" />;
-      case 'admin':
-        return <Shield className="h-4 w-4" />;
-      default:
-        return <Users className="h-4 w-4" />;
-    }
-  };
+        try {
+            const response = await fetch('http://localhost:3001/api/admin/users/bulk/delete', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authService.getAccessToken()}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userIds: Array.from(selectedUsers) })
+            });
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'student':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'teacher':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'admin':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
+            if (!response.ok) throw new Error('Failed to delete users');
 
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`;
-  };
+            toast.success(`Successfully deleted ${selectedUsers.size} users`);
+            setSelectedUsers(new Set());
+            fetchUsers();
+        } catch (error) {
+            console.error('Error deleting users:', error);
+            toast.error('Failed to delete users');
+        }
+    };
 
-  const userStats = {
-    total: users.length,
-    active: users.filter(u => u.status === 'active').length,
-    students: users.filter(u => u.role === 'student').length,
-    teachers: users.filter(u => u.role === 'teacher').length,
-    admins: users.filter(u => u.role === 'admin').length
-  };
+    const handleBulkUpdateStatus = async (isActive: boolean) => {
+        if (selectedUsers.size === 0) {
+            toast.error('No users selected');
+            return;
+        }
 
-  return (
-    <AuthGuard allowedRoles={['admin']}>
-      <div className="flex h-screen bg-background">
-        <DashboardSidebar />
-        
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">User Management</h1>
-                <p className="text-muted-foreground mt-2">
-                  Manage all users on the EduLearn platform
-                </p>
-              </div>
-              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={handleCreateUser}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add User
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingUser ? 'Edit User' : 'Create New User'}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {editingUser ? 'Update user information' : 'Add a new user to the platform'}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="firstName">First Name</Label>
-                        <Input
-                          id="firstName"
-                          value={formData.firstName}
-                          onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                          placeholder="John"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="lastName">Last Name</Label>
-                        <Input
-                          id="lastName"
-                          value={formData.lastName}
-                          onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                          placeholder="Doe"
-                          required
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                        placeholder="john.doe@example.com"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="role">Role</Label>
-                        <Select value={formData.role} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="student">Student</SelectItem>
-                            <SelectItem value="teacher">Teacher</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="status">Status</Label>
-                        <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-end space-x-2 pt-4">
-                      <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit">
-                        {editingUser ? 'Update User' : 'Create User'}
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
+        try {
+            const response = await fetch('http://localhost:3001/api/admin/users/bulk/update-status', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authService.getAccessToken()}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userIds: Array.from(selectedUsers), isActive })
+            });
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{userStats.total}</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-                  <UserCheck className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{userStats.active}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {Math.round((userStats.active / userStats.total) * 100)}% of total
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Students</CardTitle>
-                  <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{userStats.students}</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Teachers</CardTitle>
-                  <BookOpenIcon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{userStats.teachers}</div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Admins</CardTitle>
-                  <Shield className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{userStats.admins}</div>
-                </CardContent>
-              </Card>
-            </div>
+            if (!response.ok) throw new Error('Failed to update users');
 
-            {/* Search and Filters */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search users..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="All Roles" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="student">Students</SelectItem>
-                  <SelectItem value="teacher">Teachers</SelectItem>
-                  <SelectItem value="admin">Admins</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-32">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            toast.success(`Successfully updated ${selectedUsers.size} users`);
+            setSelectedUsers(new Set());
+            fetchUsers();
+        } catch (error) {
+            console.error('Error updating users:', error);
+            toast.error('Failed to update users');
+        }
+    };
 
-            {/* Users Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Users</CardTitle>
-                <CardDescription>
-                  Manage user accounts, roles, and permissions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Last Login</TableHead>
-                      <TableHead>Activity</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <div className="flex items-center space-x-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
-                              <AvatarFallback>
-                                {getInitials(user.firstName, user.lastName)}
-                              </AvatarFallback>
-                            </Avatar>
+    const handleExport = async () => {
+        try {
+            const params = new URLSearchParams({
+                ...(filters.role && filters.role !== 'all' && { role: filters.role }),
+                ...(filters.status && filters.status !== 'all' && { status: filters.status }),
+                ...(filters.search && { search: filters.search })
+            });
+
+            const response = await fetch(`http://localhost:3001/api/admin/users/export/csv?${params}`, {
+                headers: {
+                    'Authorization': `Bearer ${authService.getAccessToken()}`,
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to export users');
+
+            const data = await response.json();
+
+            // Convert to CSV
+            const csv = convertToCSV(data.data);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `users-export-${new Date().toISOString()}.csv`;
+            a.click();
+
+            toast.success('Users exported successfully');
+        } catch (error) {
+            console.error('Error exporting users:', error);
+            toast.error('Failed to export users');
+        }
+    };
+
+    const convertToCSV = (data: any[]) => {
+        if (data.length === 0) return '';
+        const headers = Object.keys(data[0]).join(',');
+        const rows = data.map(row => Object.values(row).join(',')).join('\n');
+        return headers + '\n' + rows;
+    };
+
+    return (
+        <AuthGuard allowedRoles={['admin']}>
+            <div className="flex h-screen bg-background">
+                <DashboardSidebar />
+
+                <main className="flex-1 overflow-y-auto">
+                    <div className="p-6 space-y-6">
+                        {/* Header */}
+                        <div className="flex justify-between items-center">
                             <div>
-                              <p className="font-medium">{user.firstName} {user.lastName}</p>
-                              <p className="text-sm text-muted-foreground">{user.email}</p>
+                                <h1 className="text-3xl font-bold">User Management</h1>
+                                <p className="text-muted-foreground mt-1">
+                                    Manage all platform users with full access to all fields
+                                </p>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={user.role}
-                            onValueChange={(value) => handleRoleChange(user.id, value)}
-                          >
-                            <SelectTrigger className="w-32">
-                              <div className="flex items-center gap-2">
-                                {getRoleIcon(user.role)}
-                                <SelectValue />
-                              </div>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="student">Student</SelectItem>
-                              <SelectItem value="teacher">Teacher</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              checked={user.status === 'active'}
-                              onCheckedChange={() => handleStatusToggle(user.id)}
-                            />
-                            <Badge className={user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                              {user.status === 'active' ? <UserCheck className="h-3 w-3 mr-1" /> : <UserX className="h-3 w-3 mr-1" />}
-                              {user.status}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm">{user.lastLogin}</span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            {user.role === 'student' && (
-                              <div>
-                                <p>{user.coursesEnrolled} courses enrolled</p>
-                                <p className="text-muted-foreground">{user.coursesCompleted} completed</p>
-                              </div>
-                            )}
-                            {user.role === 'teacher' && (
-                              <div>
-                                <p>{user.coursesCreated} courses created</p>
-                                <p className="text-muted-foreground">{user.studentsTotal} students</p>
-                              </div>
-                            )}
-                            {user.role === 'admin' && (
-                              <p>{user.systemAccess} access</p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline" onClick={() => handleEditUser(user)}>
-                              <Edit className="h-4 w-4 mr-1" />
-                              Edit
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              onClick={() => handleDeleteUser(user.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                            <div className="flex gap-2">
+                                <Button variant="outline" onClick={handleExport}>
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export CSV
+                                </Button>
+                                <Button onClick={() => router.push('/admin/users/new')}>
+                                    <UserPlus className="h-4 w-4 mr-2" />
+                                    Add User
+                                </Button>
+                            </div>
+                        </div>
 
-                {filteredUsers.length === 0 && (
-                  <div className="text-center py-8">
-                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No users found</h3>
-                    <p className="text-muted-foreground">
-                      {searchTerm || roleFilter || statusFilter
-                        ? 'Try adjusting your search or filters.'
-                        : 'No users have been created yet.'
-                      }
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </main>
-      </div>
-    </AuthGuard>
-  );
+                        {/* Filters */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Filters</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex gap-4">
+                                    <div className="flex-1">
+                                        <Input
+                                            placeholder="Search by name or email..."
+                                            value={filters.search}
+                                            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSearch() }}
+                                        />
+                                    </div>
+                                    <Select value={filters.role} onValueChange={(value) => setFilters({ ...filters, role: value })}>
+                                        <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="All Roles" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Roles</SelectItem>
+                                            <SelectItem value="student">Student</SelectItem>
+                                            <SelectItem value="teacher">Teacher</SelectItem>
+                                            <SelectItem value="admin">Admin</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Select value={filters.status} onValueChange={(value) => setFilters({ ...filters, status: value })}>
+                                        <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="All Status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Status</SelectItem>
+                                            <SelectItem value="active">Active</SelectItem>
+                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Button onClick={handleSearch}>
+                                        <Search className="h-4 w-4 mr-2" />
+                                        Search
+                                    </Button>
+                                    <Button variant="outline" onClick={handleClearFilters}>
+                                        Clear
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Bulk Actions */}
+                        {selectedUsers.size > 0 && (
+                            <Card className="bg-accent">
+                                <CardContent className="flex items-center justify-between p-4">
+                                    <span className="font-medium">
+                                        {selectedUsers.size} user(s) selected
+                                    </span>
+                                    <div className="flex gap-2">
+                                        <Button size="sm" variant="outline" onClick={() => handleBulkUpdateStatus(true)}>
+                                            Activate
+                                        </Button>
+                                        <Button size="sm" variant="outline" onClick={() => handleBulkUpdateStatus(false)}>
+                                            Deactivate
+                                        </Button>
+                                        <Button size="sm" variant="destructive" onClick={handleBulkDelete}>
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete Selected
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Users Table */}
+                        <Card>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-12">
+                                            <Checkbox
+                                                checked={selectedUsers.size === users.length && users.length > 0}
+                                                onCheckedChange={handleSelectAll}
+                                            />
+                                        </TableHead>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead>Role</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Courses</TableHead>
+                                        <TableHead>Last Login</TableHead>
+                                        <TableHead>Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {loading ? (
+                                        <TableRow key="loading">
+                                            <TableCell colSpan={8} className="text-center py-8">
+                                                Loading users...
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : users.length === 0 ? (
+                                        <TableRow key="empty">
+                                            <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                                                No users found
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        users.map((user) => (
+                                            <TableRow key={user.id}>
+                                                <TableCell>
+                                                    <Checkbox
+                                                        checked={selectedUsers.has(user.id)}
+                                                        onCheckedChange={(checked) => handleSelectUser(user.id, checked as boolean)}
+                                                    />
+                                                </TableCell>
+                                                <TableCell className="font-medium">
+                                                    {user.firstName} {user.lastName}
+                                                </TableCell>
+                                                <TableCell>{user.email}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant="outline">{user.role}</Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
+                                                        {user.status}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {user.role === 'student' ? user.coursesEnrolled : user.coursesCreated}
+                                                </TableCell>
+                                                <TableCell className="text-sm text-muted-foreground">
+                                                    {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => router.push(`/admin/users/${user.id}`)}
+                                                    >
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+
+                            {/* Pagination */}
+                            {!loading && pagination.totalPages > 1 && (
+                                <div className="flex items-center justify-between p-4 border-t">
+                                    <div className="text-sm text-muted-foreground">
+                                        Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+                                        {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                                        {pagination.total} users
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
+                                            disabled={pagination.page === 1}
+                                        >
+                                            <ChevronLeft className="h-4 w-4" />
+                                            Previous
+                                        </Button>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-sm">
+                                                Page {pagination.page} of {pagination.totalPages}
+                                            </span>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
+                                            disabled={pagination.page === pagination.totalPages}
+                                        >
+                                            Next
+                                            <ChevronRight className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </Card>
+                    </div>
+                </main>
+            </div>
+        </AuthGuard>
+    );
 }

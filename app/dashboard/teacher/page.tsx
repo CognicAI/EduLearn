@@ -12,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpenIcon, Users, FileText, Clock, TrendingUp, Plus, Eye, Edit, BarChart3 } from 'lucide-react';
 import { useDashboardData } from '@/lib/hooks/use-dashboard-data';
 import { useUserProfile } from '@/lib/hooks/use-user';
-import { CourseManagement } from '@/components/teacher/course-management';
 import { AssignmentManagement } from '@/components/teacher/assignment-management';
 import { GradeSubmissions } from '@/components/teacher/grade-submissions';
 import { EventManagement } from '@/components/teacher/event-management';
@@ -155,9 +154,8 @@ export default function TeacherDashboard() {
 
               {/* Management Tabs */}
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="courses">Courses</TabsTrigger>
                   <TabsTrigger value="assignments">Assignments</TabsTrigger>
                   <TabsTrigger value="grading">Grading</TabsTrigger>
                   <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -270,10 +268,6 @@ export default function TeacherDashboard() {
                       </Card>
                     </div>
                   </div>
-                </TabsContent>
-
-                <TabsContent value="courses" className="mt-6">
-                  <CourseManagement />
                 </TabsContent>
 
                 <TabsContent value="assignments" className="mt-6">
