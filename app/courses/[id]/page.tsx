@@ -7,46 +7,37 @@ import {
     Clock,
     Users,
     Star,
-    FileText,
-    Download,
-    Megaphone,
-    CheckCircle,
     PlayCircle,
-    Lock,
-    Calendar,
-    AlertCircle,
-    ChevronRight
+    CheckCircle,
+    Megaphone,
+    FileText,
+    Upload,
+    Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { createModule, createAssignment, createFile, createAnnouncement } from '@/lib/services/courseAssignments';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
 import { AuthGuard } from '@/lib/auth/auth-guard';
+import {
+    createModule,
+    createAssignment,
+    createAnnouncement,
+    updateModule,
+    deleteModule,
+    deleteAssignment,
+    updateModuleOrder,
+    updateAssignment,
+    createLesson,
+    deleteLesson,
+    uploadFile
+} from '@/lib/services/courseAssignments';
+import { CourseStructure, Module } from '@/components/courses/CourseStructure';
+import { CourseItem } from '@/components/courses/CourseSection';
 
 export default function CourseDetailsPage() {
     const params = useParams();
@@ -54,7 +45,7 @@ export default function CourseDetailsPage() {
     const { toast } = useToast();
     const [course, setCourse] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('overview');
+    const [activeTab, setActiveTab] = useState('modules');
 
     const [modules, setModules] = useState<any[]>([]);
     const [assignments, setAssignments] = useState<any[]>([]);
@@ -66,26 +57,11 @@ export default function CourseDetailsPage() {
     const [canEdit, setCanEdit] = useState(false);
     const [userRole, setUserRole] = useState<string>('');
 
-    // Dialog States
-    const [isModuleDialogOpen, setIsModuleDialogOpen] = useState(false);
-    const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
-    const [isFileDialogOpen, setIsFileDialogOpen] = useState(false);
-    const [isAnnouncementDialogOpen, setIsAnnouncementDialogOpen] = useState(false);
+    // File Upload State
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
 
-    // Form States
-    const [newModule, setNewModule] = useState({ title: '', description: '' });
-    const [newAssignment, setNewAssignment] = useState({ title: '', description: '', due_date: '', max_points: 100, assignment_type: 'essay' });
-    const [newFile, setNewFile] = useState({ filename: '', file_size: 1024 * 1024, mime_type: 'application/pdf', file_path: '/tmp/placeholder.pdf' });
-    const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '', priority: 'medium' });
-
-    useEffect(() => {
-        if (courseId) {
-            fetchCourseDetails();
-            fetchCourseContent();
-        }
-    }, [courseId]);
-
-    const fetchCourseDetails = async () => {
+    const fetchCourseDetails = React.useCallback(async () => {
         try {
             const token = localStorage.getItem('accessToken');
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/${courseId}`, {
@@ -97,8 +73,6 @@ export default function CourseDetailsPage() {
 
             if (data.success) {
                 setCourse(data.data);
-                // Check if user has edit permissions (admin or instructor/assigned teacher)
-                // Check if user has edit permissions (admin or instructor/assigned teacher)
                 const role = JSON.parse(atob(token?.split('.')[1] || '{}')).role;
                 setUserRole(role);
                 setCanEdit(role === 'admin' || data.data.can_edit || data.data.is_owner);
@@ -114,9 +88,9 @@ export default function CourseDetailsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [courseId, toast]);
 
-    const fetchCourseContent = async () => {
+    const fetchCourseContent = React.useCallback(async () => {
         try {
             const token = localStorage.getItem('accessToken');
             const headers = { 'Authorization': `Bearer ${token}` };
@@ -144,53 +118,238 @@ export default function CourseDetailsPage() {
         } catch (error) {
             console.error('Error fetching course content:', error);
         }
+    }, [courseId]);
+
+    useEffect(() => {
+        if (courseId) {
+            fetchCourseDetails();
+            fetchCourseContent();
+        }
+    }, [courseId, fetchCourseDetails, fetchCourseContent]);
+
+    // Transform data for CourseStructure
+    const mapModuleToStructure = (mod: any): Module => {
+        const modAssignments = assignments.filter(a => a.module_id === mod.id).map(a => ({
+            id: a.id,
+            type: 'assignment' as const,
+            title: a.title,
+            dueDate: a.due_date,
+            completed: a.submission_status === 'submitted',
+            sortOrder: a.sort_order || 0
+        }));
+
+        const modLessons = (mod.lessons || []).map((l: any) => {
+            let itemType: 'lesson' | 'file' | 'page' = 'lesson';
+            if (l.type === 'file') itemType = 'file';
+            else if (l.type === 'text') itemType = 'page';
+
+            return {
+                id: l.id,
+                type: itemType,
+                title: l.title,
+                duration: l.duration_minutes,
+                completed: l.completed,
+                sortOrder: l.sort_order || 0,
+                isFree: l.is_free,
+                video_url: l.video_url,
+                url: l.video_url
+            };
+        });
+
+        // Merge and sort items
+        const items = [...modLessons, ...modAssignments].sort((a, b) => a.sortOrder - b.sortOrder);
+
+        // Recursively map subsections
+        const subsections = (mod.subsections || []).map(mapModuleToStructure);
+
+        return {
+            id: mod.id,
+            title: mod.title,
+            items: items,
+            subsections: subsections,
+            sortOrder: mod.sort_order
+        };
     };
 
-    const handleCreateModule = async () => {
+    const getStructuredModules = (): Module[] => {
+        return modules.map(mapModuleToStructure);
+    };
+
+    // Handlers
+    const handleAddModule = async (title: string) => {
         try {
-            await createModule(courseId, newModule);
-            toast({ title: 'Success', description: 'Module created successfully' });
-            setIsModuleDialogOpen(false);
-            setNewModule({ title: '', description: '' });
+            await createModule(courseId, { title, sort_order: modules.length + 1 });
+            toast({ title: 'Success', description: 'Section added' });
             fetchCourseContent();
         } catch (error: any) {
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
         }
     };
 
-    const handleCreateAssignment = async () => {
+    const handleAddSubsection = async (parentId: string, title: string) => {
         try {
-            await createAssignment(courseId, newAssignment);
-            toast({ title: 'Success', description: 'Assignment created successfully' });
-            setIsAssignmentDialogOpen(false);
-            setNewAssignment({ title: '', description: '', due_date: '', max_points: 100, assignment_type: 'essay' });
+            // Find parent module to determine sort order (append to end)
+            // This is a bit complex with nested structure, so we'll just use 0 or logic in backend
+            // For now, let's just create it.
+            await createModule(courseId, { title, parentId, sort_order: 999 }); // Backend or DB should handle order or we fetch and calc
+            toast({ title: 'Success', description: 'Subsection added' });
             fetchCourseContent();
         } catch (error: any) {
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
         }
     };
 
-    const handleCreateFile = async () => {
+    const handleBulkAddModules = async (count: number) => {
         try {
-            await createFile(courseId, newFile);
-            toast({ title: 'Success', description: 'File added successfully' });
-            setIsFileDialogOpen(false);
-            setNewFile({ filename: '', file_size: 1024 * 1024, mime_type: 'application/pdf', file_path: '/tmp/placeholder.pdf' });
+            const promises = [];
+            for (let i = 0; i < count; i++) {
+                promises.push(createModule(courseId, { title: 'New Section', sort_order: modules.length + i + 1 }));
+            }
+            await Promise.all(promises);
+            toast({ title: 'Success', description: `${count} sections added` });
             fetchCourseContent();
         } catch (error: any) {
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
         }
     };
 
-    const handleCreateAnnouncement = async () => {
+    const handleRenameModule = async (moduleId: string, newTitle: string) => {
         try {
-            await createAnnouncement(courseId, newAnnouncement);
-            toast({ title: 'Success', description: 'Announcement posted successfully' });
-            setIsAnnouncementDialogOpen(false);
-            setNewAnnouncement({ title: '', content: '', priority: 'medium' });
+            await updateModule(courseId, moduleId, { title: newTitle });
+            toast({ title: 'Success', description: 'Section renamed' });
             fetchCourseContent();
         } catch (error: any) {
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        }
+    };
+
+    const handleDeleteModule = async (moduleId: string) => {
+        if (!confirm('Are you sure you want to delete this section?')) return;
+        try {
+            await deleteModule(courseId, moduleId);
+            toast({ title: 'Success', description: 'Section deleted' });
+            fetchCourseContent();
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        }
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !activeModuleId) return;
+
+        try {
+            toast({ title: 'Uploading...', description: 'Please wait while the file uploads.' });
+
+            // 1. Upload file
+            const uploadResult = await uploadFile(courseId, file);
+            const fileUrl = uploadResult.url;
+            const fileName = file.name;
+
+            // 2. Create lesson of type 'file'
+            // Find max sort order
+            // We need to find the module in the nested structure. 
+            // For simplicity, we'll just use a default sort order or fetch fresh data.
+            // Let's rely on backend or just use a safe high number/default.
+
+            await createLesson(courseId, activeModuleId, {
+                title: fileName,
+                type: 'file',
+                video_url: fileUrl,
+                sort_order: 999 // Append to end
+            });
+
+            toast({ title: 'Success', description: 'File uploaded and added to section' });
+            fetchCourseContent();
+        } catch (error: any) {
+            console.error('Upload error:', error);
+            toast({ title: 'Error', description: error.message || 'Failed to upload file', variant: 'destructive' });
+        } finally {
+            // Reset input
+            if (fileInputRef.current) fileInputRef.current.value = '';
+            setActiveModuleId(null);
+        }
+    };
+
+    const handleAddItem = async (moduleId: string, type: string) => {
+        if (!canEdit) return;
+
+        try {
+            if (type === 'assignment') {
+                const title = prompt('Enter assignment title:');
+                if (!title) return;
+
+                const newAssignment = await createAssignment(courseId as string, {
+                    title,
+                    description: '',
+                    due_date: new Date().toISOString(),
+                    max_points: 100,
+                    assignment_type: 'essay'
+                });
+
+                await updateAssignment(courseId as string, newAssignment.data.id, {
+                    module_id: moduleId,
+                    sort_order: 999
+                });
+
+                fetchCourseContent();
+                toast({ title: 'Success', description: 'Assignment created successfully' });
+            } else if (type === 'quiz') {
+                toast({ title: 'Info', description: 'Quiz creation not fully implemented yet' });
+            } else if (type === 'file') {
+                // Trigger file input
+                setActiveModuleId(moduleId);
+                fileInputRef.current?.click();
+            }
+        } catch (error: any) {
+            toast({
+                title: 'Error',
+                description: error.message || 'Failed to add item',
+                variant: 'destructive'
+            });
+        }
+    };
+
+    const handleDeleteItem = async (moduleId: string, itemId: string, type: string) => {
+        if (!confirm('Are you sure?')) return;
+        try {
+            if (type === 'assignment') {
+                await deleteAssignment(courseId, itemId);
+            } else if (type === 'lesson' || type === 'file' || type === 'page') {
+                await deleteLesson(courseId, moduleId, itemId);
+            } else {
+                toast({ title: 'Error', description: 'Cannot delete this item type' });
+                return;
+            }
+            toast({ title: 'Success', description: 'Item deleted' });
+            fetchCourseContent();
+        } catch (error: any) {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        }
+    };
+
+
+
+    const handleModulesChange = async (newModules: Module[]) => {
+        // Optimistic update
+        const orderUpdates = newModules.map((m, index) => ({ id: m.id, sort_order: index + 1 }));
+
+        setModules(prevModules => {
+            const updated = [...prevModules];
+            const reordered = updated.map(m => {
+                const update = orderUpdates.find(u => u.id === m.id);
+                return update ? { ...m, sort_order: update.sort_order } : m;
+            });
+            return reordered.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        });
+
+        try {
+            await updateModuleOrder(courseId, orderUpdates);
+            fetchCourseContent();
+        } catch (error) {
+            console.error('Failed to update order', error);
+            toast({ title: 'Error', description: 'Failed to save order', variant: 'destructive' });
+            fetchCourseContent();
         }
     };
 
@@ -217,6 +376,14 @@ export default function CourseDetailsPage() {
 
                 <main className="flex-1 overflow-y-auto">
                     <div className="container mx-auto py-8 space-y-8">
+                        {/* Hidden File Input */}
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            onChange={handleFileUpload}
+                        />
+
                         {/* Header Section */}
                         <div className="flex justify-between items-start">
                             <div>
@@ -241,58 +408,10 @@ export default function CourseDetailsPage() {
                             )}
                         </div>
 
-                        {/* Course Hero Card */}
-                        <Card className="overflow-hidden">
-                            <div className="flex flex-col md:flex-row">
-                                <div className="w-full md:w-1/3 h-48 md:h-auto relative bg-muted">
-                                    {course.thumbnail ? (
-                                        <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                                            <BookOpen className="h-12 w-12" />
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="p-6 flex-1 space-y-4">
-                                    <div className="flex flex-wrap gap-4 text-sm">
-                                        <Badge variant="secondary" className="capitalize">{course.level}</Badge>
-                                        <div className="flex items-center text-yellow-500">
-                                            <Star className="h-4 w-4 fill-current mr-1" />
-                                            <span className="font-medium">{course.rating_average || '0.0'}</span>
-                                        </div>
-                                        <div className="flex items-center text-muted-foreground">
-                                            <Users className="h-4 w-4 mr-1" />
-                                            <span>{course.enrollment_count || 0} students</span>
-                                        </div>
-                                        <div className="flex items-center text-muted-foreground">
-                                            <Clock className="h-4 w-4 mr-1" />
-                                            <span>{course.duration_weeks} weeks</span>
-                                        </div>
-                                    </div>
-
-                                    <p className="text-muted-foreground">
-                                        {course.short_description || course.description}
-                                    </p>
-
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="font-medium">Progress</span>
-                                            <span className="text-muted-foreground">0% completed</span>
-                                        </div>
-                                        <Progress value={0} className="h-2" />
-                                        <div className="flex justify-between text-xs text-muted-foreground">
-                                            <span>Current Grade: N/A</span>
-                                            <span>0% complete</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </Card>
-
                         {/* Tabs Navigation */}
-                        <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
+                        <Tabs defaultValue="modules" className="w-full" onValueChange={setActiveTab}>
                             <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
-                                {['Overview', 'Modules', 'Assignments', 'Files', 'Announcements'].map((tab) => (
+                                {['Overview', 'Modules', 'Participants', 'Assignments', 'Announcements', 'Resources'].map((tab) => (
                                     <TabsTrigger
                                         key={tab}
                                         value={tab.toLowerCase()}
@@ -313,7 +432,23 @@ export default function CourseDetailsPage() {
                                                 {course.description}
                                             </p>
                                         </section>
-
+                                    </div>
+                                    <div className="space-y-6">
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle>Course Stats</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Duration</span>
+                                                    <span className="font-medium">{course.duration_weeks} weeks</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Difficulty</span>
+                                                    <span className="font-medium capitalize">{course.level}</span>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
                                         <section>
                                             <h3 className="text-xl font-semibold mb-3">About the Instructor</h3>
                                             <div className="flex items-start gap-4">
@@ -328,164 +463,82 @@ export default function CourseDetailsPage() {
                                                 </div>
                                             </div>
                                         </section>
-                                    </div>
 
-                                    <div className="space-y-6">
-                                        <Card>
-                                            <CardHeader>
-                                                <CardTitle>Course Stats</CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="space-y-4">
-                                                <div className="flex justify-between">
-                                                    <span className="text-muted-foreground">Total Modules</span>
-                                                    <span className="font-medium">{modules.length}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-muted-foreground">Assignments</span>
-                                                    <span className="font-medium">{assignments.length}</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-muted-foreground">Duration</span>
-                                                    <span className="font-medium">{course.duration_weeks} weeks</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-muted-foreground">Difficulty</span>
-                                                    <span className="font-medium capitalize">{course.level}</span>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
+
                                     </div>
                                 </div>
                             </TabsContent>
 
-                            {/* Modules Tab */}
-                            <TabsContent value="modules" className="mt-6 space-y-6">
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h3 className="text-xl font-semibold">Course Modules</h3>
-                                            <p className="text-muted-foreground">Track your progress through each module</p>
-                                        </div>
-                                        {isEditing && (
-                                            <Button onClick={() => setIsModuleDialogOpen(true)}>Add Module</Button>
-                                        )}
-                                    </div>
-                                </div>
+                            {/* Modules Tab (Course Structure) */}
+                            <TabsContent value="modules" className="mt-6">
+                                <CourseStructure
+                                    modules={getStructuredModules()}
+                                    isEditing={isEditing}
+                                    onModulesChange={handleModulesChange}
+                                    onAddModule={handleAddModule}
+                                    onDeleteModule={handleDeleteModule}
+                                    onRenameModule={handleRenameModule}
+                                    onAddItem={handleAddItem}
+                                    onDeleteItem={handleDeleteItem}
+                                    onEditItem={() => { }}
+                                    onBulkAddModules={handleBulkAddModules}
+                                    onAddSubsection={handleAddSubsection}
+                                />
+                            </TabsContent>
 
-                                {modules.length === 0 ? (
-                                    <div className="text-center py-8 text-muted-foreground">
-                                        No modules available yet.
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {modules.map((module) => (
-                                            <Card key={module.id}>
-                                                <CardContent className="p-6 flex items-center justify-between">
-                                                    <div className="flex items-start gap-4">
-                                                        <div className="mt-1">
-                                                            <PlayCircle className="h-5 w-5 text-blue-500" />
-                                                        </div>
-                                                        <div>
-                                                            <h4 className="font-medium text-lg">{module.title}</h4>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                {module.lessons?.length || 0} lessons
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <Button>
-                                                        Continue
-                                                    </Button>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                )}
+                            {/* Participants Tab */}
+                            <TabsContent value="participants" className="mt-6">
+                                <div className="text-center py-8 text-muted-foreground">
+                                    Participants list coming soon.
+                                </div>
                             </TabsContent>
 
                             {/* Assignments Tab */}
-                            <TabsContent value="assignments" className="mt-6 space-y-6">
+                            <TabsContent value="assignments" className="mt-6">
                                 <div className="space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h3 className="text-xl font-semibold">Assignments</h3>
-                                            <p className="text-muted-foreground">View and submit your assignments</p>
-                                        </div>
-                                        {isEditing && (
-                                            <Button onClick={() => setIsAssignmentDialogOpen(true)}>Add Assignment</Button>
-                                        )}
-                                    </div>
+                                    {assignments.map((assignment) => (
+                                        <Card key={assignment.id}>
+                                            <CardContent className="p-6 flex justify-between items-center">
+                                                <div>
+                                                    <h4 className="font-medium text-lg">{assignment.title}</h4>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Due: {assignment.due_date ? new Date(assignment.due_date).toLocaleDateString() : 'No due date'}
+                                                    </p>
+                                                </div>
+                                                <Button variant="outline">View</Button>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                    {assignments.length === 0 && (
+                                        <div className="text-center py-8 text-muted-foreground">No assignments found.</div>
+                                    )}
                                 </div>
-
-                                {assignments.length === 0 ? (
-                                    <div className="text-center py-8 text-muted-foreground">
-                                        No assignments due.
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {assignments.map((assignment) => (
-                                            <Card key={assignment.id}>
-                                                <CardContent className="p-6 space-y-4">
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <h4 className="font-medium text-lg">{assignment.title}</h4>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                Due: {assignment.due_date ? new Date(assignment.due_date).toLocaleDateString() : 'No due date'}
-                                                            </p>
-                                                        </div>
-                                                        {assignment.submission_status === 'submitted' ? (
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="font-bold">{assignment.points_earned}/{assignment.max_points}</span>
-                                                                <Badge className="bg-blue-600">submitted</Badge>
-                                                            </div>
-                                                        ) : (
-                                                            <Badge variant="secondary">pending</Badge>
-                                                        )}
-                                                    </div>
-
-                                                    {assignment.description && (
-                                                        <p className="text-sm text-muted-foreground">{assignment.description}</p>
-                                                    )}
-
-                                                    {assignment.feedback && (
-                                                        <div className="bg-muted p-4 rounded-lg text-sm">
-                                                            <p className="font-medium mb-1">Teacher Feedback:</p>
-                                                            <p className="text-muted-foreground">{assignment.feedback}</p>
-                                                        </div>
-                                                    )}
-
-                                                    <div className="flex gap-3">
-                                                        <Button variant="outline" size="sm">View Details</Button>
-                                                        {assignment.submission_status !== 'submitted' && userRole === 'student' && (
-                                                            <Button size="sm">Submit Assignment</Button>
-                                                        )}
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                )}
                             </TabsContent>
 
-                            {/* Files Tab */}
-                            <TabsContent value="files" className="mt-6 space-y-6">
+                            {/* Announcements Tab */}
+                            <TabsContent value="announcements" className="mt-6">
                                 <div className="space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h3 className="text-xl font-semibold">Course Files</h3>
-                                            <p className="text-muted-foreground">Download course materials and resources</p>
-                                        </div>
-                                        {isEditing && (
-                                            <Button onClick={() => setIsFileDialogOpen(true)}>Upload File</Button>
-                                        )}
-                                    </div>
+                                    {announcements.map((announcement) => (
+                                        <Card key={announcement.id}>
+                                            <CardContent className="p-6 space-y-2">
+                                                <div className="flex justify-between items-start">
+                                                    <h4 className="font-medium text-lg">{announcement.title}</h4>
+                                                    <span className="text-sm text-muted-foreground">{new Date(announcement.created_at).toLocaleDateString()}</span>
+                                                </div>
+                                                <p className="text-muted-foreground">{announcement.content}</p>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                    {announcements.length === 0 && (
+                                        <div className="text-center py-8 text-muted-foreground">No announcements yet.</div>
+                                    )}
                                 </div>
+                            </TabsContent>
 
-                                {files.length === 0 ? (
-                                    <div className="text-center py-8 text-muted-foreground">
-                                        No files available.
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
+                            {/* Resources Tab */}
+                            <TabsContent value="resources" className="mt-6">
+                                {files.length > 0 ? (
+                                    <div className="grid grid-cols-1 gap-3">
                                         {files.map((file) => (
                                             <Card key={file.id}>
                                                 <CardContent className="p-4 flex items-center justify-between">
@@ -494,242 +547,30 @@ export default function CourseDetailsPage() {
                                                             <FileText className="h-6 w-6 text-blue-500" />
                                                         </div>
                                                         <div>
-                                                            <p className="font-medium">{file.filename}</p>
+                                                            <p className="font-medium">{file.original_filename || file.filename}</p>
                                                             <p className="text-xs text-muted-foreground">
                                                                 {(file.file_size / 1024 / 1024).toFixed(2)} MB • Uploaded {new Date(file.created_at).toLocaleDateString()}
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <Button variant="outline" size="sm">
-                                                        <Download className="h-4 w-4 mr-2" />
-                                                        Download
+                                                    <Button variant="outline" size="sm" asChild>
+                                                        <a href={`${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace('/api', '')}/uploads/${file.filename}`} target="_blank" rel="noopener noreferrer">
+                                                            <Download className="h-4 w-4 mr-2" />
+                                                            Download
+                                                        </a>
                                                     </Button>
                                                 </CardContent>
                                             </Card>
                                         ))}
                                     </div>
-                                )}
-                            </TabsContent>
-
-                            {/* Announcements Tab */}
-                            <TabsContent value="announcements" className="mt-6 space-y-6">
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h3 className="text-xl font-semibold">Announcements</h3>
-                                            <p className="text-muted-foreground">Important updates from your instructor</p>
-                                        </div>
-                                        {isEditing && (
-                                            <Button onClick={() => setIsAnnouncementDialogOpen(true)}>Post Announcement</Button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {announcements.length === 0 ? (
-                                    <div className="text-center py-8 text-muted-foreground">
-                                        No announcements yet.
-                                    </div>
                                 ) : (
-                                    <div className="space-y-4">
-                                        {announcements.map((announcement) => (
-                                            <Card key={announcement.id}>
-                                                <CardContent className="p-6 space-y-2">
-                                                    <div className="flex justify-between items-start">
-                                                        <h4 className="font-medium text-lg">{announcement.title}</h4>
-                                                        <div className="flex items-center gap-2">
-                                                            {announcement.priority === 'high' && (
-                                                                <Badge variant="destructive">Important</Badge>
-                                                            )}
-                                                            <span className="text-sm text-muted-foreground">{new Date(announcement.created_at).toLocaleDateString()}</span>
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-muted-foreground">{announcement.content}</p>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
+                                    <div className="text-center py-8 text-muted-foreground">No resources available.</div>
                                 )}
                             </TabsContent>
                         </Tabs>
                     </div>
                 </main>
             </div>
-
-            {/* Dialogs */}
-            <Dialog open={isModuleDialogOpen} onOpenChange={setIsModuleDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Add New Module</DialogTitle>
-                        <DialogDescription>Create a new module for this course.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Title</Label>
-                            <Input
-                                value={newModule.title}
-                                onChange={(e) => setNewModule({ ...newModule, title: e.target.value })}
-                                placeholder="Module Title"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Description</Label>
-                            <Textarea
-                                value={newModule.description}
-                                onChange={(e) => setNewModule({ ...newModule, description: e.target.value })}
-                                placeholder="Module Description"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsModuleDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleCreateModule}>Create Module</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isAssignmentDialogOpen} onOpenChange={setIsAssignmentDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Add New Assignment</DialogTitle>
-                        <DialogDescription>Create a new assignment for students.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Title</Label>
-                            <Input
-                                value={newAssignment.title}
-                                onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
-                                placeholder="Assignment Title"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Description</Label>
-                            <Textarea
-                                value={newAssignment.description}
-                                onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
-                                placeholder="Assignment Instructions"
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Due Date</Label>
-                                <Input
-                                    type="date"
-                                    value={newAssignment.due_date}
-                                    onChange={(e) => setNewAssignment({ ...newAssignment, due_date: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Max Points</Label>
-                                <Input
-                                    type="number"
-                                    value={newAssignment.max_points}
-                                    onChange={(e) => setNewAssignment({ ...newAssignment, max_points: parseInt(e.target.value) })}
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Type</Label>
-                            <Select
-                                value={newAssignment.assignment_type}
-                                onValueChange={(val) => setNewAssignment({ ...newAssignment, assignment_type: val })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="essay">Essay</SelectItem>
-                                    <SelectItem value="quiz">Quiz</SelectItem>
-                                    <SelectItem value="project">Project</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAssignmentDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleCreateAssignment}>Create Assignment</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isFileDialogOpen} onOpenChange={setIsFileDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Upload File</DialogTitle>
-                        <DialogDescription>Add a resource file to this course.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Filename</Label>
-                            <Input
-                                value={newFile.filename}
-                                onChange={(e) => setNewFile({ ...newFile, filename: e.target.value })}
-                                placeholder="e.g. Course Syllabus.pdf"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>File Path (Simulation)</Label>
-                            <Input
-                                value={newFile.file_path}
-                                onChange={(e) => setNewFile({ ...newFile, file_path: e.target.value })}
-                                placeholder="/path/to/file"
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsFileDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleCreateFile}>Add File</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isAnnouncementDialogOpen} onOpenChange={setIsAnnouncementDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Post Announcement</DialogTitle>
-                        <DialogDescription>Share an update with your students.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Title</Label>
-                            <Input
-                                value={newAnnouncement.title}
-                                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
-                                placeholder="Announcement Title"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Content</Label>
-                            <Textarea
-                                value={newAnnouncement.content}
-                                onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
-                                placeholder="Write your announcement here..."
-                                className="min-h-[100px]"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Priority</Label>
-                            <Select
-                                value={newAnnouncement.priority}
-                                onValueChange={(val) => setNewAnnouncement({ ...newAnnouncement, priority: val })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select priority" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="low">Low</SelectItem>
-                                    <SelectItem value="medium">Medium</SelectItem>
-                                    <SelectItem value="high">High</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAnnouncementDialogOpen(false)}>Cancel</Button>
-                        <Button onClick={handleCreateAnnouncement}>Post Announcement</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </AuthGuard>
     );
 }

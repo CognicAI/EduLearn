@@ -56,12 +56,7 @@ export default function EditCoursePage() {
         status: 'draft',
     });
 
-    useEffect(() => {
-        fetchCategories();
-        fetchCourse();
-    }, [courseId]);
-
-    const fetchCategories = async () => {
+    const fetchCategories = React.useCallback(async () => {
         try {
             const token = localStorage.getItem('accessToken');
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/categories`, {
@@ -76,9 +71,9 @@ export default function EditCoursePage() {
         } catch (error) {
             console.error('Error fetching categories:', error);
         }
-    };
+    }, []);
 
-    const fetchCourse = async () => {
+    const fetchCourse = React.useCallback(async () => {
         try {
             const token = localStorage.getItem('accessToken');
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/${courseId}`, {
@@ -112,7 +107,12 @@ export default function EditCoursePage() {
         } finally {
             setPageLoading(false);
         }
-    };
+    }, [courseId, toast]);
+
+    useEffect(() => {
+        fetchCategories();
+        fetchCourse();
+    }, [fetchCategories, fetchCourse]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

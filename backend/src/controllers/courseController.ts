@@ -298,6 +298,7 @@ export class CourseController {
             }
 
             // Fetch modules with lessons
+            // Fetch modules with lessons
             const modulesResult = await query(`
                 SELECT 
                     cm.*,
@@ -308,8 +309,10 @@ export class CourseController {
                                 'title', cl.title,
                                 'duration_minutes', cl.video_duration,
                                 'is_free', cl.is_free,
-                                'type', 'video',
-                                'completed', CASE WHEN lp.completed THEN true ELSE false END
+                                'type', COALESCE(cl.type, 'video'),
+                                'completed', CASE WHEN lp.completed THEN true ELSE false END,
+                                'content', cl.content,
+                                'video_url', cl.video_url
                             ) ORDER BY cl.sort_order
                         )
                         FROM course_lessons cl
@@ -322,9 +325,29 @@ export class CourseController {
                 ORDER BY cm.sort_order
             `, [id, userId]);
 
+            // Process modules to create nested structure
+            const modules = modulesResult.rows;
+            const moduleMap = new Map();
+            const rootModules: any[] = [];
+
+            // First pass: map all modules
+            modules.forEach(m => {
+                m.subsections = [];
+                moduleMap.set(m.id, m);
+            });
+
+            // Second pass: build hierarchy
+            modules.forEach(m => {
+                if (m.parent_id && moduleMap.has(m.parent_id)) {
+                    moduleMap.get(m.parent_id).subsections.push(m);
+                } else {
+                    rootModules.push(m);
+                }
+            });
+
             return res.json({
                 success: true,
-                data: modulesResult.rows
+                data: rootModules
             });
         } catch (error) {
             console.error('Error fetching course modules:', error);
@@ -387,21 +410,21 @@ export class CourseController {
                 return res.status(403).json({ success: false, message: 'Access denied' });
             }
 
-            // Fetch files (assuming file_associations table links files to courses)
-            // Or if files are directly linked or via modules. 
-            // Based on schema, files table doesn't have course_id directly.
-            // But let's assume for now we might need a way to link them.
-            // Checking schema again... file_associations table exists.
-            // entity_type = 'course', entity_id = course_id
 
             const filesResult = await query(`
-                SELECT 
-                    f.*
+                SELECT f.*
                 FROM files f
-                JOIN file_associations fa ON fa.file_id = f.id
-                WHERE fa.entity_type = 'course' AND fa.entity_id = $1 AND f.is_deleted = false
-                ORDER BY fa.created_at DESC
+                JOIN course_lessons cl ON substring(cl.video_url from '[^/]+$') = f.filename
+                JOIN course_modules cm ON cl.module_id = cm.id
+                WHERE cm.course_id = $1
+                  AND cm.is_deleted = false
+                  AND cl.is_deleted = false
+                  AND cl.type = 'file'
+                  AND f.is_deleted = false
+                GROUP BY f.id
+                ORDER BY f.created_at DESC
             `, [id]);
+
 
             return res.json({
                 success: true,
@@ -456,7 +479,7 @@ export class CourseController {
             const { id } = req.params;
             const userId = req.user!.userId;
             const userRole = req.user!.role;
-            const { title, description, sort_order } = req.body;
+            const { title, description, sort_order, parentId } = req.body;
 
             // Check edit permission
             const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
@@ -465,10 +488,10 @@ export class CourseController {
             }
 
             const result = await query(
-                `INSERT INTO course_modules (course_id, title, description, sort_order) 
-                 VALUES ($1, $2, $3, $4) 
+                `INSERT INTO course_modules (course_id, title, description, sort_order, parent_id) 
+                 VALUES ($1, $2, $3, $4, $5) 
                  RETURNING *`,
-                [id, title, description, sort_order || 0]
+                [id, title, description, sort_order || 0, parentId || null]
             );
 
             return res.status(201).json({
@@ -479,6 +502,105 @@ export class CourseController {
         } catch (error) {
             console.error('Error creating module:', error);
             return res.status(500).json({ success: false, message: 'Failed to create module' });
+        }
+    }
+
+    /**
+     * Create a new lesson
+     */
+    async createLesson(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id, moduleId } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+            const { title, content, video_url, duration_minutes, is_free, type, sort_order } = req.body;
+
+            // Check edit permission
+            const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
+            if (!canEdit) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            const result = await query(
+                `INSERT INTO course_lessons (module_id, title, content, video_url, video_duration, is_free, type, sort_order) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+                 RETURNING *`,
+                [moduleId, title, content, video_url, duration_minutes || 0, is_free || false, type || 'video', sort_order || 0]
+            );
+
+            return res.status(201).json({
+                success: true,
+                message: 'Lesson created successfully',
+                data: result.rows[0]
+            });
+        } catch (error) {
+            console.error('Error creating lesson:', error);
+            return res.status(500).json({ success: false, message: 'Failed to create lesson' });
+        }
+    }
+
+    /**
+     * Delete lesson
+     */
+    async deleteLesson(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id, lessonId } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+
+            // Check edit permission
+            const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
+            if (!canEdit) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            // Get lesson details before deleting
+            const lessonResult = await query('SELECT * FROM course_lessons WHERE id = $1', [lessonId]);
+            if (lessonResult.rows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Lesson not found' });
+            }
+            const lesson = lessonResult.rows[0];
+
+            const result = await query(
+                `UPDATE course_lessons SET is_deleted = true, deleted_at = NOW() 
+                 WHERE id = $1 RETURNING id`,
+                [lessonId]
+            );
+
+            // If it's a file lesson, try to delete the associated file
+            if (lesson.type === 'file' && lesson.video_url) {
+                // Extract filename from URL (assuming format .../uploads/filename)
+                const filename = lesson.video_url.split('/').pop();
+
+                if (filename) {
+                    // Find file by path
+                    const fileResult = await query(
+                        `SELECT id FROM files WHERE file_path = $1 AND is_deleted = false`,
+                        [`/uploads/${filename}`]
+                    );
+
+                    if (fileResult.rows.length > 0) {
+                        const fileId = fileResult.rows[0].id;
+
+                        // Remove association
+                        await query(
+                            `DELETE FROM file_associations WHERE file_id = $1 AND entity_id = $2 AND entity_type = 'course'`,
+                            [fileId, id]
+                        );
+
+                        // Soft delete file
+                        await query(
+                            `UPDATE files SET is_deleted = true WHERE id = $1`,
+                            [fileId]
+                        );
+                    }
+                }
+            }
+
+            return res.json({ success: true, message: 'Lesson deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting lesson:', error);
+            return res.status(500).json({ success: false, message: 'Failed to delete lesson' });
         }
     }
 
@@ -517,7 +639,60 @@ export class CourseController {
     }
 
     /**
-     * Create a file record (simulating upload)
+     * Upload a file
+     */
+    async uploadFile(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+            const file = req.file;
+
+            if (!file) {
+                return res.status(400).json({ success: false, message: 'No file uploaded' });
+            }
+
+            // Check edit permission
+            const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
+            if (!canEdit) {
+                // Clean up uploaded file if permission denied
+                // fs.unlinkSync(file.path); // Need fs import if we want to do this
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            // Create file record
+            const fileResult = await query(
+                `INSERT INTO files (uploader_id, filename, original_filename, file_path, file_size, mime_type, is_public) 
+                 VALUES ($1, $2, $3, $4, $5, $6, true) 
+                 RETURNING *`,
+                [userId, file.filename, file.originalname, `/uploads/${file.filename}`, file.size, file.mimetype]
+            );
+
+            const fileId = fileResult.rows[0].id;
+
+            // Associate with course
+            await query(
+                `INSERT INTO file_associations (file_id, entity_type, entity_id, association_type) 
+                 VALUES ($1, 'course', $2, 'resource')`,
+                [fileId, id]
+            );
+
+            return res.status(201).json({
+                success: true,
+                message: 'File uploaded successfully',
+                data: {
+                    ...fileResult.rows[0],
+                    url: `${process.env.API_URL || 'http://localhost:3001'}/uploads/${file.filename}`
+                }
+            });
+        } catch (error) {
+            console.error('Error uploading file:', error);
+            return res.status(500).json({ success: false, message: 'Failed to upload file' });
+        }
+    }
+
+    /**
+     * Create a new file (Metadata only - Legacy or specific use case)
      */
     async createFile(req: AuthenticatedRequest, res: Response) {
         try {
@@ -591,6 +766,204 @@ export class CourseController {
         } catch (error) {
             console.error('Error posting announcement:', error);
             return res.status(500).json({ success: false, message: 'Failed to post announcement' });
+        }
+    }
+    /**
+     * Update module
+     */
+    async updateModule(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id, moduleId } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+            const { title, description, sort_order } = req.body;
+
+            // Check edit permission
+            const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
+            if (!canEdit) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            const result = await query(
+                `UPDATE course_modules 
+                 SET title = COALESCE($1, title), 
+                     description = COALESCE($2, description), 
+                     sort_order = COALESCE($3, sort_order),
+                     updated_at = NOW()
+                 WHERE id = $4 AND course_id = $5
+                 RETURNING *`,
+                [title, description, sort_order, moduleId, id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Module not found' });
+            }
+
+            return res.json({
+                success: true,
+                message: 'Module updated successfully',
+                data: result.rows[0]
+            });
+        } catch (error) {
+            console.error('Error updating module:', error);
+            return res.status(500).json({ success: false, message: 'Failed to update module' });
+        }
+    }
+
+    /**
+     * Delete module
+     */
+    async deleteModule(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id, moduleId } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+
+            // Check edit permission
+            const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
+            if (!canEdit) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            const result = await query(
+                `UPDATE course_modules SET is_deleted = true, deleted_at = NOW() 
+                 WHERE id = $1 AND course_id = $2 RETURNING id`,
+                [moduleId, id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Module not found' });
+            }
+
+            return res.json({ success: true, message: 'Module deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting module:', error);
+            return res.status(500).json({ success: false, message: 'Failed to delete module' });
+        }
+    }
+
+    /**
+     * Update assignment
+     */
+    async updateAssignment(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id, assignmentId } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+            const updates = req.body;
+
+            // Check edit permission
+            const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
+            if (!canEdit) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            // Build dynamic update query
+            const allowedFields = ['title', 'description', 'due_date', 'max_points', 'assignment_type', 'status', 'sort_order'];
+            const updateParts: string[] = [];
+            const params: any[] = [assignmentId, id];
+            let paramIndex = 3;
+
+            for (const field of allowedFields) {
+                if (updates[field] !== undefined) {
+                    updateParts.push(`${field} = $${paramIndex}`);
+                    params.push(updates[field]);
+                    paramIndex++;
+                }
+            }
+
+            if (updateParts.length === 0) {
+                return res.json({ success: true, message: 'No changes made' });
+            }
+
+            updateParts.push(`updated_at = NOW()`);
+
+            const result = await query(
+                `UPDATE assignments SET ${updateParts.join(', ')} 
+                 WHERE id = $1 AND course_id = $2 
+                 RETURNING *`,
+                params
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Assignment not found' });
+            }
+
+            return res.json({
+                success: true,
+                message: 'Assignment updated successfully',
+                data: result.rows[0]
+            });
+        } catch (error) {
+            console.error('Error updating assignment:', error);
+            return res.status(500).json({ success: false, message: 'Failed to update assignment' });
+        }
+    }
+
+    /**
+     * Delete assignment
+     */
+    async deleteAssignment(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id, assignmentId } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+
+            // Check edit permission
+            const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
+            if (!canEdit) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            const result = await query(
+                `UPDATE assignments SET is_deleted = true, deleted_at = NOW() 
+                 WHERE id = $1 AND course_id = $2 RETURNING id`,
+                [assignmentId, id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Assignment not found' });
+            }
+
+            return res.json({ success: true, message: 'Assignment deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting assignment:', error);
+            return res.status(500).json({ success: false, message: 'Failed to delete assignment' });
+        }
+    }
+
+    /**
+     * Delete file
+     */
+    async deleteFile(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id, fileId } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+
+            // Check edit permission
+            const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
+            if (!canEdit) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            // Soft delete file and remove association
+            // First remove association
+            await query(
+                `DELETE FROM file_associations WHERE file_id = $1 AND entity_id = $2 AND entity_type = 'course'`,
+                [fileId, id]
+            );
+
+            // Then soft delete file (optional, or keep it if used elsewhere? For now soft delete)
+            await query(
+                `UPDATE files SET is_deleted = true WHERE id = $1`,
+                [fileId]
+            );
+
+            return res.json({ success: true, message: 'File deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting file:', error);
+            return res.status(500).json({ success: false, message: 'Failed to delete file' });
         }
     }
 }
