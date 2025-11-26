@@ -198,7 +198,7 @@ export default function AdminDashboard() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ScrollArea className="h-[400px] pr-4">
+                      <ScrollArea className="h-[210px] pr-4">
                         <div className="space-y-4">
                           {platformData?.recentActivity?.map((activity: any) => (
                             <div key={activity.id} className="flex items-start space-x-3">
