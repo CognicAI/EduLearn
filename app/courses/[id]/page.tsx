@@ -375,7 +375,7 @@ export default function CourseDetailsPage() {
                 <DashboardSidebar />
 
                 <main className="flex-1 overflow-y-auto">
-                    <div className="container mx-auto py-8 space-y-8">
+                    <div className="container mx-auto py-8 px-6 space-y-8">
                         {/* Hidden File Input */}
                         <input
                             type="file"
@@ -410,12 +410,12 @@ export default function CourseDetailsPage() {
 
                         {/* Tabs Navigation */}
                         <Tabs defaultValue="modules" className="w-full" onValueChange={setActiveTab}>
-                            <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent space-x-6">
+                            <TabsList className="w-full grid grid-cols-6 bg-muted p-1 rounded-lg">
                                 {['Overview', 'Modules', 'Participants', 'Assignments', 'Announcements', 'Resources'].map((tab) => (
                                     <TabsTrigger
                                         key={tab}
                                         value={tab.toLowerCase()}
-                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3"
+                                        className="rounded-md"
                                     >
                                         {tab}
                                     </TabsTrigger>

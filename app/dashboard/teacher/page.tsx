@@ -27,7 +27,7 @@ function DashboardSkeleton() {
         </div>
         <Skeleton className="h-10 w-32" />
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
@@ -75,7 +75,7 @@ export default function TeacherDashboard() {
     <AuthGuard allowedRoles={['teacher']}>
       <div className="flex h-screen bg-background">
         <DashboardSidebar />
-        
+
         <main className="flex-1 overflow-y-auto">
           {isLoading ? (
             <DashboardSkeleton />
@@ -111,7 +111,7 @@ export default function TeacherDashboard() {
                     </p>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total Students</CardTitle>
@@ -124,7 +124,7 @@ export default function TeacherDashboard() {
                     </p>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Pending Grades</CardTitle>
@@ -137,7 +137,7 @@ export default function TeacherDashboard() {
                     </p>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Avg. Performance</CardTitle>
@@ -203,10 +203,10 @@ export default function TeacherDashboard() {
                               </Button>
                             </div>
                           )) || (
-                            <div className="text-center py-8">
-                              <p className="text-muted-foreground">No courses created yet.</p>
-                            </div>
-                          )}
+                              <div className="text-center py-8">
+                                <p className="text-muted-foreground">No courses created yet.</p>
+                              </div>
+                            )}
                         </CardContent>
                       </Card>
                     </div>
@@ -233,10 +233,10 @@ export default function TeacherDashboard() {
                               </div>
                             </div>
                           )) || (
-                            <div className="text-center py-4">
-                              <p className="text-sm text-muted-foreground">No recent activity.</p>
-                            </div>
-                          )}
+                              <div className="text-center py-4">
+                                <p className="text-sm text-muted-foreground">No recent activity.</p>
+                              </div>
+                            )}
                         </CardContent>
                       </Card>
 
@@ -260,10 +260,10 @@ export default function TeacherDashboard() {
                               </Badge>
                             </div>
                           )) || (
-                            <div className="text-center py-4">
-                              <p className="text-sm text-muted-foreground">No upcoming deadlines.</p>
-                            </div>
-                          )}
+                              <div className="text-center py-4">
+                                <p className="text-sm text-muted-foreground">No upcoming deadlines.</p>
+                              </div>
+                            )}
                         </CardContent>
                       </Card>
                     </div>
