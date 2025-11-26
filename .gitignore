@@ -41,3 +41,5 @@ next-env.d.ts
 
 # logs
 /backend/logs
+/backend/.env
+.env
