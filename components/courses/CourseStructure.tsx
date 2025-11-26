@@ -110,10 +110,10 @@ export function CourseStructure({
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-end items-center mb-4 gap-2">
                 <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={expandAll}>Expand All</Button>
-                    <Button variant="ghost" size="sm" onClick={collapseAll}>Collapse All</Button>
+                    <Button variant="outline" size="sm" onClick={expandAll}>Expand All</Button>
+                    <Button variant="outline" size="sm" onClick={collapseAll}>Collapse All</Button>
                 </div>
                 {isEditing && (
                     <div className="flex gap-2">

@@ -39,6 +39,9 @@ import {
 import { CourseStructure, Module } from '@/components/courses/CourseStructure';
 import { CourseItem } from '@/components/courses/CourseSection';
 
+import { getCourseImageUrl } from '@/lib/utils/image-utils';
+import { OptimizedImage } from '@/components/ui/optimized-image';
+
 export default function CourseDetailsPage() {
     const params = useParams();
     const courseId = params.id as string;
@@ -422,10 +425,23 @@ export default function CourseDetailsPage() {
                                 ))}
                             </TabsList>
 
+
+
                             {/* Overview Tab */}
                             <TabsContent value="overview" className="mt-6">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div className="md:col-span-2 space-y-6">
+                                        {/* Course Image */}
+                                        <div className="relative w-full h-[300px] rounded-lg overflow-hidden border">
+                                            <OptimizedImage
+                                                src={getCourseImageUrl(course.image_url || course.thumbnail)}
+                                                alt={course.title}
+                                                fill
+                                                className="object-cover"
+                                                priority
+                                            />
+                                        </div>
+
                                         <section>
                                             <h3 className="text-xl font-semibold mb-3">Course Description</h3>
                                             <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
