@@ -811,6 +811,55 @@ export class CourseController {
     }
 
     /**
+     * Get course enrollments (Participants)
+     */
+    async getCourseEnrollments(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+
+            console.log(`[getCourseEnrollments] Fetching for course ${id}, user ${userId}, role ${userRole}`);
+
+            // Check access
+            const hasAccess = await courseAuthService.canAccessCourse(userId, id, userRole);
+            if (!hasAccess) {
+                console.log(`[getCourseEnrollments] Access denied for user ${userId}`);
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            // Fetch enrolled students
+            const result = await query(`
+                SELECT 
+                    e.id,
+                    e.enrollment_date,
+                    e.status,
+                    e.progress_percentage,
+                    u.id as student_id,
+                    TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) as student_name,
+                    u.email as student_email,
+                    u.profile_image as student_image
+                FROM enrollments e
+                JOIN users u ON e.student_id = u.id
+                WHERE e.course_id = $1
+                ORDER BY u.first_name, u.last_name
+            `, [id]);
+
+            console.log(`[getCourseEnrollments] Found ${result.rows.length} enrollments`);
+
+            return res.json({
+                success: true,
+                data: result.rows
+            });
+        } catch (error) {
+            console.error('Error fetching course enrollments:', error);
+            return res.status(500).json({ success: false, message: 'Failed to fetch enrollments' });
+        }
+    }
+
+
+
+    /**
      * Delete module
      */
     async deleteModule(req: AuthenticatedRequest, res: Response) {

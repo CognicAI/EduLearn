@@ -56,6 +56,9 @@ router.get('/:id/files', courseController.getCourseFiles);
 // Get course announcements
 router.get('/:id/announcements', courseController.getCourseAnnouncements);
 
+// Get course enrollments (Participants)
+router.get('/:id/enrollments', requireRole(['teacher', 'admin']), courseController.getCourseEnrollments);
+
 // Create course content
 router.post('/:id/modules', requireRole(['teacher', 'admin']), courseController.createModule);
 router.post('/:id/modules/:moduleId/lessons', requireRole(['teacher', 'admin']), courseController.createLesson);

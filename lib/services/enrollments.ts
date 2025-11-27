@@ -38,3 +38,8 @@ export const deleteEnrollments = async (enrollmentIds: string[]): Promise<any> =
     return response.data;
 };
 
+export const getCourseParticipants = async (courseId: string): Promise<any[]> => {
+    const response = await api.get(`/courses/${courseId}/enrollments`);
+    return response.data.data;
+};
+
