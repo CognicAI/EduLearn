@@ -105,4 +105,3 @@ This document outlines the current limitations and drawbacks of the EduLearn Lea
 
 ---
 
-This document will be updated regularly as issues are addressed and new limitations are identified. The development team is actively working to resolve these limitations in upcoming releases.
