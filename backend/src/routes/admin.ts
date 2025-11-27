@@ -88,5 +88,12 @@ router.post('/enrollments/:id/certificate', adminEnrollmentController.issueCerti
 // Export enrollments
 router.get('/enrollments/export/csv', adminEnrollmentController.exportEnrollments);
 
+// Enroll students (manual/bulk)
+router.post('/courses/:id/enrollments', adminEnrollmentController.enrollStudents);
+
+// Delete enrollments (bulk)
+router.post('/enrollments/delete', adminEnrollmentController.deleteEnrollments);
+
+
 export default router;
 

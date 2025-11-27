@@ -57,12 +57,14 @@ export class AdminCourseController {
           u.email as instructor_email,
           cat.name as category_name,
           COUNT(DISTINCT cm.id) as module_count,
-          COUNT(DISTINCT cl.id) as lesson_count
+          COUNT(DISTINCT cl.id) as lesson_count,
+          COUNT(DISTINCT e.id) as enrollment_count
         FROM courses c
         LEFT JOIN users u ON c.instructor_id = u.id
         LEFT JOIN categories cat ON c.category_id = cat.id
         LEFT JOIN course_modules cm ON c.id = cm.course_id AND cm.is_deleted = false
         LEFT JOIN course_lessons cl ON cm.id = cl.module_id AND cl.is_deleted = false
+        LEFT JOIN enrollments e ON c.id = e.course_id
         WHERE ${whereClause}
         GROUP BY c.id, u.first_name, u.last_name, u.email, cat.name
         ORDER BY c.created_at DESC

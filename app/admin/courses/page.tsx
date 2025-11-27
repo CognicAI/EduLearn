@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ManageTeachersDialog } from '@/components/admin/ManageTeachersDialog';
+import { ManageStudentsDialog } from '@/components/admin/ManageStudentsDialog';
 import { getAllCourses, type Course } from '@/lib/services/courseAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { AuthGuard } from '@/lib/auth/auth-guard';
@@ -34,6 +35,7 @@ export default function AdminCoursesPage() {
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [studentDialogOpen, setStudentDialogOpen] = useState(false);
     const { toast } = useToast();
 
     const loadCourses = useCallback(async () => {
@@ -63,6 +65,11 @@ export default function AdminCoursesPage() {
     const handleManageTeachers = (course: Course) => {
         setSelectedCourse(course);
         setDialogOpen(true);
+    };
+
+    const handleManageStudents = (course: Course) => {
+        setSelectedCourse(course);
+        setStudentDialogOpen(true);
     };
 
     const getStatusColor = (status: string) => {
@@ -199,6 +206,14 @@ export default function AdminCoursesPage() {
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
+                                                            onClick={() => handleManageStudents(course)}
+                                                        >
+                                                            <Users className="mr-2 h-4 w-4" />
+                                                            Manage Students
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
                                                             asChild
                                                         >
                                                             <Link href={`/courses/${course.id}`}>
@@ -221,6 +236,17 @@ export default function AdminCoursesPage() {
                                 courseTitle={selectedCourse.title}
                                 open={dialogOpen}
                                 onOpenChange={setDialogOpen}
+                                onSuccess={() => loadCourses()}
+                            />
+                        )}
+
+                        {/* Manage Students Dialog */}
+                        {selectedCourse && (
+                            <ManageStudentsDialog
+                                courseId={selectedCourse.id}
+                                courseTitle={selectedCourse.title}
+                                open={studentDialogOpen}
+                                onOpenChange={setStudentDialogOpen}
                                 onSuccess={() => loadCourses()}
                             />
                         )}
