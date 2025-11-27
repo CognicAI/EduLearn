@@ -331,6 +331,24 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Featured Presentation */}
+      <section className="py-20 bg-white dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Platform Overview</h2>
+          </div>
+          <div id="1764175885049" style={{ width: '100%', maxWidth: '700px', height: '525px', margin: 'auto', display: 'block', position: 'relative', border: '2px solid #dee1e5', borderRadius: '3px' }}>
+            <iframe
+              allow="clipboard-write; autoplay"
+              allowFullScreen={true}
+              style={{ width: '100%', height: '100%', border: 'none' }}
+              src="https://app.presentations.ai/view/MBw5pltTrp"
+              scrolling="no"
+            />
+          </div>
+        </div>
+      </section>
+
       {/* Trending Courses - Enhanced */}
       <section className="py-20 bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 dark:from-gray-900 dark:via-blue-900/10 dark:to-purple-900/10 relative overflow-hidden">
         {/* Subtle animated background */}
