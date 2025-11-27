@@ -31,13 +31,22 @@ import {
     deleteModule,
     deleteAssignment,
     updateModuleOrder,
-    updateAssignment,
     createLesson,
     deleteLesson,
     uploadFile
 } from '@/lib/services/courseAssignments';
+import { getCourseParticipants } from '@/lib/services/enrollments';
 import { CourseStructure, Module } from '@/components/courses/CourseStructure';
 import { CourseItem } from '@/components/courses/CourseSection';
+import { Loader2 } from 'lucide-react';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
 import { getCourseImageUrl } from '@/lib/utils/image-utils';
 import { OptimizedImage } from '@/components/ui/optimized-image';
@@ -54,6 +63,8 @@ export default function CourseDetailsPage() {
     const [assignments, setAssignments] = useState<any[]>([]);
     const [files, setFiles] = useState<any[]>([]);
     const [announcements, setAnnouncements] = useState<any[]>([]);
+    const [participants, setParticipants] = useState<any[]>([]);
+    const [loadingParticipants, setLoadingParticipants] = useState(false);
 
     // Edit Mode State
     const [isEditing, setIsEditing] = useState(false);
@@ -123,12 +134,39 @@ export default function CourseDetailsPage() {
         }
     }, [courseId]);
 
+    const fetchParticipants = React.useCallback(async () => {
+        if (!canEdit && userRole !== 'teacher' && userRole !== 'admin') return;
+
+        setLoadingParticipants(true);
+        try {
+            console.log('Fetching participants for course:', courseId);
+            const data = await getCourseParticipants(courseId);
+            console.log('Participants data:', data);
+            setParticipants(data);
+        } catch (error: any) {
+            console.error('Failed to fetch participants', error);
+            toast({
+                title: 'Error',
+                description: error.message || 'Failed to load participants',
+                variant: 'destructive'
+            });
+        } finally {
+            setLoadingParticipants(false);
+        }
+    }, [courseId, canEdit, userRole, toast]);
+
     useEffect(() => {
         if (courseId) {
             fetchCourseDetails();
             fetchCourseContent();
         }
     }, [courseId, fetchCourseDetails, fetchCourseContent]);
+
+    useEffect(() => {
+        if (activeTab === 'participants') {
+            fetchParticipants();
+        }
+    }, [activeTab, fetchParticipants]);
 
     // Transform data for CourseStructure
     const mapModuleToStructure = (mod: any): Module => {
@@ -504,8 +542,71 @@ export default function CourseDetailsPage() {
 
                             {/* Participants Tab */}
                             <TabsContent value="participants" className="mt-6">
-                                <div className="text-center py-8 text-muted-foreground">
-                                    Participants list coming soon.
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                                            Participants
+                                            <Badge variant="secondary" className="rounded-full px-2.5">
+                                                {participants.length}
+                                            </Badge>
+                                        </h3>
+                                    </div>
+
+                                    {loadingParticipants ? (
+                                        <div className="flex items-center justify-center py-12 border rounded-xl bg-muted/10">
+                                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                        </div>
+                                    ) : participants.length === 0 ? (
+                                        <div className="text-center py-12 border rounded-xl bg-muted/10 border-dashed">
+                                            <Users className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                                            <p className="text-sm text-muted-foreground">No participants found.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="border rounded-xl overflow-hidden">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow className="bg-muted/50">
+                                                        <TableHead>Student</TableHead>
+                                                        <TableHead>Email</TableHead>
+                                                        <TableHead>Enrolled Date</TableHead>
+                                                        <TableHead>Progress</TableHead>
+                                                        <TableHead>Status</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {participants.map((participant) => (
+                                                        <TableRow key={participant.id}>
+                                                            <TableCell className="font-medium">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Avatar className="h-8 w-8">
+                                                                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                                                                            {participant.student_name.charAt(0)}
+                                                                        </AvatarFallback>
+                                                                    </Avatar>
+                                                                    {participant.student_name}
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell className="text-muted-foreground">{participant.student_email}</TableCell>
+                                                            <TableCell>
+                                                                {new Date(participant.enrollment_date).toLocaleDateString()}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Progress value={participant.progress_percentage || 0} className="w-20 h-2" />
+                                                                    <span className="text-xs text-muted-foreground">{participant.progress_percentage || 0}%</span>
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Badge variant={participant.status === 'active' ? 'default' : 'secondary'} className="rounded-full capitalize">
+                                                                    {participant.status}
+                                                                </Badge>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    )}
                                 </div>
                             </TabsContent>
 
