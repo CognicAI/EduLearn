@@ -140,9 +140,7 @@ export default function CourseDetailsPage() {
 
         setLoadingParticipants(true);
         try {
-            console.log('Fetching participants for course:', courseId);
             const data = await getCourseParticipants(courseId);
-            console.log('Participants data:', data);
             setParticipants(data);
         } catch (error: any) {
             console.error('Failed to fetch participants', error);
