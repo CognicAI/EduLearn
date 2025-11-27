@@ -86,7 +86,7 @@ export default function AdminUsersPage() {
                 ...(currentFilters.search && { search: currentFilters.search })
             });
 
-            const response = await fetch(`http://localhost:3001/api/admin/users?${params}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users?${params}`, {
                 headers: {
                     'Authorization': `Bearer ${authService.getAccessToken()}`,
                     'Content-Type': 'application/json'
@@ -154,7 +154,7 @@ export default function AdminUsersPage() {
         }
 
         try {
-            const response = await fetch('http://localhost:3001/api/admin/users/bulk/delete', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/bulk/delete`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${authService.getAccessToken()}`,
@@ -181,7 +181,7 @@ export default function AdminUsersPage() {
         }
 
         try {
-            const response = await fetch('http://localhost:3001/api/admin/users/bulk/update-status', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/bulk/update-status`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${authService.getAccessToken()}`,
@@ -209,7 +209,7 @@ export default function AdminUsersPage() {
                 ...(filters.search && { search: filters.search })
             });
 
-            const response = await fetch(`http://localhost:3001/api/admin/users/export/csv?${params}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/export/csv?${params}`, {
                 headers: {
                     'Authorization': `Bearer ${authService.getAccessToken()}`,
                 }

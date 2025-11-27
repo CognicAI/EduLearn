@@ -60,7 +60,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchPlatformStats = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/admin/analytics/platform', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/analytics/platform`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }

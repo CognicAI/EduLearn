@@ -27,7 +27,7 @@ app.use(cors({
   origin: [
     'http://localhost:3000',
     'http://localhost:3001',
-    'https://edu-learn-rust.vercel.app',
+    ...(process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',') : []),
     process.env.FRONTEND_URL || 'http://localhost:3000'
   ],
   credentials: true,

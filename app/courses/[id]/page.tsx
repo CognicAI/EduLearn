@@ -672,7 +672,7 @@ export default function CourseDetailsPage() {
                                                         </div>
                                                     </div>
                                                     <Button variant="outline" size="sm" asChild>
-                                                        <a href={`${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace('/api', '')}/uploads/${file.filename}`} target="_blank" rel="noopener noreferrer">
+                                                        <a href={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}/uploads/${file.filename}`} target="_blank" rel="noopener noreferrer">
                                                             <Download className="h-4 w-4 mr-2" />
                                                             Download
                                                         </a>
