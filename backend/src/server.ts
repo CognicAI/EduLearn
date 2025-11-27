@@ -27,6 +27,7 @@ app.use(cors({
   origin: [
     'http://localhost:3000',
     'http://localhost:3001',
+    'https://edu-learn-rust.vercel.app',
     process.env.FRONTEND_URL || 'http://localhost:3000'
   ],
   credentials: true,
@@ -95,23 +96,25 @@ app.use('*', (_req: Request, res: Response) => {
 });
 
 // Start server
-app.listen(PORT, '0.0.0.0', async () => {
-  logger.info(`EduLearn API server running on port ${PORT}`);
-  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', async () => {
+    logger.info(`EduLearn API server running on port ${PORT}`);
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
 
-  // Test database connection
-  try {
-    await testConnection();
-    logger.info('Database connection successful');
-  } catch (error: any) {
-    logger.error('Database connection failed', {
-      error: {
-        message: error.message,
-        stack: error.stack,
-      },
-    });
-  }
-});
+    // Test database connection
+    try {
+      await testConnection();
+      logger.info('Database connection successful');
+    } catch (error: any) {
+      logger.error('Database connection failed', {
+        error: {
+          message: error.message,
+          stack: error.stack,
+        },
+      });
+    }
+  });
+}
 
 export default app;
