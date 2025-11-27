@@ -26,13 +26,15 @@ app.use(helmet());
 app.set('trust proxy', 1);
 
 // CORS configuration
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  ...(process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',').map(o => o.trim().replace(/\/$/, '')) : []),
+  (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '')
+];
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    ...(process.env.CORS_ALLOWED_ORIGINS ? process.env.CORS_ALLOWED_ORIGINS.split(',') : []),
-    process.env.FRONTEND_URL || 'http://localhost:3000'
-  ],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-User-ID', 'X-User-Role'],
@@ -112,7 +114,7 @@ if (require.main === module) {
   app.listen(PORT, '0.0.0.0', async () => {
     logger.info(`EduLearn API server running on port ${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    logger.info(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+    logger.info(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
 
     // Test database connection
     try {
