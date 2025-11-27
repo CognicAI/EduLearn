@@ -580,7 +580,7 @@ export default function CourseDetailsPage() {
                                                                 <div className="flex items-center gap-2">
                                                                     <Avatar className="h-8 w-8">
                                                                         <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                                                                            {participant.student_name.charAt(0)}
+                                                                            {participant.student_name?.charAt(0) || '?'}
                                                                         </AvatarFallback>
                                                                     </Avatar>
                                                                     {participant.student_name}
