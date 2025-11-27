@@ -22,6 +22,9 @@ const PORT = parseInt(process.env.PORT || '3001', 10);
 // Security middleware
 app.use(helmet());
 
+// Enable trust proxy for Vercel/proxies to ensure rate limiting works correctly
+app.set('trust proxy', 1);
+
 // CORS configuration
 app.use(cors({
   origin: [
@@ -67,6 +70,15 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'EduLearn API is running',
+    version: '1.0.0'
+  });
 });
 
 // Global error handler
