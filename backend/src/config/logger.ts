@@ -51,33 +51,39 @@ const level = () => {
 const logsDir = path.join(process.cwd(), 'logs');
 
 // Define transports
-const transports = [
+// Define transports
+const transports: winston.transport[] = [
     // Console transport
     new winston.transports.Console({
         format: process.env.NODE_ENV === 'production' ? format : consoleFormat,
     }),
-
-    // Daily rotate file transport for all logs
-    new DailyRotateFile({
-        filename: path.join(logsDir, 'app-%DATE%.log'),
-        datePattern: 'YYYY-MM-DD',
-        zippedArchive: true,
-        maxSize: '20m',
-        maxFiles: '14d',
-        format: format,
-    }),
-
-    // Daily rotate file transport for errors only
-    new DailyRotateFile({
-        level: 'error',
-        filename: path.join(logsDir, 'error-%DATE%.log'),
-        datePattern: 'YYYY-MM-DD',
-        zippedArchive: true,
-        maxSize: '20m',
-        maxFiles: '30d',
-        format: format,
-    }),
 ];
+
+// Only add file transports if NOT running on Vercel
+if (process.env.VERCEL !== '1') {
+    transports.push(
+        // Daily rotate file transport for all logs
+        new DailyRotateFile({
+            filename: path.join(logsDir, 'app-%DATE%.log'),
+            datePattern: 'YYYY-MM-DD',
+            zippedArchive: true,
+            maxSize: '20m',
+            maxFiles: '14d',
+            format: format,
+        }),
+
+        // Daily rotate file transport for errors only
+        new DailyRotateFile({
+            level: 'error',
+            filename: path.join(logsDir, 'error-%DATE%.log'),
+            datePattern: 'YYYY-MM-DD',
+            zippedArchive: true,
+            maxSize: '20m',
+            maxFiles: '30d',
+            format: format,
+        })
+    );
+}
 
 // Create the logger
 const logger = winston.createLogger({
