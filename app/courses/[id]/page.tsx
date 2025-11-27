@@ -135,7 +135,7 @@ export default function CourseDetailsPage() {
     }, [courseId]);
 
     const fetchParticipants = React.useCallback(async () => {
-        if (!canEdit && userRole !== 'teacher' && userRole !== 'admin') return;
+        if (userRole !== 'teacher' && userRole !== 'admin') return;
 
         setLoadingParticipants(true);
         try {
