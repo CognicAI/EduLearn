@@ -836,7 +836,7 @@ export class CourseController {
                     e.status,
                     e.progress_percentage,
                     u.id as student_id,
-                    u.first_name || ' ' || u.last_name as student_name,
+                    TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) as student_name,
                     u.email as student_email,
                     u.profile_image as student_image
                 FROM enrollments e
