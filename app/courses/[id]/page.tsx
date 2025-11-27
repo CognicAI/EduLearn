@@ -33,7 +33,8 @@ import {
     updateModuleOrder,
     createLesson,
     deleteLesson,
-    uploadFile
+    uploadFile,
+    updateAssignment
 } from '@/lib/services/courseAssignments';
 import { getCourseParticipants } from '@/lib/services/enrollments';
 import { CourseStructure, Module } from '@/components/courses/CourseStructure';
