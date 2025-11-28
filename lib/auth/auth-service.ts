@@ -63,7 +63,7 @@ class AuthService {
       json = {};
     }
 
-    if (!res.ok || (json && json.success === false)) {
+    if (!res.ok || json.success === false) {
       if (res.status === 401) {
         this.clearTokens();
         throw new Error('Invalid or expired token');
