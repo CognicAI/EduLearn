@@ -38,6 +38,9 @@ router.use(authenticateToken);
 // For now, let's have a specific route for teacher's courses
 router.get('/teacher', requireRole(['teacher', 'admin']), courseController.getTeacherCourses);
 
+// Get student courses
+router.get('/my-courses', requireRole(['student']), courseController.getStudentCourses);
+
 // Get categories
 router.get('/categories', courseController.getCategories);
 
@@ -57,7 +60,7 @@ router.get('/:id/files', courseController.getCourseFiles);
 router.get('/:id/announcements', courseController.getCourseAnnouncements);
 
 // Get course enrollments (Participants)
-router.get('/:id/enrollments', requireRole(['teacher', 'admin']), courseController.getCourseEnrollments);
+router.get('/:id/enrollments', courseController.getCourseEnrollments);
 
 // Create course content
 router.post('/:id/modules', requireRole(['teacher', 'admin']), courseController.createModule);

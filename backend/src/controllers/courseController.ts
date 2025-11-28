@@ -87,6 +87,68 @@ export class CourseController {
     }
 
     /**
+     * Get courses for the current user (Student)
+     */
+    async getStudentCourses(req: AuthenticatedRequest, res: Response) {
+        try {
+            const userId = req.user!.userId;
+            const { status } = req.query;
+
+            let queryStr = `
+                SELECT 
+                    c.id,
+                    c.title,
+                    c.slug,
+                    c.description,
+                    c.thumbnail,
+                    c.level,
+                    c.status as course_status,
+                    e.status as enrollment_status,
+                    e.progress_percentage as progress,
+                    e.enrollment_date,
+                    u.first_name || ' ' || u.last_name as instructor,
+                    (
+                        SELECT title 
+                        FROM assignments a 
+                        WHERE a.course_id = c.id 
+                        AND a.due_date > NOW() 
+                        ORDER BY a.due_date ASC 
+                        LIMIT 1
+                    ) as next_deadline
+                FROM enrollments e
+                JOIN courses c ON e.course_id = c.id
+                JOIN users u ON c.instructor_id = u.id
+                WHERE e.student_id = $1 AND c.is_deleted = false
+            `;
+
+            const params: any[] = [userId];
+
+            if (status) {
+                queryStr += ` AND e.status = $2`;
+                params.push(status);
+            }
+
+            queryStr += ` ORDER BY e.enrollment_date DESC`;
+
+            const result = await query(queryStr, params);
+
+            // Map status to frontend expected format if needed
+            const courses = result.rows.map(course => ({
+                ...course,
+                status: course.enrollment_status // Use enrollment status for student view
+            }));
+
+            return res.json({
+                success: true,
+                data: courses
+            });
+        } catch (error) {
+            console.error('Error fetching student courses:', error);
+            return res.status(500).json({ success: false, message: 'Failed to fetch courses' });
+        }
+    }
+
+    /**
      * Create a new course
      */
     async createCourse(req: AuthenticatedRequest, res: Response) {

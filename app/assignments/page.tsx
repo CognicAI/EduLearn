@@ -9,13 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { 
-  FileText, 
-  Search, 
-  Plus, 
-  Calendar, 
-  Clock, 
-  CheckCircle, 
+import {
+  FileText,
+  Search,
+  Plus,
+  Calendar,
+  Clock,
+  CheckCircle,
   AlertCircle,
   Eye,
   Edit,
@@ -174,7 +174,7 @@ export default function AssignmentsPage() {
             <div className="text-2xl font-bold">{mockAssignments.length}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Submitted</CardTitle>
@@ -186,7 +186,7 @@ export default function AssignmentsPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending</CardTitle>
@@ -198,7 +198,7 @@ export default function AssignmentsPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Average Grade</CardTitle>
@@ -216,7 +216,7 @@ export default function AssignmentsPage() {
       <div className="space-y-4">
         {mockAssignments.map((assignment) => {
           const actualStatus = isOverdue(assignment.dueDate) && assignment.status !== 'submitted' ? 'overdue' : assignment.status;
-          
+
           return (
             <Card key={assignment.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
@@ -248,7 +248,7 @@ export default function AssignmentsPage() {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     <span>
-                      {assignment.submittedAt 
+                      {assignment.submittedAt
                         ? `Submitted on ${formatDate(assignment.submittedAt)}`
                         : `Due in ${Math.ceil((new Date(assignment.dueDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days`
                       }
@@ -288,7 +288,7 @@ export default function AssignmentsPage() {
             <div className="text-2xl font-bold">{teacherAssignments.length}</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Grading</CardTitle>
@@ -300,7 +300,7 @@ export default function AssignmentsPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Submissions</CardTitle>
@@ -312,7 +312,7 @@ export default function AssignmentsPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg. Grade</CardTitle>
@@ -361,7 +361,7 @@ export default function AssignmentsPage() {
                   </div>
                   <Progress value={(assignment.submissions / assignment.totalStudents) * 100} className="h-2" />
                 </div>
-                
+
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span>Grading Progress</span>
@@ -398,7 +398,7 @@ export default function AssignmentsPage() {
     <AuthGuard allowedRoles={['student', 'teacher']}>
       <div className="flex h-screen bg-background">
         <DashboardSidebar />
-        
+
         <main className="flex-1 overflow-y-auto">
           <div className="p-6">
             {/* Header */}
@@ -408,7 +408,7 @@ export default function AssignmentsPage() {
                   {user?.role === 'teacher' ? 'Assignment Management' : 'My Assignments'}
                 </h1>
                 <p className="text-muted-foreground mt-2">
-                  {user?.role === 'teacher' 
+                  {user?.role === 'teacher'
                     ? 'Create and manage assignments for your courses'
                     : 'View and submit your course assignments'
                   }

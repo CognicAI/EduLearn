@@ -4,6 +4,7 @@ import adminRoutes from './admin';
 import courseRoutes from './courses';
 import settingsRoutes from './settings';
 import chatbotRoutes from './chatbot';
+import dashboardRoutes from './dashboard';
 
 const router = Router();
 
@@ -13,6 +14,7 @@ router.use('/admin', adminRoutes);
 router.use('/courses', courseRoutes);
 router.use('/user', settingsRoutes);
 router.use('/chatbot', chatbotRoutes);
+router.use('/dashboard', dashboardRoutes);
 
 // Health check
 router.get('/health', (req, res) => {
