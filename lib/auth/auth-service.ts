@@ -18,11 +18,20 @@ class AuthService {
     }
   }
 
-  private async request<T>(endpoint: string, options: RequestInit, retryOnAuth = true): Promise<T> {
-    const res = await fetch(`${API_URL}${endpoint}`, options);
+  public async request<T>(endpoint: string, options: RequestInit, retryOnAuth = true): Promise<T> {
+    // Add authorization header if token exists and not already present
+    const headers = new Headers(options.headers);
+    if (this.accessToken && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${this.accessToken}`);
+    }
 
-    // Handle 403 Forbidden - try to refresh token once
-    if (res.status === 403 && retryOnAuth && this.refreshToken && endpoint !== '/auth/refresh') {
+    const res = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+
+    // Handle 401 Unauthorized - try to refresh token once
+    if (res.status === 401 && retryOnAuth && this.refreshToken && endpoint !== '/auth/refresh') {
       try {
         await this.refreshAccessToken();
         // Retry the request with new token
@@ -41,15 +50,28 @@ class AuthService {
       }
     }
 
-    const json = await res.json();
-    if (!res.ok || !json.success) {
-      if (res.status === 401 || res.status === 403) {
+    // Handle 204 No Content
+    if (res.status === 204) {
+      return {} as T;
+    }
+
+    let json: { success?: boolean; message?: string; data?: any };
+    try {
+      const text = await res.text();
+      json = text ? JSON.parse(text) : {};
+    } catch (e) {
+      json = {};
+    }
+
+    if (!res.ok || json.success === false) {
+      if (res.status === 401) {
         this.clearTokens();
         throw new Error('Invalid or expired token');
       }
-      throw new Error(json.message || 'Request failed');
+      throw new Error(json.message || `Request failed with status ${res.status}`);
     }
-    return json.data;
+
+    return (json.data !== undefined ? json.data : json) as T;
   }
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
@@ -179,6 +201,7 @@ class AuthService {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('currentUser');
+      localStorage.removeItem('token'); // Remove legacy token
     }
   }
 
@@ -193,7 +216,20 @@ class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return !!this.accessToken && !!this.currentUser;
+    if (this.accessToken && this.currentUser) return true;
+
+    // Check localStorage if memory is empty (hydration fallback)
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('accessToken');
+      const user = localStorage.getItem('currentUser');
+      if (token && user) {
+        // Rehydrate state
+        this.accessToken = token;
+        this.currentUser = JSON.parse(user);
+        return true;
+      }
+    }
+    return false;
   }
 }
 

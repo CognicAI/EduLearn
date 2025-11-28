@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AuthGuard } from '@/lib/auth/auth-guard';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
 import Link from 'next/link';
+import { authService } from '@/lib/auth/auth-service';
 
 interface CourseFormData {
     title: string;
@@ -58,19 +59,13 @@ export default function CreateCoursePage() {
 
     const fetchCategories = async () => {
         try {
-            const token = localStorage.getItem('accessToken');
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/categories`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            const data = await response.json();
-            console.log('Categories API response:', data);
-            if (data.success) {
-                setCategories(data.data || []);
-                console.log('Categories set:', data.data);
+            const response = await authService.request<any>('/courses/categories', { method: 'GET' });
+            console.log('Categories API response:', response);
+            if (response.success) {
+                setCategories(response.data || []);
+                console.log('Categories set:', response.data);
             } else {
-                console.error('Failed to fetch categories:', data.message);
+                console.error('Failed to fetch categories:', response.message);
                 // Set some default categories if API fails
                 setCategories([
                     { id: '1', name: 'Programming' },
@@ -116,11 +111,10 @@ export default function CreateCoursePage() {
         setLoading(true);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses`, {
+            const response = await authService.request<any>('/courses', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
                 },
                 body: JSON.stringify({
                     title: formData.title,
@@ -133,41 +127,17 @@ export default function CreateCoursePage() {
                 })
             });
 
-            const data = await response.json();
+            toast({
+                title: "Success",
+                description: "Course created successfully",
+            });
 
-            if (data.success) {
-                const createdCourseId = data.data.id;
-
-                toast({
-                    title: 'Success!',
-                    description: 'Course created successfully',
-                });
-
-                // Check user role
-                const userStr = localStorage.getItem('user');
-                const user = userStr ? JSON.parse(userStr) : null;
-                const userRole = user?.role;
-
-                if (userRole === 'admin') {
-                    // For admins, offer to assign teachers immediately
-                    if (confirm('Course created! Would you like to assign teachers to this course now?')) {
-                        // Redirect to the courses page which will open the ManageTeachersDialog
-                        router.push(`/admin/courses?openAssignment=${createdCourseId}`);
-                    } else {
-                        router.push('/admin/courses');
-                    }
-                } else {
-                    // For teachers, just redirect to their courses
-                    router.push('/dashboard/teacher/courses');
-                }
-            } else {
-                throw new Error(data.message || 'Failed to create course');
-            }
+            router.push(`/courses/${response.data.id}/edit`);
         } catch (error: any) {
             toast({
-                title: 'Error',
-                description: error.message || 'Failed to create course',
-                variant: 'destructive'
+                title: "Error",
+                description: error.message || "Failed to create course",
+                variant: "destructive",
             });
         } finally {
             setLoading(false);

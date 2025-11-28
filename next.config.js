@@ -11,6 +11,18 @@ const nextConfig = {
         hostname: 'images.pexels.com',
       },
       {
+        protocol: 'https',
+        hostname: 'edulearn.studio',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.edulearn.studio',
+      },
+      {
+        protocol: 'https',
+        hostname: 'backend.edulearn.studio',
+      },
+      {
         protocol: 'http',
         hostname: 'localhost',
       },

@@ -169,7 +169,7 @@ export default function CalendarPage() {
     <AuthGuard>
       <div className="flex h-screen bg-background">
         <DashboardSidebar />
-        
+
         <main className="flex-1 overflow-y-auto">
           <div className="p-6">
             {/* Header */}
@@ -179,7 +179,7 @@ export default function CalendarPage() {
                   Calendar
                 </h1>
                 <p className="text-muted-foreground mt-2">
-                  {user?.role === 'teacher' 
+                  {user?.role === 'teacher'
                     ? 'Manage your schedule and important dates'
                     : 'Keep track of assignments, classes, and important dates'
                   }
@@ -200,42 +200,42 @@ export default function CalendarPage() {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <h2 className="text-xl font-semibold">
-                  {currentDate.toLocaleDateString('en-US', { 
-                    month: 'long', 
-                    year: 'numeric' 
+                  {currentDate.toLocaleDateString('en-US', {
+                    month: 'long',
+                    year: 'numeric'
                   })}
                 </h2>
                 <Button variant="outline" size="icon">
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
-              
+
               <div className="flex gap-2">
-                <Button 
+                <Button
                   variant={selectedFilter === 'all' ? 'default' : 'outline'}
                   onClick={() => setSelectedFilter('all')}
                 >
                   All
                 </Button>
-                <Button 
+                <Button
                   variant={selectedFilter === 'today' ? 'default' : 'outline'}
                   onClick={() => setSelectedFilter('today')}
                 >
                   Today
                 </Button>
-                <Button 
+                <Button
                   variant={selectedFilter === 'week' ? 'default' : 'outline'}
                   onClick={() => setSelectedFilter('week')}
                 >
                   This Week
                 </Button>
-                <Button 
+                <Button
                   variant={selectedFilter === 'assignments' ? 'default' : 'outline'}
                   onClick={() => setSelectedFilter('assignments')}
                 >
                   Assignments
                 </Button>
-                <Button 
+                <Button
                   variant={selectedFilter === 'classes' ? 'default' : 'outline'}
                   onClick={() => setSelectedFilter('classes')}
                 >
@@ -265,15 +265,15 @@ export default function CalendarPage() {
                         </div>
                       ))}
                     </div>
-                    
+
                     <div className="grid grid-cols-7 gap-2">
                       {Array.from({ length: 35 }, (_, i) => {
                         const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), i - 6);
                         const isCurrentMonth = date.getMonth() === currentDate.getMonth();
-                        const hasEvents = events.some(event => 
+                        const hasEvents = events.some(event =>
                           new Date(event.date).toDateString() === date.toDateString()
                         );
-                        
+
                         return (
                           <div
                             key={i}

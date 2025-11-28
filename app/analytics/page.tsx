@@ -37,7 +37,7 @@ export default function AnalyticsPage() {
     <AuthGuard allowedRoles={['teacher', 'admin']}>
       <div className="flex h-screen bg-background">
         <DashboardSidebar />
-        
+
         <main className="flex-1 overflow-y-auto">
           <div className="p-6">
             {/* Header */}
@@ -47,8 +47,8 @@ export default function AnalyticsPage() {
                   Analytics Dashboard
                 </h1>
                 <p className="text-muted-foreground mt-2">
-                  {user?.role === 'admin' 
-                    ? 'Platform-wide analytics and insights' 
+                  {user?.role === 'admin'
+                    ? 'Platform-wide analytics and insights'
                     : 'Course performance and student analytics'
                   }
                 </p>
@@ -78,11 +78,10 @@ export default function AnalyticsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{stat.value}</div>
-                    <p className={`text-xs ${
-                      stat.trend === 'up' ? 'text-green-600' : 
-                      stat.trend === 'down' ? 'text-red-600' : 
-                      'text-muted-foreground'
-                    }`}>
+                    <p className={`text-xs ${stat.trend === 'up' ? 'text-green-600' :
+                        stat.trend === 'down' ? 'text-red-600' :
+                          'text-muted-foreground'
+                      }`}>
                       {stat.change} from last month
                     </p>
                   </CardContent>

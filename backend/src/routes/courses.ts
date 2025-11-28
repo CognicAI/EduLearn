@@ -38,6 +38,9 @@ router.use(authenticateToken);
 // For now, let's have a specific route for teacher's courses
 router.get('/teacher', requireRole(['teacher', 'admin']), courseController.getTeacherCourses);
 
+// Get student courses
+router.get('/my-courses', requireRole(['student']), courseController.getStudentCourses);
+
 // Get categories
 router.get('/categories', courseController.getCategories);
 
@@ -57,7 +60,7 @@ router.get('/:id/files', courseController.getCourseFiles);
 router.get('/:id/announcements', courseController.getCourseAnnouncements);
 
 // Get course enrollments (Participants)
-router.get('/:id/enrollments', requireRole(['teacher', 'admin']), courseController.getCourseEnrollments);
+router.get('/:id/enrollments', courseController.getCourseEnrollments);
 
 // Create course content
 router.post('/:id/modules', requireRole(['teacher', 'admin']), courseController.createModule);
@@ -78,6 +81,7 @@ router.delete('/:id/modules/:moduleId', requireRole(['teacher', 'admin']), cours
 router.delete('/:id/modules/:moduleId/lessons/:lessonId', requireRole(['teacher', 'admin']), courseController.deleteLesson);
 router.delete('/:id/assignments/:assignmentId', requireRole(['teacher', 'admin']), courseController.deleteAssignment);
 router.delete('/:id/files/:fileId', requireRole(['teacher', 'admin']), courseController.deleteFile);
+router.delete('/:id/announcements/:announcementId', requireRole(['teacher', 'admin']), courseController.deleteAnnouncement);
 
 // Create course (Teacher or Admin)
 router.post('/', requireRole(['teacher', 'admin']), courseController.createCourse);

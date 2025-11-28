@@ -172,7 +172,7 @@ export default function StudentDashboard() {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Recent Assignments */}
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-2 space-y-6">
                   <Card>
                     <CardHeader>
                       <CardTitle>Recent Assignments</CardTitle>
@@ -183,23 +183,6 @@ export default function StudentDashboard() {
                     <CardContent>
                       <div className="text-center py-8">
                         <p className="text-sm text-muted-foreground">No assignments yet.</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="space-y-6">
-                  {/* Upcoming Deadlines */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Upcoming Deadlines</CardTitle>
-                      <CardDescription>
-                        Don't miss these important dates
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-center py-4">
-                        <p className="text-sm text-muted-foreground">No upcoming deadlines.</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -231,6 +214,25 @@ export default function StudentDashboard() {
                         )}
                     </CardContent>
                   </Card>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Upcoming Deadlines */}
+                  <Card className="min-h-[285px] flex flex-col">
+                    <CardHeader>
+                      <CardTitle>Upcoming Deadlines</CardTitle>
+                      <CardDescription>
+                        Don't miss these important dates
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center py-4">
+                        <p className="text-sm text-muted-foreground">No upcoming deadlines.</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+
 
                   {/* Quick Actions */}
                   <Card>

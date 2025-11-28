@@ -28,6 +28,7 @@ import {
 const sidebarItems = {
   student: [
     { name: 'Dashboard', href: '/dashboard/student', icon: LayoutDashboard },
+    { name: 'My Courses', href: '/dashboard/student/courses', icon: BookOpenIcon },
     { name: 'Assignments', href: '/assignments', icon: FileText },
     { name: 'Calendar', href: '/calendar', icon: Calendar },
     { name: 'Progress', href: '/progress', icon: BarChart3 },

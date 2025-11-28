@@ -12,12 +12,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { 
-  ArrowLeft, 
-  Upload, 
-  FileText, 
-  Calendar, 
-  Clock, 
+import {
+  ArrowLeft,
+  Upload,
+  FileText,
+  Calendar,
+  Clock,
   AlertCircle,
   CheckCircle,
   X
@@ -56,10 +56,10 @@ export default function SubmitAssignmentPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  
+
   const assignmentId = params.id as string;
   const assignment = mockAssignment; // In real app, fetch by assignmentId
-  
+
   const [selectedCourse, setSelectedCourse] = useState(assignment.courseId);
   const [submissionText, setSubmissionText] = useState('');
   const [comments, setComments] = useState('');
@@ -68,27 +68,27 @@ export default function SubmitAssignmentPage() {
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    
+
     // Validate file types
     const allowedTypes = assignment.allowedFileTypes;
-    const invalidFiles = files.filter(file => 
+    const invalidFiles = files.filter(file =>
       !allowedTypes.some(type => file.name.toLowerCase().endsWith(type))
     );
-    
+
     if (invalidFiles.length > 0) {
       toast.error(`Invalid file types. Allowed: ${allowedTypes.join(', ')}`);
       return;
     }
-    
+
     // Validate file size (10MB = 10 * 1024 * 1024 bytes)
     const maxSize = 10 * 1024 * 1024;
     const oversizedFiles = files.filter(file => file.size > maxSize);
-    
+
     if (oversizedFiles.length > 0) {
       toast.error(`Files too large. Maximum size: ${assignment.maxFileSize}`);
       return;
     }
-    
+
     setUploadedFiles(prev => [...prev, ...files]);
     toast.success(`${files.length} file(s) uploaded successfully`);
   };
@@ -99,18 +99,18 @@ export default function SubmitAssignmentPage() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    
+
     if (!submissionText.trim() && uploadedFiles.length === 0) {
       toast.error('Please provide either text submission or upload files');
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       toast.success('Assignment submitted successfully!');
       router.push('/assignments');
     } catch (error) {
@@ -127,7 +127,7 @@ export default function SubmitAssignmentPage() {
     <AuthGuard allowedRoles={['student']}>
       <div className="flex h-screen bg-background">
         <DashboardSidebar />
-        
+
         <main className="flex-1 overflow-y-auto">
           <div className="p-6">
             {/* Header */}
@@ -155,7 +155,7 @@ export default function SubmitAssignmentPage() {
                       <Label className="text-sm font-medium">Course</Label>
                       <p className="text-sm text-muted-foreground">{assignment.course}</p>
                     </div>
-                    
+
                     <div>
                       <Label className="text-sm font-medium">Due Date</Label>
                       <div className="flex items-center gap-2">
@@ -181,12 +181,12 @@ export default function SubmitAssignmentPage() {
                         </Badge>
                       )}
                     </div>
-                    
+
                     <div>
                       <Label className="text-sm font-medium">Max Points</Label>
                       <p className="text-sm text-muted-foreground">{assignment.maxPoints} points</p>
                     </div>
-                    
+
                     <div>
                       <Label className="text-sm font-medium">Requirements</Label>
                       <ul className="text-sm text-muted-foreground space-y-1 mt-1">
@@ -198,14 +198,14 @@ export default function SubmitAssignmentPage() {
                         ))}
                       </ul>
                     </div>
-                    
+
                     <div>
                       <Label className="text-sm font-medium">Allowed File Types</Label>
                       <p className="text-sm text-muted-foreground">
                         {assignment.allowedFileTypes.join(', ')}
                       </p>
                     </div>
-                    
+
                     <div>
                       <Label className="text-sm font-medium">Max File Size</Label>
                       <p className="text-sm text-muted-foreground">{assignment.maxFileSize}</p>
@@ -266,7 +266,7 @@ export default function SubmitAssignmentPage() {
                             Choose Files
                           </Button>
                         </div>
-                        
+
                         {/* Uploaded Files */}
                         {uploadedFiles.length > 0 && (
                           <div className="space-y-2">
