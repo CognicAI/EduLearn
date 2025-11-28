@@ -55,7 +55,7 @@ class AuthService {
       return {} as T;
     }
 
-    let json;
+    let json: { success?: boolean; message?: string; data?: any };
     try {
       const text = await res.text();
       json = text ? JSON.parse(text) : {};
