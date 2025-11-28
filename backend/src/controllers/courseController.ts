@@ -821,14 +821,7 @@ export class CourseController {
                 return res.status(403).json({ success: false, message: 'Access denied' });
             }
 
-            // Determine if published based on scheduled_at
-            // If scheduled_at is in the future, it's not published yet (or we rely on the client to tell us "Publish Now" vs "Schedule")
-            // The requirement says "Publish or Schedule At".
-            // If scheduled_at is provided, we assume it's a scheduled announcement.
-            // If not, it's published immediately.
-            // However, the client might send scheduled_at even for "Publish Now" if they pick a date? 
-            // Let's assume if scheduled_at is present, it's scheduled.
-
+            // Published immediately if no scheduled_at is provided
             const isPublished = !scheduled_at;
 
             const result = await query(
