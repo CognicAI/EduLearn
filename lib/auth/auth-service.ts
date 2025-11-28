@@ -71,7 +71,7 @@ class AuthService {
       throw new Error(json.message || `Request failed with status ${res.status}`);
     }
 
-    return json.data !== undefined ? json.data : json;
+    return (json.data !== undefined ? json.data : json) as T;
   }
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {

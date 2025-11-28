@@ -24,6 +24,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { AuthGuard } from '@/lib/auth/auth-guard';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
+import { authService } from '@/lib/auth/auth-service';
 import Link from 'next/link';
 
 interface CourseFormData {
@@ -58,13 +59,9 @@ export default function EditCoursePage() {
 
     const fetchCategories = React.useCallback(async () => {
         try {
-            const token = localStorage.getItem('accessToken');
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/categories`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            const data = await authService.request<any>(`/courses/categories`, {
+                method: 'GET'
             });
-            const data = await response.json();
             if (data.success) {
                 setCategories(data.data || []);
             }
@@ -75,13 +72,9 @@ export default function EditCoursePage() {
 
     const fetchCourse = React.useCallback(async () => {
         try {
-            const token = localStorage.getItem('accessToken');
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/${courseId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            const data = await authService.request<any>(`/courses/${courseId}`, {
+                method: 'GET'
             });
-            const data = await response.json();
 
             if (data.success) {
                 const course = data.data;
@@ -129,11 +122,10 @@ export default function EditCoursePage() {
         setLoading(true);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/${courseId}`, {
+            const data = await authService.request<any>(`/courses/${courseId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
                 },
                 body: JSON.stringify({
                     title: formData.title,
@@ -146,8 +138,6 @@ export default function EditCoursePage() {
                     status: formData.status,
                 })
             });
-
-            const data = await response.json();
 
             if (data.success) {
                 toast({
