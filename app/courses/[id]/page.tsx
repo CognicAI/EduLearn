@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import {
     BookOpen,
-    Clock,
     Users,
     Star,
     PlayCircle,
@@ -12,7 +11,8 @@ import {
     Megaphone,
     FileText,
     Upload,
-    Download
+    Download,
+    Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -52,6 +52,9 @@ import {
 import { getCourseImageUrl } from '@/lib/utils/image-utils';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 
+import { AnnouncementForm } from '@/components/courses/AnnouncementForm';
+import { AnnouncementViewModal } from '@/components/courses/AnnouncementViewModal';
+
 export default function CourseDetailsPage() {
     const params = useParams();
     const courseId = params.id as string;
@@ -75,6 +78,11 @@ export default function CourseDetailsPage() {
     // File Upload State
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
+
+    // Announcement State
+    const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
+    const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
+    const [showAnnouncementView, setShowAnnouncementView] = useState(false);
 
     const fetchCourseDetails = React.useCallback(async () => {
         try {
@@ -340,6 +348,8 @@ export default function CourseDetailsPage() {
                 // Trigger file input
                 setActiveModuleId(moduleId);
                 fileInputRef.current?.click();
+            } else if (type === 'announcement') {
+                setShowAnnouncementForm(true);
             }
         } catch (error: any) {
             toast({
@@ -367,6 +377,39 @@ export default function CourseDetailsPage() {
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
         }
     };
+
+    const handleDeleteAnnouncement = async (announcementId: string) => {
+        if (!confirm('Are you sure you want to delete this announcement?')) return;
+
+        try {
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/${courseId}/announcements/${announcementId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                toast({
+                    title: 'Success',
+                    description: 'Announcement deleted successfully'
+                });
+                fetchCourseContent();
+            } else {
+                throw new Error(data.message || 'Failed to delete announcement');
+            }
+        } catch (error: any) {
+            toast({
+                title: 'Error',
+                description: error.message || 'Failed to delete announcement',
+                variant: 'destructive'
+            });
+        }
+    };
+
 
 
 
@@ -638,10 +681,35 @@ export default function CourseDetailsPage() {
                                         <Card key={announcement.id}>
                                             <CardContent className="p-6 space-y-2">
                                                 <div className="flex justify-between items-start">
-                                                    <h4 className="font-medium text-lg">{announcement.title}</h4>
-                                                    <span className="text-sm text-muted-foreground">{new Date(announcement.created_at).toLocaleDateString()}</span>
+                                                    <div className="flex-1">
+                                                        <h4 className="font-medium text-lg">{announcement.title}</h4>
+
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm text-muted-foreground">{new Date(announcement.created_at).toLocaleDateString()}</span>
+                                                        {isEditing && canEdit && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleDeleteAnnouncement(announcement.id)}
+                                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setSelectedAnnouncement(announcement);
+                                                                setShowAnnouncementView(true);
+                                                            }}
+                                                        >
+                                                            View
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                                <p className="text-muted-foreground">{announcement.content}</p>
+                                                <p className="text-muted-foreground line-clamp-2">{announcement.content}</p>
                                             </CardContent>
                                         </Card>
                                     ))}
@@ -687,6 +755,18 @@ export default function CourseDetailsPage() {
                     </div>
                 </main>
             </div>
-        </AuthGuard>
+            <AnnouncementForm
+                isOpen={showAnnouncementForm}
+                onClose={() => setShowAnnouncementForm(false)}
+                courseId={courseId}
+                onSuccess={fetchCourseContent}
+            />
+
+            <AnnouncementViewModal
+                isOpen={showAnnouncementView}
+                onClose={() => setShowAnnouncementView(false)}
+                announcement={selectedAnnouncement}
+            />
+        </AuthGuard >
     );
 }
