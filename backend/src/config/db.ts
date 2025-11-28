@@ -11,7 +11,7 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
   // Only use SSL for production/remote databases
-  ssl: process.env.NODE_ENV === 'production' ? {
+  ssl: (process.env.NODE_ENV === 'production' || process.env.DB_HOST?.includes('supabase.com')) ? {
     rejectUnauthorized: false // Required for remote PostgreSQL with self-signed cert
   } : false // Disable SSL for local development
 });
