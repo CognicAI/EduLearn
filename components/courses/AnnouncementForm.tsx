@@ -210,7 +210,13 @@ export function AnnouncementForm({ isOpen, onClose, courseId, onSuccess }: Annou
                                                 selected={scheduleDate}
                                                 onSelect={setScheduleDate}
                                                 initialFocus
-                                                disabled={(date) => date < new Date()}
+                                                disabled={(date) => {
+                                                    const today = new Date();
+                                                    today.setHours(0, 0, 0, 0);
+                                                    const checkDate = new Date(date);
+                                                    checkDate.setHours(0, 0, 0, 0);
+                                                    return checkDate < today;
+                                                }}
                                             />
                                         </PopoverContent>
                                     </Popover>
