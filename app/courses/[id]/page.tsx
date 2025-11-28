@@ -1,18 +1,12 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import {
-    BookOpen,
-    Clock,
-    Users,
-    Star,
-    PlayCircle,
-    CheckCircle,
-    Megaphone,
-    FileText,
-    Upload,
-    Download
+Users,
+PlayCircle,
+FileText,
+Download,
+Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -23,10 +17,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardSidebar } from '@/components/layout/dashboard-sidebar';
 import { AuthGuard } from '@/lib/auth/auth-guard';
+import { useAuth } from '@/lib/auth/auth-context';
+import { authService } from '@/lib/auth/auth-service';
 import {
     createModule,
     createAssignment,
-    createAnnouncement,
     updateModule,
     deleteModule,
     deleteAssignment,
@@ -38,7 +33,6 @@ import {
 } from '@/lib/services/courseAssignments';
 import { getCourseParticipants } from '@/lib/services/enrollments';
 import { CourseStructure, Module } from '@/components/courses/CourseStructure';
-import { CourseItem } from '@/components/courses/CourseSection';
 import { Loader2 } from 'lucide-react';
 import {
     Table,
@@ -52,10 +46,14 @@ import {
 import { getCourseImageUrl } from '@/lib/utils/image-utils';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 
+import { AnnouncementForm } from '@/components/courses/AnnouncementForm';
+import { AnnouncementViewModal } from '@/components/courses/AnnouncementViewModal';
+
 export default function CourseDetailsPage() {
     const params = useParams();
     const courseId = params.id as string;
     const { toast } = useToast();
+    const { user } = useAuth();
     const [course, setCourse] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('modules');
@@ -69,31 +67,28 @@ export default function CourseDetailsPage() {
 
     // Edit Mode State
     const [isEditing, setIsEditing] = useState(false);
-    const [canEdit, setCanEdit] = useState(false);
-    const [userRole, setUserRole] = useState<string>('');
+
+    // Derived state
+    const canEdit = React.useMemo(() => {
+        if (!user || !course) return false;
+        return user.role === 'admin' || course.can_edit || course.is_owner;
+    }, [user, course]);
 
     // File Upload State
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
 
+    // Announcement State
+    const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
+    const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
+    const [showAnnouncementView, setShowAnnouncementView] = useState(false);
+
     const fetchCourseDetails = React.useCallback(async () => {
         try {
-            const token = localStorage.getItem('accessToken');
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/courses/${courseId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            const data = await authService.request<any>(`/courses/${courseId}`, {
+                method: 'GET'
             });
-            const data = await response.json();
-
-            if (data.success) {
-                setCourse(data.data);
-                const role = JSON.parse(atob(token?.split('.')[1] || '{}')).role;
-                setUserRole(role);
-                setCanEdit(role === 'admin' || data.data.can_edit || data.data.is_owner);
-            } else {
-                throw new Error(data.message || 'Failed to load course');
-            }
+            setCourse(data);
         } catch (error: any) {
             toast({
                 title: 'Error',
@@ -107,28 +102,17 @@ export default function CourseDetailsPage() {
 
     const fetchCourseContent = React.useCallback(async () => {
         try {
-            const token = localStorage.getItem('accessToken');
-            const headers = { 'Authorization': `Bearer ${token}` };
-            const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-
-            const [modulesRes, assignmentsRes, filesRes, announcementsRes] = await Promise.all([
-                fetch(`${baseUrl}/courses/${courseId}/modules`, { headers }),
-                fetch(`${baseUrl}/courses/${courseId}/assignments`, { headers }),
-                fetch(`${baseUrl}/courses/${courseId}/files`, { headers }),
-                fetch(`${baseUrl}/courses/${courseId}/announcements`, { headers })
-            ]);
-
             const [modulesData, assignmentsData, filesData, announcementsData] = await Promise.all([
-                modulesRes.json(),
-                assignmentsRes.json(),
-                filesRes.json(),
-                announcementsRes.json()
+                authService.request<any[]>(`/courses/${courseId}/modules`, { method: 'GET' }),
+                authService.request<any[]>(`/courses/${courseId}/assignments`, { method: 'GET' }),
+                authService.request<any[]>(`/courses/${courseId}/files`, { method: 'GET' }),
+                authService.request<any[]>(`/courses/${courseId}/announcements`, { method: 'GET' })
             ]);
 
-            if (modulesData.success) setModules(modulesData.data);
-            if (assignmentsData.success) setAssignments(assignmentsData.data);
-            if (filesData.success) setFiles(filesData.data);
-            if (announcementsData.success) setAnnouncements(announcementsData.data);
+            setModules(modulesData);
+            setAssignments(assignmentsData);
+            setFiles(filesData);
+            setAnnouncements(announcementsData);
 
         } catch (error) {
             console.error('Error fetching course content:', error);
@@ -136,7 +120,7 @@ export default function CourseDetailsPage() {
     }, [courseId]);
 
     const fetchParticipants = React.useCallback(async () => {
-        // if (userRole !== 'teacher' && userRole !== 'admin') return;
+        // if (user?.role !== 'teacher' && user?.role !== 'admin') return;
 
         setLoadingParticipants(true);
         try {
@@ -152,7 +136,7 @@ export default function CourseDetailsPage() {
         } finally {
             setLoadingParticipants(false);
         }
-    }, [courseId, canEdit, userRole, toast]);
+    }, [courseId, canEdit, user, toast]);
 
     useEffect(() => {
         if (courseId) {
@@ -340,6 +324,8 @@ export default function CourseDetailsPage() {
                 // Trigger file input
                 setActiveModuleId(moduleId);
                 fileInputRef.current?.click();
+            } else if (type === 'announcement') {
+                setShowAnnouncementForm(true);
             }
         } catch (error: any) {
             toast({
@@ -367,6 +353,30 @@ export default function CourseDetailsPage() {
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
         }
     };
+
+    const handleDeleteAnnouncement = async (announcementId: string) => {
+        if (!confirm('Are you sure you want to delete this announcement?')) return;
+
+        try {
+            await authService.request<void>(
+                `/courses/${courseId}/announcements/${announcementId}`,
+                { method: 'DELETE' }
+            );
+
+            toast({
+                title: 'Success',
+                description: 'Announcement deleted successfully'
+            });
+            fetchCourseContent();
+        } catch (error: any) {
+            toast({
+                title: 'Error',
+                description: error.message || 'Failed to delete announcement',
+                variant: 'destructive'
+            });
+        }
+    };
+
 
 
 
@@ -638,10 +648,35 @@ export default function CourseDetailsPage() {
                                         <Card key={announcement.id}>
                                             <CardContent className="p-6 space-y-2">
                                                 <div className="flex justify-between items-start">
-                                                    <h4 className="font-medium text-lg">{announcement.title}</h4>
-                                                    <span className="text-sm text-muted-foreground">{new Date(announcement.created_at).toLocaleDateString()}</span>
+                                                    <div className="flex-1">
+                                                        <h4 className="font-medium text-lg">{announcement.title}</h4>
+
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm text-muted-foreground">{new Date(announcement.created_at).toLocaleDateString()}</span>
+                                                        {isEditing && canEdit && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleDeleteAnnouncement(announcement.id)}
+                                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setSelectedAnnouncement(announcement);
+                                                                setShowAnnouncementView(true);
+                                                            }}
+                                                        >
+                                                            View
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                                <p className="text-muted-foreground">{announcement.content}</p>
+                                                <p className="text-muted-foreground line-clamp-2">{announcement.content}</p>
                                             </CardContent>
                                         </Card>
                                     ))}
@@ -687,6 +722,18 @@ export default function CourseDetailsPage() {
                     </div>
                 </main>
             </div>
-        </AuthGuard>
+            <AnnouncementForm
+                isOpen={showAnnouncementForm}
+                onClose={() => setShowAnnouncementForm(false)}
+                courseId={courseId}
+                onSuccess={fetchCourseContent}
+            />
+
+            <AnnouncementViewModal
+                isOpen={showAnnouncementView}
+                onClose={() => setShowAnnouncementView(false)}
+                announcement={selectedAnnouncement}
+            />
+        </AuthGuard >
     );
 }

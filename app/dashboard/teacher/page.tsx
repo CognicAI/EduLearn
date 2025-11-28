@@ -154,9 +154,9 @@ export default function TeacherDashboard() {
 
               {/* Management Tabs */}
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="assignments">Assignments</TabsTrigger>
+                  {/* <TabsTrigger value="assignments">Assignments</TabsTrigger> */}
                   <TabsTrigger value="grading">Grading</TabsTrigger>
                   <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 </TabsList>
@@ -270,9 +270,6 @@ export default function TeacherDashboard() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="assignments" className="mt-6">
-                  <AssignmentManagement />
-                </TabsContent>
 
                 <TabsContent value="grading" className="mt-6">
                   <GradeSubmissions />

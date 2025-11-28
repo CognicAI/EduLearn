@@ -514,15 +514,23 @@ export class CourseController {
             }
 
             const announcementsResult = await query(`
-                SELECT 
-                    a.*,
-                    u.first_name || ' ' || u.last_name as author_name,
-                    u.profile_image as author_image
-                FROM announcements a
-                JOIN users u ON a.author_id = u.id
-                WHERE a.course_id = $1 AND a.is_deleted = false
-                ORDER BY a.created_at DESC
-            `, [id]);
+            SELECT 
+                a.*,
+                u.first_name || ' ' || u.last_name as author_name,
+                u.profile_image as author_image
+            FROM announcements a
+            JOIN users u ON a.author_id = u.id
+            WHERE a.course_id = $1 AND a.is_deleted = false
+            ORDER BY 
+                CASE a.priority
+                    WHEN 'urgent' THEN 1
+                    WHEN 'high' THEN 2
+                    WHEN 'medium' THEN 3
+                    WHEN 'low' THEN 4
+                    ELSE 5
+                END ASC,
+                a.created_at DESC
+        `, [id]);
 
             return res.json({
                 success: true,
@@ -805,7 +813,7 @@ export class CourseController {
             const { id } = req.params;
             const userId = req.user!.userId;
             const userRole = req.user!.role;
-            const { title, content, priority } = req.body;
+            const { title, content, priority, scheduled_at, expires_at } = req.body;
 
             // Check edit permission
             const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
@@ -813,11 +821,14 @@ export class CourseController {
                 return res.status(403).json({ success: false, message: 'Access denied' });
             }
 
+            // Published immediately if no scheduled_at is provided
+            const isPublished = !scheduled_at;
+
             const result = await query(
-                `INSERT INTO announcements (course_id, author_id, title, content, priority, is_published) 
-                 VALUES ($1, $2, $3, $4, $5, true) 
+                `INSERT INTO announcements (course_id, author_id, title, content, priority, is_published, scheduled_at, expires_at) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
                  RETURNING *`,
-                [id, userId, title, content, priority || 'medium']
+                [id, userId, title, content, priority || 'medium', isPublished, scheduled_at || null, expires_at || null]
             );
 
             return res.status(201).json({
@@ -830,6 +841,39 @@ export class CourseController {
             return res.status(500).json({ success: false, message: 'Failed to post announcement' });
         }
     }
+
+    /**
+     * Delete announcement
+     */
+    async deleteAnnouncement(req: AuthenticatedRequest, res: Response) {
+        try {
+            const { id, announcementId } = req.params;
+            const userId = req.user!.userId;
+            const userRole = req.user!.role;
+
+            // Check edit permission
+            const canEdit = await courseAuthService.canEditCourse(userId, id, userRole);
+            if (!canEdit) {
+                return res.status(403).json({ success: false, message: 'Access denied' });
+            }
+
+            const result = await query(
+                `UPDATE announcements SET is_deleted = true, deleted_at = NOW() 
+                 WHERE id = $1 AND course_id = $2 RETURNING id`,
+                [announcementId, id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ success: false, message: 'Announcement not found' });
+            }
+
+            return res.json({ success: true, message: 'Announcement deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting announcement:', error);
+            return res.status(500).json({ success: false, message: 'Failed to delete announcement' });
+        }
+    }
+
     /**
      * Update module
      */

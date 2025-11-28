@@ -81,6 +81,7 @@ router.delete('/:id/modules/:moduleId', requireRole(['teacher', 'admin']), cours
 router.delete('/:id/modules/:moduleId/lessons/:lessonId', requireRole(['teacher', 'admin']), courseController.deleteLesson);
 router.delete('/:id/assignments/:assignmentId', requireRole(['teacher', 'admin']), courseController.deleteAssignment);
 router.delete('/:id/files/:fileId', requireRole(['teacher', 'admin']), courseController.deleteFile);
+router.delete('/:id/announcements/:announcementId', requireRole(['teacher', 'admin']), courseController.deleteAnnouncement);
 
 // Create course (Teacher or Admin)
 router.post('/', requireRole(['teacher', 'admin']), courseController.createCourse);
