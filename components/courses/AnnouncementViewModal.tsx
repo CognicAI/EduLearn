@@ -11,10 +11,20 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Calendar, Clock } from "lucide-react";
 
+interface Announcement {
+    id: string;
+    title: string;
+    content: string;
+    priority: 'urgent' | 'high' | 'medium' | 'low';
+    created_at: string;
+    author_name?: string;
+    scheduled_at?: string;
+}
+
 interface AnnouncementViewModalProps {
     isOpen: boolean;
     onClose: () => void;
-    announcement: any;
+    announcement: Announcement;
 }
 
 export function AnnouncementViewModal({ isOpen, onClose, announcement }: AnnouncementViewModalProps) {
