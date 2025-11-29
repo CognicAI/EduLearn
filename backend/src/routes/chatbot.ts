@@ -5,90 +5,6 @@ import { query } from '../config/db';
 
 const router = Router();
 
-// Proxy route for chatbot webhook
-router.post('/query', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    // Extract session and message for logging
-    const { sessionId, query: userQuery, attachments } = req.body;
-    const userId = req.user?.userId;
-
-    // Create or update chat session
-    await query(`
-      INSERT INTO chat_sessions(session_token, user_id)
-      VALUES ($1, $2)
-      ON CONFLICT(session_token) DO UPDATE SET last_activity = CURRENT_TIMESTAMP
-    `, [sessionId, userId]);
-
-    // Log user message
-    await query(`
-      INSERT INTO chat_messages(session_id, sender, text, attachments)
-      VALUES (
-        (SELECT id FROM chat_sessions WHERE session_token = $1),
-        'user', $2, $3
-      )
-    `, [sessionId, userQuery, attachments ? JSON.stringify(attachments) : null]);
-
-    const webhookUrl = process.env.EXTERNAL_WEBHOOK_URL;
-
-    if (!webhookUrl) {
-      return res.status(500).json({
-        success: false,
-        message: 'Chatbot webhook URL not configured'
-      });
-    }
-
-    console.log('Sending request to webhook:', webhookUrl);
-    console.log('Request payload:', JSON.stringify(req.body, null, 2));
-
-    // Forward the request to the n8n webhook
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(req.body)
-    });
-
-    console.log('Webhook response status:', response.status);
-    console.log('Webhook response headers:', Object.fromEntries(response.headers.entries()));
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Webhook error response:', errorText);
-      throw new Error(`Webhook responded with status ${response.status}: ${errorText}`);
-    }
-
-    const data: any = await response.json();
-    console.log('Webhook response data:', data);
-
-    // Log bot message to database
-    const botText = Array.isArray(data) && data.every(item => typeof item.text === 'string')
-      ? data.map(item => item.text).join('\n\n')
-      : data.response || data.message || '';
-    await query(
-      `INSERT INTO chat_messages(session_id, sender, text, attachments)
-       VALUES (
-         (SELECT id FROM chat_sessions WHERE session_token = $1),
-         'bot', $2, $3
-       )`,
-      [sessionId, botText, data.attachments ? JSON.stringify(data.attachments) : null]
-    );
-
-    return res.json({
-      success: true,
-      data: data
-    });
-
-  } catch (error) {
-    console.error('Chatbot webhook error:', error);
-    return res.status(500).json({
-      success: false,
-      message: error instanceof Error ? error.message : 'Internal server error'
-    });
-  }
-});
-
 // Logging endpoint for chat sessions and messages
 router.post('/log', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -162,35 +78,124 @@ router.get('/sessions', authenticateToken, async (req: AuthenticatedRequest, res
   }
 });
 
-// Get messages for a specific session
+// Get messages for a specific session with pagination
+router.get('/sessions/:sessionId/messages', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user?.userId;
+    
+    // Pagination parameters
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 100); // Max 100 messages per request
+    const cursor = req.query.cursor as string | undefined; // Message ID cursor
+    const direction = (req.query.direction as string) === 'after' ? 'after' : 'before'; // Load before or after cursor
+
+    let messagesQuery = `
+      SELECT 
+        cm.id,
+        cm.sender, 
+        cm.text, 
+        cm.attachments, 
+        cm.created_at 
+      FROM chat_messages cm
+      INNER JOIN chat_sessions cs ON cm.session_id = cs.id
+      WHERE cs.session_token = $1 
+        AND cs.user_id = $2 
+        AND cs.is_deleted = false
+        AND cm.is_deleted = false
+    `;
+
+    const params: any[] = [sessionId, userId];
+
+    // Add cursor condition if provided
+    if (cursor) {
+      const cursorId = parseInt(cursor);
+      if (!isNaN(cursorId)) {
+        params.push(cursorId);
+        messagesQuery += direction === 'before' 
+          ? ` AND cm.id < $${params.length}`
+          : ` AND cm.id > $${params.length}`;
+      }
+    }
+
+    // Order and limit
+    messagesQuery += ` ORDER BY cm.created_at ${direction === 'before' ? 'DESC' : 'ASC'} LIMIT $${params.length + 1}`;
+    params.push(limit);
+
+    const result = await query(messagesQuery, params);
+
+    // Reverse results if fetching before cursor (to maintain chronological order)
+    const messages = direction === 'before' ? result.rows.reverse() : result.rows;
+
+    // Determine if there are more messages
+    const hasMore = result.rows.length === limit;
+    const nextCursor = hasMore && messages.length > 0 
+      ? messages[messages.length - 1].id 
+      : null;
+    const prevCursor = messages.length > 0 
+      ? messages[0].id 
+      : null;
+
+    return res.json({
+      success: true,
+      data: messages,
+      pagination: {
+        hasMore,
+        nextCursor,
+        prevCursor,
+        limit
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching paginated chat messages:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
+// Get messages for a specific session (legacy - kept for backward compatibility)
 router.get('/sessions/:sessionId', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { sessionId } = req.params;
     const userId = req.user?.userId;
 
-    // Verify session belongs to user
-    const sessionCheck = await query(`
-      SELECT id FROM chat_sessions 
-      WHERE session_token = $1 AND user_id = $2
-    `, [sessionId, userId]);
-
-    if (sessionCheck.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Session not found or access denied'
-      });
-    }
-
+    // Optimized: Single query with JOIN instead of two sequential queries
     const result = await query(`
       SELECT 
-        sender, 
-        text, 
-        attachments, 
-        created_at 
-      FROM chat_messages 
-      WHERE session_id = $1 AND is_deleted = false
-      ORDER BY created_at ASC
-    `, [sessionCheck.rows[0].id]);
+        cm.sender, 
+        cm.text, 
+        cm.attachments, 
+        cm.created_at 
+      FROM chat_messages cm
+      INNER JOIN chat_sessions cs ON cm.session_id = cs.id
+      WHERE cs.session_token = $1 
+        AND cs.user_id = $2 
+        AND cs.is_deleted = false
+        AND cm.is_deleted = false
+      ORDER BY cm.created_at ASC
+    `, [sessionId, userId]);
+
+    if (result.rows.length === 0) {
+      // Check if session exists but has no messages or doesn't exist/access denied
+      const sessionExists = await query(`
+        SELECT id FROM chat_sessions 
+        WHERE session_token = $1 AND user_id = $2 AND is_deleted = false
+      `, [sessionId, userId]);
+
+      if (sessionExists.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Session not found or access denied'
+        });
+      }
+      
+      // Session exists but has no messages
+      return res.json({
+        success: true,
+        data: []
+      });
+    }
 
     return res.json({
       success: true,

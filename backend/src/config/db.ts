@@ -13,7 +13,17 @@ const pool = new Pool({
   // Only use SSL for production/remote databases
   ssl: (process.env.NODE_ENV === 'production' || process.env.DB_HOST?.includes('supabase.com')) ? {
     rejectUnauthorized: false // Required for remote PostgreSQL with self-signed cert
-  } : false // Disable SSL for local development
+  } : false, // Disable SSL for local development
+  
+  // Optimized pool configuration for chat workload
+  max: 20,                    // Maximum pool size (up from default 10)
+  min: 2,                     // Minimum pool size (keep connections warm)
+  idleTimeoutMillis: 30000,   // Close idle clients after 30 seconds
+  connectionTimeoutMillis: 3000, // Timeout if connection cannot be established in 3s
+  allowExitOnIdle: false,     // Don't exit process when all clients idle
+  
+  // Statement timeout to prevent long-running queries
+  statement_timeout: 30000,   // 30 second max query time
 });
 
 // Test database connection

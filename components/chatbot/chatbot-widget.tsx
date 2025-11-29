@@ -2,14 +2,18 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, Paperclip, FileText, Download, Mic, MicOff, Volume2, Settings, Maximize2, Minimize2, History, Plus, Trash2 } from 'lucide-react';
-
+import dynamic from 'next/dynamic';
 
 import { useAuth } from '@/lib/auth/auth-context';
 import { cn } from '@/lib/utils';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import apiClient from '@/lib/apiClient';
+
+// Lazy load markdown rendering library to reduce initial bundle size (200KB saved)
+const ReactMarkdown = dynamic(() => import('react-markdown'), {
+  loading: () => <div className="text-sm text-gray-500 italic">Loading...</div>,
+  ssr: false
+});
 
 interface Message {
   id: string;
@@ -39,9 +43,6 @@ interface ChatbotWidgetProps {
   className?: string;
 }
 
-// Add direct webhook URL from env
-const CHATBOT_WEBHOOK_URL = process.env.NEXT_PUBLIC_CHATBOT_WEBHOOK_URL;
-
 export function ChatbotWidget({ className }: ChatbotWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -59,6 +60,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [remarkGfmPlugin, setRemarkGfmPlugin] = useState<any>(null);
 
   // History State
   const [showHistory, setShowHistory] = useState(false);
@@ -101,9 +103,16 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     }
   }, [inputValue]);
 
-  // Client-side check
+  // Client-side check and load markdown plugin
   useEffect(() => {
     setIsClient(true);
+    
+    // Lazy load remarkGfm plugin only when needed
+    import('remark-gfm').then((module) => {
+      setRemarkGfmPlugin(() => module.default);
+    }).catch((error) => {
+      console.error('Failed to load remark-gfm:', error);
+    });
   }, []);
 
   // Speech recognition hook
@@ -146,11 +155,49 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     }
   });
 
-  // Generate session ID on mount
+  // Generate or restore session ID on mount with localStorage persistence
   useEffect(() => {
     if (isAuthenticated && user) {
-      const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      setSessionId(newSessionId);
+      if (typeof window !== 'undefined') {
+        const STORAGE_KEY = 'edulearn_chat_session';
+        const stored = localStorage.getItem(STORAGE_KEY);
+        
+        if (stored) {
+          try {
+            const { id, timestamp } = JSON.parse(stored);
+            const age = Date.now() - timestamp;
+            // Session valid for 24 hours
+            if (age < 24 * 60 * 60 * 1000) {
+              setSessionId(id);
+            } else {
+              // Expired, create new session
+              const newId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+              localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                id: newId,
+                timestamp: Date.now()
+              }));
+              setSessionId(newId);
+            }
+          } catch {
+            // Invalid stored data, create new session
+            const newId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+              id: newId,
+              timestamp: Date.now()
+            }));
+            setSessionId(newId);
+          }
+        } else {
+          // No stored session, create new
+          const newId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            id: newId,
+            timestamp: Date.now()
+          }));
+          setSessionId(newId);
+        }
+      }
+      
       // Initialize debug values
       setDebugRole(user.role);
       setDebugStyle(user.learningStyle || 'General');
@@ -359,7 +406,21 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
       setMessages(prev => prev.filter(msg => !msg.isTyping));
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        
+        if (response.status === 429) {
+          throw new Error(
+            errorData.error || 
+            'Rate limit exceeded. Please wait a moment before sending another message.'
+          );
+        } else if (response.status === 401) {
+          throw new Error('Your session has expired. Please log in again.');
+        } else {
+          throw new Error(
+            errorData.error || 
+            `Unable to process your request (Error ${response.status}). Please try again.`
+          );
+        }
       }
 
       const data = response.body;
@@ -396,10 +457,25 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
       setMessages(prev => prev.filter(msg => !msg.isTyping));
 
       console.error('Chatbot error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
+      
+      let errorMessage = 'An unexpected error occurred.';
+      let showRetry = true;
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Customize error message based on error type
+        if (error.message.includes('Rate limit')) {
+          showRetry = false; // Don't show retry for rate limits
+        } else if (error.message.includes('session has expired')) {
+          showRetry = false; // Don't show retry for auth errors
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        }
+      }
 
       addMessage({
-        text: errorMessage,
+        text: `${errorMessage}${showRetry ? '\n\n_Click the send button to retry your message._' : ''}`,
         sender: 'error'
       });
     } finally {
@@ -570,22 +646,42 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     setShowHistory(!showHistory);
   };
 
-  const loadSession = async (token: string) => {
+  const loadSession = async (token: string, cursor?: string) => {
     if (!isAuthenticated) return;
     setIsLoading(true);
     try {
-      const response = await apiClient.get(`/chatbot/sessions/${token}`);
+      // Use new paginated endpoint with limit of 50 messages
+      const url = cursor 
+        ? `/chatbot/sessions/${token}/messages?limit=50&cursor=${cursor}&direction=before`
+        : `/chatbot/sessions/${token}/messages?limit=50`;
+      
+      const response = await apiClient.get(url);
       if (response.data.success) {
         const loadedMessages: Message[] = response.data.data.map((msg: any) => ({
-          id: `msg_${Date.now()}_${Math.random()}`,
+          id: msg.id?.toString() || `msg_${Date.now()}_${Math.random()}`,
           text: msg.text,
           sender: msg.sender,
           timestamp: new Date(msg.created_at),
           attachments: (typeof msg.attachments === 'string' ? JSON.parse(msg.attachments) : msg.attachments) || undefined
         }));
-        setMessages(loadedMessages);
-        setSessionId(token);
-        setShowHistory(false);
+        
+        if (cursor) {
+          // Prepend older messages
+          setMessages(prev => [...loadedMessages, ...prev]);
+        } else {
+          // Initial load
+          setMessages(loadedMessages);
+          setSessionId(token);
+          setShowHistory(false);
+        }
+        
+        // Show message if there are more messages to load
+        if (response.data.pagination?.hasMore && !cursor) {
+          addMessage({
+            text: `_Loaded ${loadedMessages.length} most recent messages. Scroll up to load older messages._`,
+            sender: 'bot'
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to load session:', error);
@@ -600,6 +696,16 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
 
   const startNewChat = () => {
     const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Update localStorage with new session
+    if (typeof window !== 'undefined') {
+      const STORAGE_KEY = 'edulearn_chat_session';
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        id: newSessionId,
+        timestamp: Date.now()
+      }));
+    }
+    
     setSessionId(newSessionId);
     setMessages([]);
     setShowHistory(false);
@@ -640,6 +746,36 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
   };
 
   const processFiles = async (files: File[]) => {
+    // File upload limits
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
+    const MAX_FILES = 5; // Maximum 5 files at once
+    const MAX_TOTAL_SIZE = 25 * 1024 * 1024; // 25MB total batch size
+
+    // Check file count limit
+    const currentFileCount = attachments.length;
+    const newFileCount = files.length;
+    
+    if (currentFileCount + newFileCount > MAX_FILES) {
+      addMessage({
+        text: `You can only attach up to ${MAX_FILES} files per message. Currently have ${currentFileCount} file(s). Please remove some files before adding more.`,
+        sender: 'error'
+      });
+      return;
+    }
+
+    // Calculate total size including existing attachments
+    const currentTotalSize = attachments.reduce((sum, att) => sum + att.size, 0);
+    const newFilesSize = Array.from(files).reduce((sum, file) => sum + file.size, 0);
+    const totalSize = currentTotalSize + newFilesSize;
+
+    if (totalSize > MAX_TOTAL_SIZE) {
+      addMessage({
+        text: `Total file size cannot exceed ${Math.round(MAX_TOTAL_SIZE / 1024 / 1024)}MB. Current total: ${Math.round(currentTotalSize / 1024 / 1024)}MB, attempting to add: ${Math.round(newFilesSize / 1024 / 1024)}MB.`,
+        sender: 'error'
+      });
+      return;
+    }
+
     const newAttachments: Array<{
       name: string;
       size: number;
@@ -648,6 +784,8 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
       base64: string;
     }> = [];
 
+    let skippedFiles = 0;
+
     for (const file of files) {
       // Validate file type
       if (!isValidFileType(file)) {
@@ -655,15 +793,17 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
           text: `File "${file.name}" is not supported. Please upload PDF, Word, Excel, PowerPoint, Text, or Image files.`,
           sender: 'error'
         });
+        skippedFiles++;
         continue;
       }
 
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
+      // Validate individual file size (max 10MB)
+      if (file.size > MAX_FILE_SIZE) {
         addMessage({
-          text: `File "${file.name}" is too large. Maximum file size is 10MB.`,
+          text: `File "${file.name}" is too large (${formatFileSize(file.size)}). Maximum file size is ${Math.round(MAX_FILE_SIZE / 1024 / 1024)}MB.`,
           sender: 'error'
         });
+        skippedFiles++;
         continue;
       }
 
@@ -681,14 +821,23 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
           text: `Failed to process file "${file.name}". Please try again.`,
           sender: 'error'
         });
+        skippedFiles++;
       }
     }
 
     if (newAttachments.length > 0) {
       setAttachments(prev => [...prev, ...newAttachments]);
+      const successMsg = skippedFiles > 0 
+        ? `Added ${newAttachments.length} file(s). ${skippedFiles} file(s) skipped due to validation errors.`
+        : `Added ${newAttachments.length} file(s) to your message.`;
       addMessage({
-        text: `Added ${newAttachments.length} file(s) to your message.`,
+        text: successMsg,
         sender: 'bot'
+      });
+    } else if (skippedFiles > 0) {
+      addMessage({
+        text: `No files were added. All ${skippedFiles} file(s) failed validation.`,
+        sender: 'error'
       });
     }
   };
@@ -914,7 +1063,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
                     )}>
                       {message.sender === 'bot' ? (
                         <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
+                          remarkPlugins={remarkGfmPlugin ? [remarkGfmPlugin] : []}
                           components={{
                             p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
                             ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2 space-y-1" {...props} />,

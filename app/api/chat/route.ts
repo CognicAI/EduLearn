@@ -1,10 +1,30 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { generateSystemPrompt, NeuroProfile } from '@/lib/neuro-prompts';
+import { checkRateLimit, trackTokenUsage, checkTokenQuota, getRateLimitHeaders } from '@/lib/rate-limit';
+import { jwtVerify } from 'jose';
 
 // Ensure API key is present
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || '');
 
 export const runtime = 'nodejs'; // Switch to nodejs runtime to avoid potential edge streaming issues
+
+// Helper to verify JWT token
+async function verifyToken(authHeader: string | null): Promise<{ userId: string } | null> {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return null;
+    }
+
+    const token = authHeader.substring(7);
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'your-jwt-secret-key');
+
+    try {
+        const { payload } = await jwtVerify(token, secret);
+        return { userId: payload.userId as string };
+    } catch (error) {
+        console.error('Token verification failed:', error);
+        return null;
+    }
+}
 
 // Simple iterator to stream adapter
 function GeminiStream(stream: AsyncGenerator<any, any, unknown>) {
@@ -38,6 +58,47 @@ export async function POST(req: Request) {
     let userAttachments: any[] = [];
 
     try {
+        // Verify authentication
+        const authHeader = req.headers.get('Authorization');
+        const user = await verifyToken(authHeader);
+        
+        if (!user) {
+            return new Response(JSON.stringify({ error: 'Unauthorized. Please log in.' }), {
+                status: 401,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        // Check rate limit
+        const rateLimitResult = await checkRateLimit(user.userId, {
+            requestsPerMinute: 10,
+            tokensPerDay: 100000
+        });
+
+        if (!rateLimitResult.allowed) {
+            return new Response(JSON.stringify({
+                error: rateLimitResult.message || 'Rate limit exceeded',
+                resetTime: rateLimitResult.resetTime
+            }), {
+                status: 429,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getRateLimitHeaders(rateLimitResult)
+                }
+            });
+        }
+
+        // Check token quota
+        const hasQuota = await checkTokenQuota(user.userId);
+        if (!hasQuota) {
+            return new Response(JSON.stringify({
+                error: 'Daily token quota exceeded. Please try again tomorrow.'
+            }), {
+                status: 429,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
         const { messages, userProfile, sessionId: reqSessionId } = await req.json();
         sessionId = reqSessionId;
 
@@ -133,20 +194,66 @@ export async function POST(req: Request) {
 
         const result = await chat.sendMessageStream(lastMessageParts);
 
-        // Create a new stream that logs the full response when done
+        // Create a new stream with error recovery
         const stream = new ReadableStream({
             async start(controller) {
                 const encoder = new TextEncoder();
                 let fullResponse = '';
+                let retryCount = 0;
+                const MAX_RETRIES = 2;
+                
+                const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+                
+                const isRetryableError = (error: any): boolean => {
+                    const message = error?.message?.toLowerCase() || '';
+                    return (
+                        message.includes('network') ||
+                        message.includes('timeout') ||
+                        message.includes('econnreset') ||
+                        error?.status === 503 ||
+                        error?.status === 429
+                    );
+                };
+
+                const attemptStream = async (): Promise<boolean> => {
+                    try {
+                        for await (const chunk of result.stream) {
+                            const text = chunk.text();
+                            if (text) {
+                                fullResponse += text;
+                                controller.enqueue(encoder.encode(text));
+                            }
+                        }
+                        return true;
+                    } catch (e: any) {
+                        console.error(`Stream error (attempt ${retryCount + 1}):`, e);
+                        
+                        if (retryCount < MAX_RETRIES && isRetryableError(e)) {
+                            retryCount++;
+                            const backoffMs = 1000 * Math.pow(2, retryCount - 1); // Exponential backoff
+                            
+                            const retryMsg = `\n\n_[Connection interrupted. Retrying (${retryCount}/${MAX_RETRIES})...]_\n\n`;
+                            controller.enqueue(encoder.encode(retryMsg));
+                            
+                            await sleep(backoffMs);
+                            return attemptStream();
+                        }
+                        
+                        // Failed all retries or non-retryable error
+                        const errorMsg = '\n\n_[Unable to complete response. Please try sending your message again.]_';
+                        controller.enqueue(encoder.encode(errorMsg));
+                        throw e;
+                    }
+                };
 
                 try {
-                    for await (const chunk of result.stream) {
-                        const text = chunk.text();
-                        if (text) {
-                            fullResponse += text;
-                            controller.enqueue(encoder.encode(text));
-                        }
-                    }
+                    await attemptStream();
+                    
+                    // Track token usage (approximate: 1 token ≈ 4 chars)
+                    const estimatedTokens = Math.ceil(
+                        (userMessageText.length + fullResponse.length) / 4
+                    );
+                    await trackTokenUsage(user.userId, estimatedTokens);
 
                     // Log bot response asynchronously
                     if (sessionId && fullResponse) {
@@ -156,7 +263,7 @@ export async function POST(req: Request) {
 
                     controller.close();
                 } catch (e) {
-                    console.error('Stream error:', e);
+                    console.error('Final stream error:', e);
                     controller.error(e);
                 }
             }
@@ -165,6 +272,7 @@ export async function POST(req: Request) {
         return new Response(stream, {
             headers: {
                 'Content-Type': 'text/plain; charset=utf-8',
+                ...getRateLimitHeaders(rateLimitResult),
             },
         });
 
