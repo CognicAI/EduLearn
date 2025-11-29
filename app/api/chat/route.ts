@@ -15,7 +15,10 @@ async function verifyToken(authHeader: string | null): Promise<{ userId: string 
     }
 
     const token = authHeader.substring(7);
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'your-jwt-secret-key');
+    if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET environment variable is not set');
+    }
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 
     try {
         const { payload } = await jwtVerify(token, secret);
