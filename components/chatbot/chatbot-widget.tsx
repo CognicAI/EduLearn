@@ -651,9 +651,12 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     setIsLoading(true);
     try {
       // Use new paginated endpoint with limit of 50 messages
-      const url = cursor 
-        ? `/chatbot/sessions/${token}/messages?limit=50&cursor=${cursor}&direction=before`
-        : `/chatbot/sessions/${token}/messages?limit=50`;
+      const params = new URLSearchParams({ limit: '50' });
+      if (cursor) {
+        params.append('cursor', cursor);
+        params.append('direction', 'before');
+      }
+      const url = `/chatbot/sessions/${token}/messages?${params.toString()}`;
       
       const response = await apiClient.get(url);
       if (response.data.success) {
