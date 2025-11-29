@@ -127,12 +127,16 @@ router.get('/sessions/:sessionId/messages', authenticateToken, async (req: Authe
     // Add cursor condition if provided
     if (cursor) {
       const cursorId = parseInt(cursor);
-      if (!isNaN(cursorId)) {
-        params.push(cursorId);
-        messagesQuery += direction === 'before' 
-          ? ` AND cm.id < $${params.length}`
-          : ` AND cm.id > $${params.length}`;
+      if (isNaN(cursorId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid cursor value'
+        });
       }
+      params.push(cursorId);
+      messagesQuery += direction === 'before' 
+        ? ` AND cm.id < $${params.length}`
+        : ` AND cm.id > $${params.length}`;
     }
 
     // Order and limit
