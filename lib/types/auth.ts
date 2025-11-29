@@ -6,6 +6,7 @@ export interface User {
   firstName: string;
   lastName: string;
   role: UserRole;
+  learningStyle?: 'ADHD' | 'Dyslexia' | 'Anxiety' | 'General';
   avatar?: string;
   createdAt: string;
   lastLogin?: string;

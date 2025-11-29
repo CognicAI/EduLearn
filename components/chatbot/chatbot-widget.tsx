@@ -1,10 +1,19 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Paperclip, FileText, Download, Mic, MicOff, Volume2 } from 'lucide-react';
+import { MessageCircle, X, Send, Paperclip, FileText, Download, Mic, MicOff, Volume2, Settings, Maximize2, Minimize2, History, Plus, Trash2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
 import { useAuth } from '@/lib/auth/auth-context';
 import { cn } from '@/lib/utils';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+import apiClient from '@/lib/apiClient';
+
+// Lazy load markdown rendering library to reduce initial bundle size (200KB saved)
+const ReactMarkdown = dynamic(() => import('react-markdown'), {
+  loading: () => <div className="text-sm text-gray-500 italic">Loading...</div>,
+  ssr: false
+});
 
 interface Message {
   id: string;
@@ -22,15 +31,21 @@ interface Message {
   }>;
 }
 
+interface ChatSession {
+  id: string;
+  session_token: string;
+  started_at: string;
+  last_activity: string;
+  summary: string;
+}
+
 interface ChatbotWidgetProps {
   className?: string;
 }
 
-// Add direct webhook URL from env
-const CHATBOT_WEBHOOK_URL = process.env.NEXT_PUBLIC_CHATBOT_WEBHOOK_URL;
-
 export function ChatbotWidget({ className }: ChatbotWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +60,18 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [remarkGfmPlugin, setRemarkGfmPlugin] = useState<any>(null);
+
+  // History State
+  const [showHistory, setShowHistory] = useState(false);
+  const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Debug/Settings State
+  const [showSettings, setShowSettings] = useState(false);
+  const [debugRole, setDebugRole] = useState<string>('');
+  const [debugStyle, setDebugStyle] = useState<string>('');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatWidgetRef = useRef<HTMLDivElement>(null);
   const chatButtonRef = useRef<HTMLButtonElement>(null);
@@ -76,9 +103,16 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     }
   }, [inputValue]);
 
-  // Client-side check
+  // Client-side check and load markdown plugin
   useEffect(() => {
     setIsClient(true);
+    
+    // Lazy load remarkGfm plugin only when needed
+    import('remark-gfm').then((module) => {
+      setRemarkGfmPlugin(() => module.default);
+    }).catch((error) => {
+      console.error('Failed to load remark-gfm:', error);
+    });
   }, []);
 
   // Speech recognition hook
@@ -121,11 +155,52 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     }
   });
 
-  // Generate session ID on mount
+  // Generate or restore session ID on mount with localStorage persistence
   useEffect(() => {
     if (isAuthenticated && user) {
-      const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      setSessionId(newSessionId);
+      if (typeof window !== 'undefined') {
+        const STORAGE_KEY = 'edulearn_chat_session';
+        const stored = localStorage.getItem(STORAGE_KEY);
+        
+        if (stored) {
+          try {
+            const { id, timestamp } = JSON.parse(stored);
+            const age = Date.now() - timestamp;
+            // Session valid for 24 hours
+            if (age < 24 * 60 * 60 * 1000) {
+              setSessionId(id);
+            } else {
+              // Expired, create new session
+              const newId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+              localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                id: newId,
+                timestamp: Date.now()
+              }));
+              setSessionId(newId);
+            }
+          } catch {
+            // Invalid stored data, create new session
+            const newId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+              id: newId,
+              timestamp: Date.now()
+            }));
+            setSessionId(newId);
+          }
+        } else {
+          // No stored session, create new
+          const newId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            id: newId,
+            timestamp: Date.now()
+          }));
+          setSessionId(newId);
+        }
+      }
+      
+      // Initialize debug values
+      setDebugRole(user.role);
+      setDebugStyle(user.learningStyle || 'General');
     }
   }, [isAuthenticated, user]);
 
@@ -185,7 +260,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
 
     const roleContent = {
       admin: {
-        welcomeMessage: `Hello ${user.firstName}! I'm EduLearn SQL Assistant. As an admin, you have full access to query the database. You can write SQL queries in plain text and I'll format and execute them for you.`,
+        welcomeMessage: `Hello ${user.firstName}! I'm EduLearn Assistant. As an admin, you have full access.`,
         quickReplies: [
           { text: "Show all users" },
           { text: "Show user statistics" },
@@ -195,7 +270,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
         ]
       },
       teacher: {
-        welcomeMessage: `Hello ${user.firstName}! I'm EduLearn SQL Assistant. As a teacher, you can query data related to your courses and students. You can write SQL queries in plain text and I'll format and execute them for you.`,
+        welcomeMessage: `Hello ${user.firstName}! I'm EduLearn Assistant. As a teacher, I can help with your courses.`,
         quickReplies: [
           { text: "Show my courses" },
           { text: "Show my students" },
@@ -205,7 +280,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
         ]
       },
       student: {
-        welcomeMessage: `Hello ${user.firstName}! I'm EduLearn SQL Assistant. As a student, you can query data related to your courses and progress. You can write SQL queries in plain text and I'll format and execute them for you.`,
+        welcomeMessage: `Hello ${user.firstName}! I'm EduLearn Assistant. I'm here to help you learn!`,
         quickReplies: [
           { text: "Show my courses" },
           { text: "My assignments" },
@@ -217,7 +292,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     };
 
     return roleContent[user.role as keyof typeof roleContent] || {
-      welcomeMessage: "Hello! I'm EduLearn SQL Assistant. You can write SQL queries in plain text and I'll format and execute them for you.",
+      welcomeMessage: "Hello! I'm EduLearn Assistant. How can I help you?",
       quickReplies: [{ text: "Help with SQL" }]
     };
   };
@@ -260,48 +335,29 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
   const sendMessage = async (text: string) => {
     if ((!text.trim() && attachments.length === 0) || !isAuthenticated || !user) return;
 
-    // Check if user is asking about or mentioning the attached files
-    const isFileRelated = text.trim() && attachments.length > 0 && (
-      text.toLowerCase().includes('file') ||
-      text.toLowerCase().includes('document') ||
-      text.toLowerCase().includes('pdf') ||
-      text.toLowerCase().includes('attached') ||
-      text.toLowerCase().includes('upload') ||
-      text.toLowerCase().includes('analyze') ||
-      text.toLowerCase().includes('read') ||
-      text.toLowerCase().includes('review') ||
-      text.toLowerCase().includes('select') ||
-      text.toLowerCase().includes('look at') ||
-      text.toLowerCase().includes('examine') ||
-      text.toLowerCase().includes('content') ||
-      text.toLowerCase().includes('what') ||
-      text.toLowerCase().includes('tell me') ||
-      text.toLowerCase().includes('explain') ||
-      text.toLowerCase().includes('summarize') ||
-      text.toLowerCase().includes('this') ||
-      text.toLowerCase().includes('these') ||
-      attachments.some(att => text.toLowerCase().includes(att.name.toLowerCase().split('.')[0]))
-    );
-
-    // Prepare message with attachments only if file-related
-    const messageAttachments = isFileRelated ? attachments.map(att => ({
+    // Prepare message with attachments
+    // Always attach files if they exist, not just if text mentions them
+    const messageAttachments = attachments.map(att => ({
       name: att.name,
       size: att.size,
       type: att.type,
       base64: att.base64
-    })) : [];
+    }));
 
     // Add user message
-    addMessage({
+    const userMsgId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const newMessage: Message = {
+      id: userMsgId,
       text: text || (attachments.length > 0 ? `Sent ${attachments.length} file(s)` : ''),
       sender: 'user',
+      timestamp: new Date(),
       attachments: messageAttachments.length > 0 ? messageAttachments : undefined
-    });
+    };
 
-    // Only clear attachments if they were sent with the message
-    if (isFileRelated) {
-      setAttachments([]);
-    }
+    setMessages(prev => [...prev, newMessage]);
+
+    // Clear attachments after sending
+    setAttachments([]);
 
     // Add typing indicator
     const typingId = `typing_${Date.now()}`;
@@ -320,33 +376,28 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
         throw new Error('No authentication token available');
       }
 
+      // Prepare payload for new API
+      // We need to send the conversation history + user profile
+      const apiMessages = [...messages, newMessage].map(m => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text,
+        attachments: m.attachments // Pass attachments to API
+      }));
+
       const payload = {
-        query: text,
-        attachments: messageAttachments,
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role
-        },
+        messages: apiMessages,
         sessionId: sessionId,
-        timestamp: new Date().toISOString()
+        userProfile: {
+          role: debugRole || user.role,
+          learningStyle: debugStyle || user.learningStyle || 'General'
+        }
       };
 
-      // Send through backend proxy to enable database logging
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      if (!apiUrl) {
-        throw new Error('API URL not configured. Please set NEXT_PUBLIC_API_URL.');
-      }
-      const response = await fetch(`${apiUrl}/chatbot/query`, {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'X-User-Role': user.role,
-          'X-User-ID': user.id
+          'Authorization': `Bearer ${token}` // Optional if API route is public or handles auth differently
         },
         body: JSON.stringify(payload)
       });
@@ -355,54 +406,76 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
       setMessages(prev => prev.filter(msg => !msg.isTyping));
 
       if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          throw new Error('Authentication failed. Please log in again.');
+        const errorData = await response.json().catch(() => ({}));
+        
+        if (response.status === 429) {
+          throw new Error(
+            errorData.error || 
+            'Rate limit exceeded. Please wait a moment before sending another message.'
+          );
+        } else if (response.status === 401) {
+          throw new Error('Your session has expired. Please log in again.');
+        } else {
+          throw new Error(
+            errorData.error || 
+            `Unable to process your request (Error ${response.status}). Please try again.`
+          );
         }
-        const errorText = await response.text();
-        throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
-      const responseData = await response.json();
+      const data = response.body;
+      if (!data) return;
 
-      if (!responseData.success) {
-        throw new Error(responseData.message || 'Chatbot request failed');
-      }
+      const reader = data.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let botMessage = '';
 
-      const data = responseData.data;
-
-      // Get role-specific quick replies
-      const defaultQuickReplies = getRoleSpecificContent().quickReplies;
-      const quickReplies = data.quick_replies || defaultQuickReplies;
-
-      // Handle different response formats from webhook
-      let botResponse;
-      if (Array.isArray(data) && data.every(item => typeof item.text === 'string')) {
-        // Handle array response format
-        const combinedText = data.map(item => item.text).join('\n\n');
-        botResponse = combinedText;
-      } else {
-        botResponse = data.response || data.message || "I received your message! How else can I help you?";
-      }
-
-      addMessage({
-        text: botResponse,
+      // Create bot message placeholder
+      const botMsgId = `bot_${Date.now()}`;
+      const botMsg: Message = {
+        id: botMsgId,
+        text: '',
         sender: 'bot',
-        quickReplies: quickReplies
-      });
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, botMsg]);
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunkValue = decoder.decode(value, { stream: true });
+        botMessage += chunkValue;
+
+        setMessages(prev => prev.map(msg =>
+          msg.id === botMsgId ? { ...msg, text: botMessage } : msg
+        ));
+      }
 
     } catch (error) {
       // Remove typing indicator
       setMessages(prev => prev.filter(msg => !msg.isTyping));
 
       console.error('Chatbot error:', error);
-      const errorMessage = error instanceof Error
-        ? error.message.includes('Authentication failed')
-          ? 'Your session has expired. Please refresh the page and log in again.'
-          : `Error: ${error.message}`
-        : 'An unexpected error occurred. Please try again.';
+      
+      let errorMessage = 'An unexpected error occurred.';
+      let showRetry = true;
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Customize error message based on error type
+        if (error.message.includes('Rate limit')) {
+          showRetry = false; // Don't show retry for rate limits
+        } else if (error.message.includes('session has expired')) {
+          showRetry = false; // Don't show retry for auth errors
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        }
+      }
 
       addMessage({
-        text: errorMessage,
+        text: `${errorMessage}${showRetry ? '\n\n_Click the send button to retry your message._' : ''}`,
         sender: 'error'
       });
     } finally {
@@ -448,11 +521,8 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
       setInputValue('');
       resetTranscript(); // Clear speech transcript after sending
     } else if (!inputValue.trim() && attachments.length > 0) {
-      // If only files are attached without text, prompt user to ask about them
-      addMessage({
-        text: "I see you've attached files. Please ask me something about them (e.g., 'analyze this document', 'what's in this file?', 'summarize this') to proceed.",
-        sender: 'bot'
-      });
+      // If only files are attached without text, send them
+      sendMessage('');
     }
   };
 
@@ -499,7 +569,10 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
       'application/vnd.ms-powerpoint',
       'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       'text/plain',
-      'text/csv'
+      'text/csv',
+      'image/jpeg',
+      'image/png',
+      'image/webp'
     ];
     return allowedTypes.includes(file.type);
   };
@@ -551,7 +624,161 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     await processFiles(files);
   };
 
+  const fetchHistory = async () => {
+    if (!isAuthenticated) return;
+    setIsLoadingHistory(true);
+    try {
+      const response = await apiClient.get('/chatbot/sessions');
+      if (response.data.success) {
+        setChatHistory(response.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch chat history:', error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const toggleHistory = () => {
+    if (!showHistory) {
+      fetchHistory();
+    }
+    setShowHistory(!showHistory);
+  };
+
+  const loadSession = async (token: string, cursor?: string) => {
+    if (!isAuthenticated) return;
+    setIsLoading(true);
+    try {
+      // Use new paginated endpoint with limit of 50 messages
+      const params = new URLSearchParams({ limit: '50' });
+      if (cursor) {
+        params.append('cursor', cursor);
+        params.append('direction', 'before');
+      }
+      const url = `/chatbot/sessions/${token}/messages?${params.toString()}`;
+      
+      const response = await apiClient.get(url);
+      if (response.data.success) {
+        const loadedMessages: Message[] = response.data.data.map((msg: any) => ({
+          id: msg.id?.toString() || `msg_${Date.now()}_${Math.random()}`,
+          text: msg.text,
+          sender: msg.sender,
+          timestamp: new Date(msg.created_at),
+          attachments: (typeof msg.attachments === 'string' ? JSON.parse(msg.attachments) : msg.attachments) || undefined
+        }));
+        
+        if (cursor) {
+          // Prepend older messages
+          setMessages(prev => [...loadedMessages, ...prev]);
+        } else {
+          // Initial load
+          setMessages(loadedMessages);
+          setSessionId(token);
+          setShowHistory(false);
+        }
+        
+        // Show message if there are more messages to load
+        if (response.data.pagination?.hasMore && !cursor) {
+          addMessage({
+            text: `_Loaded ${loadedMessages.length} most recent messages. Scroll up to load older messages._`,
+            sender: 'bot'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load session:', error);
+      addMessage({
+        text: 'Failed to load chat session.',
+        sender: 'error'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startNewChat = () => {
+    const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Update localStorage with new session
+    if (typeof window !== 'undefined') {
+      const STORAGE_KEY = 'edulearn_chat_session';
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        id: newSessionId,
+        timestamp: Date.now()
+      }));
+    }
+    
+    setSessionId(newSessionId);
+    setMessages([]);
+    setShowHistory(false);
+
+    // Re-initialize with welcome message
+    const roleContent = getRoleSpecificContent();
+    addMessage({
+      text: roleContent.welcomeMessage,
+      sender: 'bot',
+      quickReplies: roleContent.quickReplies
+    });
+  };
+
+  const deleteSession = async (token: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent loading the session when clicking delete
+    if (!isAuthenticated) return;
+
+    if (!confirm('Are you sure you want to delete this chat session?')) return;
+
+    try {
+      const response = await apiClient.delete(`/chatbot/sessions/${token}`);
+      if (response.data.success) {
+        // Remove from history list
+        setChatHistory(prev => prev.filter(s => s.session_token !== token));
+
+        // If deleted session is active, clear it
+        if (sessionId === token) {
+          startNewChat();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+      addMessage({
+        text: 'Failed to delete chat session.',
+        sender: 'error'
+      });
+    }
+  };
+
   const processFiles = async (files: File[]) => {
+    // File upload limits
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
+    const MAX_FILES = 5; // Maximum 5 files at once
+    const MAX_TOTAL_SIZE = 25 * 1024 * 1024; // 25MB total batch size
+
+    // Check file count limit
+    const currentFileCount = attachments.length;
+    const newFileCount = files.length;
+    
+    if (currentFileCount + newFileCount > MAX_FILES) {
+      addMessage({
+        text: `You can only attach up to ${MAX_FILES} files per message. Currently have ${currentFileCount} file(s). Please remove some files before adding more.`,
+        sender: 'error'
+      });
+      return;
+    }
+
+    // Calculate total size including existing attachments
+    const currentTotalSize = attachments.reduce((sum, att) => sum + att.size, 0);
+    const newFilesSize = Array.from(files).reduce((sum, file) => sum + file.size, 0);
+    const totalSize = currentTotalSize + newFilesSize;
+
+    if (totalSize > MAX_TOTAL_SIZE) {
+      addMessage({
+        text: `Total file size cannot exceed ${Math.round(MAX_TOTAL_SIZE / 1024 / 1024)}MB. Current total: ${Math.round(currentTotalSize / 1024 / 1024)}MB, attempting to add: ${Math.round(newFilesSize / 1024 / 1024)}MB.`,
+        sender: 'error'
+      });
+      return;
+    }
+
     const newAttachments: Array<{
       name: string;
       size: number;
@@ -560,22 +787,26 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
       base64: string;
     }> = [];
 
+    let skippedFiles = 0;
+
     for (const file of files) {
       // Validate file type
       if (!isValidFileType(file)) {
         addMessage({
-          text: `File "${file.name}" is not supported. Please upload PDF, Word, Excel, PowerPoint, or text files.`,
+          text: `File "${file.name}" is not supported. Please upload PDF, Word, Excel, PowerPoint, Text, or Image files.`,
           sender: 'error'
         });
+        skippedFiles++;
         continue;
       }
 
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
+      // Validate individual file size (max 10MB)
+      if (file.size > MAX_FILE_SIZE) {
         addMessage({
-          text: `File "${file.name}" is too large. Maximum file size is 10MB.`,
+          text: `File "${file.name}" is too large (${formatFileSize(file.size)}). Maximum file size is ${Math.round(MAX_FILE_SIZE / 1024 / 1024)}MB.`,
           sender: 'error'
         });
+        skippedFiles++;
         continue;
       }
 
@@ -593,14 +824,23 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
           text: `Failed to process file "${file.name}". Please try again.`,
           sender: 'error'
         });
+        skippedFiles++;
       }
     }
 
     if (newAttachments.length > 0) {
       setAttachments(prev => [...prev, ...newAttachments]);
+      const successMsg = skippedFiles > 0 
+        ? `Added ${newAttachments.length} file(s). ${skippedFiles} file(s) skipped due to validation errors.`
+        : `Added ${newAttachments.length} file(s) to your message.`;
       addMessage({
-        text: `Added ${newAttachments.length} file(s) to your message.`,
+        text: successMsg,
         sender: 'bot'
+      });
+    } else if (skippedFiles > 0) {
+      addMessage({
+        text: `No files were added. All ${skippedFiles} file(s) failed validation.`,
+        sender: 'error'
       });
     }
   };
@@ -634,14 +874,19 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={cn(
-        "fixed w-96 h-[550px] bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col chatbot-slide-in relative",
+        "fixed bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col chatbot-slide-in relative transition-all duration-300",
+        isFullScreen
+          ? "inset-4 w-auto h-auto rounded-xl"
+          : "w-96 h-[550px]",
         isDragOver && "border-blue-500 border-2 bg-blue-50/50",
         className
       )}
       style={{
         zIndex: 9999,
-        bottom: '24px',
-        right: '24px',
+        bottom: isFullScreen ? '16px' : '24px',
+        right: isFullScreen ? '16px' : '24px',
+        left: isFullScreen ? '16px' : 'auto',
+        top: isFullScreen ? '16px' : 'auto',
         position: 'fixed'
       }}
     >
@@ -650,7 +895,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
         <div className="absolute inset-0 bg-blue-500/10 border-2 border-dashed border-blue-500 rounded-xl flex items-center justify-center z-10 backdrop-blur-sm">
           <div className="text-center p-4">
             <div className="text-blue-600 text-lg font-semibold mb-2">Drop files here</div>
-            <div className="text-blue-500 text-sm">PDF, Word, Excel, PowerPoint, or text files</div>
+            <div className="text-blue-500 text-sm">PDF, Word, Excel, PowerPoint, Text, or Images</div>
           </div>
         </div>
       )}
@@ -658,17 +903,133 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-xl">
         <div className="flex items-center space-x-2">
-          <MessageCircle size={20} />
+          {showHistory ? (
+            <button
+              onClick={() => setShowHistory(false)}
+              className="hover:bg-white/20 p-1 rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
+          ) : (
+            <button
+              onClick={toggleHistory}
+              className="hover:bg-white/20 p-1 rounded-full transition-colors"
+              title="Chat History"
+            >
+              <History size={20} />
+            </button>
+          )}
           <h3 className="font-semibold">EduLearn Assistant</h3>
         </div>
-        <button
-          onClick={() => setIsOpen(false)}
-          className="text-white hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-white/20"
-          aria-label="Close chat"
-        >
-          <X size={20} />
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={startNewChat}
+            className="text-white hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-white/20"
+            title="New Chat"
+          >
+            <Plus size={18} />
+          </button>
+          <button
+            onClick={() => setIsFullScreen(!isFullScreen)}
+            className="text-white hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-white/20"
+            aria-label={isFullScreen ? "Exit full screen" : "Full screen"}
+          >
+            {isFullScreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          </button>
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="text-white hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-white/20"
+              aria-label="Settings"
+            >
+              <Settings size={18} />
+            </button>
+          )}
+          <button
+            onClick={() => setIsOpen(false)}
+            className="text-white hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-white/20"
+            aria-label="Close chat"
+          >
+            <X size={20} />
+          </button>
+        </div>
       </div>
+
+      {/* Settings Panel */}
+      {showSettings && user?.role === 'admin' && (
+        <div className="bg-gray-100 p-4 border-b border-gray-200 space-y-3 animate-in slide-in-from-top-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Role Override</label>
+            <select
+              value={debugRole}
+              onChange={(e) => setDebugRole(e.target.value)}
+              className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            >
+              <option value="student">Student</option>
+              <option value="teacher">Teacher</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Learning Style Override</label>
+            <select
+              value={debugStyle}
+              onChange={(e) => setDebugStyle(e.target.value)}
+              className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            >
+              <option value="General">General</option>
+              <option value="ADHD">ADHD</option>
+              <option value="Dyslexia">Dyslexia</option>
+              <option value="Anxiety">Anxiety</option>
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* History Sidebar */}
+      {showHistory && (
+        <div className="absolute inset-0 top-[60px] bg-white z-20 flex flex-col animate-in slide-in-from-left-2">
+          <div className="p-4 border-b border-gray-200 bg-gray-50">
+            <h3 className="font-semibold text-gray-700">Chat History</h3>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-2">
+            {isLoadingHistory ? (
+              <div className="flex justify-center p-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              </div>
+            ) : chatHistory.length === 0 ? (
+              <div className="text-center text-gray-500 p-4 text-sm">No previous chats found</div>
+            ) : (
+              chatHistory.map((session) => (
+                <div
+                  key={session.id}
+                  className={cn(
+                    "w-full flex items-center justify-between p-3 rounded-lg text-sm transition-colors hover:bg-gray-100 cursor-pointer group",
+                    sessionId === session.session_token ? "bg-blue-50 border border-blue-200" : "border border-transparent"
+                  )}
+                  onClick={() => loadSession(session.session_token)}
+                >
+                  <div className="flex-1 min-w-0 mr-2">
+                    <div className="font-medium text-gray-800 truncate">
+                      {session.summary || new Date(session.started_at).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {new Date(session.last_activity).toLocaleString()}
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => deleteSession(session.session_token, e)}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                    title="Delete Chat"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
@@ -698,7 +1059,54 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
                   </div>
                 ) : (
                   <div>
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed break-words overflow-wrap-anywhere">{message.text}</div>
+
+                    <div className={cn(
+                      "text-sm leading-relaxed overflow-wrap-anywhere",
+                      message.sender === 'bot' ? "markdown-content" : "whitespace-pre-wrap"
+                    )}>
+                      {message.sender === 'bot' ? (
+                        <ReactMarkdown
+                          remarkPlugins={remarkGfmPlugin ? [remarkGfmPlugin] : []}
+                          components={{
+                            p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+                            ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2 space-y-1" {...props} />,
+                            ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-2 space-y-1" {...props} />,
+                            li: ({ node, ...props }) => <li className="mb-1" {...props} />,
+                            h1: ({ node, ...props }) => <h1 className="text-lg font-bold mb-2" {...props} />,
+                            h2: ({ node, ...props }) => <h2 className="text-base font-bold mb-2" {...props} />,
+                            h3: ({ node, ...props }) => <h3 className="text-sm font-bold mb-1" {...props} />,
+                            code: ({ node, className, children, ...props }: any) => {
+                              const match = /language-(\w+)/.exec(className || '')
+                              return !match ? (
+                                <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono text-pink-600" {...props}>
+                                  {children}
+                                </code>
+                              ) : (
+                                <div className="relative group my-2">
+                                  <div className="absolute top-0 right-0 bg-gray-800 text-xs text-gray-400 px-2 py-1 rounded-bl-md rounded-tr-md">
+                                    {match[1]}
+                                  </div>
+                                  <pre className="bg-gray-900 text-gray-100 p-3 rounded-md overflow-x-auto text-xs">
+                                    <code className={className} {...props}>
+                                      {children}
+                                    </code>
+                                  </pre>
+                                </div>
+                              )
+                            },
+                            blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-gray-300 pl-3 italic text-gray-600 my-2" {...props} />,
+                            a: ({ node, ...props }) => <a className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+                            table: ({ node, ...props }) => <div className="overflow-x-auto my-2"><table className="min-w-full divide-y divide-gray-200 border" {...props} /></div>,
+                            th: ({ node, ...props }) => <th className="px-3 py-2 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b" {...props} />,
+                            td: ({ node, ...props }) => <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 border-b" {...props} />,
+                          }}
+                        >
+                          {message.text}
+                        </ReactMarkdown>
+                      ) : (
+                        message.text
+                      )}
+                    </div>
                     {/* Display attachments */}
                     {message.attachments && message.attachments.length > 0 && (
                       <div className="mt-2 space-y-2">
@@ -765,7 +1173,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
             ref={fileInputRef}
             type="file"
             multiple
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.webp"
             onChange={handleFileUpload}
             className="hidden"
           />
@@ -798,19 +1206,27 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
               resizeTextarea(e.target);
             }}
             onInput={e => resizeTextarea(e.target as HTMLTextAreaElement)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+            placeholder={isLoading ? "Thinking..." : "Type your message..."}
+            className="flex-1 max-h-32 min-h-[40px] p-2 bg-gray-100 border-0 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none text-sm"
+            disabled={isLoading || !isAuthenticated}
             rows={1}
-            placeholder={
-              isListening
-                ? "Listening..."
-                : "Type a message..."
-            }
-            className="flex-1 resize-none overflow-hidden py-2 px-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           />
           {/* Send Button */}
           <button
             type="submit"
-            disabled={isLoading || (!inputValue.trim() && attachments.length === 0)}
-            className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className={cn(
+              "p-2 rounded-full transition-all duration-200 flex-shrink-0",
+              inputValue.trim() || attachments.length > 0
+                ? "bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:scale-105"
+                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+            )}
+            disabled={(!inputValue.trim() && attachments.length === 0) || isLoading || !isAuthenticated}
             title="Send message"
           >
             <Send size={20} />

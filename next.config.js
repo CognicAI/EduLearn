@@ -4,6 +4,7 @@ const { withSentryConfig } = require('@sentry/nextjs');
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  compress: true, // Enable gzip compression (default: true)
   images: {
     remotePatterns: [
       {
