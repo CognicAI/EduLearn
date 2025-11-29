@@ -89,12 +89,30 @@ router.get('/sessions/:sessionId/messages', authenticateToken, async (req: Authe
     const cursor = req.query.cursor as string | undefined; // Message ID cursor
     const direction = (req.query.direction as string) === 'after' ? 'after' : 'before'; // Load before or after cursor
 
+    // Optimize query: exclude base64 data from attachments to reduce payload size
+    // Problem: 23 messages = 6.9MB response due to base64-encoded files in attachments
+    // Solution: Strip base64 field, keep only metadata (name, size, type, url)
     let messagesQuery = `
       SELECT 
         cm.id,
         cm.sender, 
-        cm.text, 
-        cm.attachments, 
+        cm.text,
+        -- Strip base64 data from attachments to reduce response size dramatically
+        CASE 
+          WHEN cm.attachments IS NOT NULL AND json_typeof(cm.attachments) = 'array' THEN
+            (
+              SELECT json_agg(
+                json_build_object(
+                  'name', elem->>'name',
+                  'size', elem->>'size',
+                  'type', elem->>'type',
+                  'url', elem->>'url'
+                )
+              )
+              FROM json_array_elements(cm.attachments) elem
+            )
+          ELSE cm.attachments
+        END as attachments,
         cm.created_at 
       FROM chat_messages cm
       INNER JOIN chat_sessions cs ON cm.session_id = cs.id
@@ -161,11 +179,27 @@ router.get('/sessions/:sessionId', authenticateToken, async (req: AuthenticatedR
     const userId = req.user?.userId;
 
     // Optimized: Single query with JOIN instead of two sequential queries
+    // Also strip base64 data from attachments to reduce payload size
     const result = await query(`
       SELECT 
         cm.sender, 
-        cm.text, 
-        cm.attachments, 
+        cm.text,
+        -- Strip base64 data to avoid sending 6.9MB for 23 messages
+        CASE 
+          WHEN cm.attachments IS NOT NULL AND json_typeof(cm.attachments) = 'array' THEN
+            (
+              SELECT json_agg(
+                json_build_object(
+                  'name', elem->>'name',
+                  'size', elem->>'size',
+                  'type', elem->>'type',
+                  'url', elem->>'url'
+                )
+              )
+              FROM json_array_elements(cm.attachments) elem
+            )
+          ELSE cm.attachments
+        END as attachments,
         cm.created_at 
       FROM chat_messages cm
       INNER JOIN chat_sessions cs ON cm.session_id = cs.id
