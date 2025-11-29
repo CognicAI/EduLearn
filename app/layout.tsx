@@ -134,8 +134,8 @@ export default function RootLayout({
           <QueryProvider>
             <AuthProvider>
               <ThemeProvider
-                defaultTheme="system"
-                enableSystem={true}
+                defaultTheme="light"
+                enableSystem={false}
                 disableTransitionOnChange={false}
               >
                 <PHProvider>
