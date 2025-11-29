@@ -254,9 +254,9 @@ export async function POST(req: Request) {
                     
                     // Track token usage (approximate: 1 token ≈ 4 chars)
                     // Use GoogleGenerativeAI's countTokens for accurate token counting
-                    const userTokens = await genAI.countTokens(userMessageText);
-                    const responseTokens = await genAI.countTokens(fullResponse);
-                    const estimatedTokens = userTokens.totalTokens + responseTokens.totalTokens;
+                    const estimatedTokens = Math.ceil(
+                        (userMessageText.length + fullResponse.length) / 4
+                    );
                     await trackTokenUsage(user.userId, estimatedTokens);
 
                     // Log bot response asynchronously
