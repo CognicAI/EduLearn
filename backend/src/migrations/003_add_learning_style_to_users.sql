@@ -17,6 +17,11 @@ UPDATE users
 SET learning_style = 'General' 
 WHERE learning_style IS NULL;
 
+-- Set default value for future inserts
+ALTER TABLE users ALTER COLUMN learning_style SET DEFAULT 'General';
+
+-- Make learning_style column NOT NULL
+ALTER TABLE users ALTER COLUMN learning_style SET NOT NULL;
 -- Add comment to document the column
 COMMENT ON COLUMN users.learning_style IS 'Learning style preference for neuro-adaptive AI personalization (ADHD, Dyslexia, Anxiety, General)';
 
