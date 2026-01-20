@@ -64,7 +64,7 @@ export async function POST(req: Request) {
         // Verify authentication
         const authHeader = req.headers.get('Authorization');
         const user = await verifyToken(authHeader);
-        
+
         if (!user) {
             return new Response(JSON.stringify({ error: 'Unauthorized. Please log in.' }), {
                 status: 401,
@@ -112,9 +112,9 @@ export async function POST(req: Request) {
         const { role, learningStyle } = userProfile as NeuroProfile;
         const systemPrompt = generateSystemPrompt(role, learningStyle);
 
-        // Using gemini-2.0-flash model with system instruction
+        // Using Gemini model with system instruction (configurable via env)
         const model = genAI.getGenerativeModel({
-            model: 'gemini-2.0-flash',
+            model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
             systemInstruction: systemPrompt
         });
 
@@ -204,9 +204,9 @@ export async function POST(req: Request) {
                 let fullResponse = '';
                 let retryCount = 0;
                 const MAX_RETRIES = 2;
-                
+
                 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-                
+
                 const isRetryableError = (error: any): boolean => {
                     const message = error?.message?.toLowerCase() || '';
                     return (
@@ -230,18 +230,18 @@ export async function POST(req: Request) {
                         return true;
                     } catch (e: any) {
                         console.error(`Stream error (attempt ${retryCount + 1}):`, e);
-                        
+
                         if (retryCount < MAX_RETRIES && isRetryableError(e)) {
                             retryCount++;
                             const backoffMs = 1000 * Math.pow(2, retryCount - 1); // Exponential backoff
-                            
+
                             const retryMsg = `\n\n_[Connection interrupted. Retrying (${retryCount}/${MAX_RETRIES})...]_\n\n`;
                             controller.enqueue(encoder.encode(retryMsg));
-                            
+
                             await sleep(backoffMs);
                             return attemptStream();
                         }
-                        
+
                         // Failed all retries or non-retryable error
                         const errorMsg = '\n\n_[Unable to complete response. Please try sending your message again.]_';
                         controller.enqueue(encoder.encode(errorMsg));
@@ -251,7 +251,7 @@ export async function POST(req: Request) {
 
                 try {
                     await attemptStream();
-                    
+
                     // Track token usage (approximate: 1 token ≈ 4 chars)
                     // Use GoogleGenerativeAI's countTokens for accurate token counting
                     const estimatedTokens = Math.ceil(
