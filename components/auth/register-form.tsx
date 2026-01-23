@@ -13,29 +13,77 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { UserRole } from '@/lib/types/auth';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
+import { AssessmentQuestions } from './assessment-questions';
 
 export function RegisterForm() {
+  const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+  const [assessmentAnswers, setAssessmentAnswers] = useState<number[]>(new Array(15).fill(undefined));
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { register: registerUser, isLoading } = useAuth();
-  
+
   const {
     register,
     handleSubmit,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
 
+  const handleNextStep = async () => {
+    // Trigger validation for step 1 fields
+    const isValid = await handleSubmit(
+      () => {
+        // If validation passes, move to step 2
+        setCurrentStep(2);
+      },
+      (errors) => {
+        // Validation failed - errors will be shown automatically
+        console.log('Validation errors:', errors);
+      }
+    )();
+  };
+
+  const handleBackToInfo = () => {
+    setCurrentStep(1);
+  };
+
+  const handleAssessmentComplete = async () => {
+    // Manually get form values and submit (bypass validation since form is not visible)
+    const formValues = getValues();
+    await onSubmit(formValues as RegisterFormData);
+  };
+
   const onSubmit = async (data: RegisterFormData) => {
     try {
       const { confirmPassword, ...registerData } = data;
-      await registerUser(registerData);
+
+      // Include assessment answers if completed
+      const registrationPayload = {
+        ...registerData,
+        assessmentAnswers: assessmentAnswers.every(a => a !== undefined) ? assessmentAnswers : undefined
+      };
+
+      await registerUser(registrationPayload);
     } catch (error) {
       // Error handling is done in the auth context
+      console.error('Registration error:', error);
     }
   };
+
+  // Show assessment questions on step 2
+  if (currentStep === 2) {
+    return (
+      <AssessmentQuestions
+        answers={assessmentAnswers}
+        onAnswersChange={setAssessmentAnswers}
+        onComplete={handleAssessmentComplete}
+        onBack={handleBackToInfo}
+      />
+    );
+  }
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -60,7 +108,7 @@ export function RegisterForm() {
                 <p className="text-sm text-destructive">{errors.firstName.message}</p>
               )}
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="lastName">Last Name</Label>
               <Input
@@ -104,7 +152,7 @@ export function RegisterForm() {
               <p className="text-sm text-destructive">{errors.role.message}</p>
             )}
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">
@@ -163,14 +211,19 @@ export function RegisterForm() {
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button
+            type="button"
+            className="w-full"
+            disabled={isLoading}
+            onClick={handleNextStep}
+          >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Creating Account...
               </>
             ) : (
-              'Create Account'
+              'Continue to Assessment'
             )}
           </Button>
         </form>

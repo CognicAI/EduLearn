@@ -8,12 +8,15 @@ import { activityLogService } from '../services/activityLogService';
 import jwt from 'jsonwebtoken';
 import { sessionService } from '../services/sessionService';
 import { verifyRefreshToken } from '../config/jwt';
+import { classifyLearningStyle } from '../services/visionovaService';
 
 export class AuthController {
   async register(req: Request, res: Response) {
     try {
       const userData: CreateUserData = req.body;
-      
+      const { assessmentAnswers } = userData;
+
+      // Create user with default learning style
       const user = await userService.createUser(userData);
       const tokens = generateTokens({
         userId: user.id,
@@ -30,17 +33,40 @@ export class AuthController {
         userAgent: req.get('User-Agent') || undefined
       });
 
-      return res.status(201).json({
+      // Send immediate response to user
+      const response = {
         success: true,
         message: 'User registered successfully',
         data: {
           user,
           tokens
         }
-      });
+      };
+
+      // Respond immediately - don't wait for ML classification
+      res.status(201).json(response);
+
+      // Background processing: Classify learning style if assessment answers provided
+      if (assessmentAnswers && Array.isArray(assessmentAnswers) && assessmentAnswers.length === 15) {
+        // Run classification asynchronously (don't await)
+        classifyLearningStyle(assessmentAnswers)
+          .then(async (learningStyle) => {
+            await userService.updateLearningStyle(user.id, learningStyle);
+            console.log(`[Auth] Learning style updated for user ${user.id}: ${learningStyle}`);
+          })
+          .catch((error) => {
+            console.error(`[Auth] Failed to update learning style for user ${user.id}:`, error);
+            // Silently fail - user is already created and logged in
+          });
+      } else {
+        console.log(`[Auth] No assessment answers provided for user ${user.id}, using default learning style`);
+      }
+
+      // Return to satisfy TypeScript (response already sent)
+      return;
     } catch (error) {
       console.error('Registration error:', error);
-      
+
       if (error instanceof Error) {
         return res.status(400).json({
           success: false,
@@ -58,7 +84,7 @@ export class AuthController {
   async login(req: Request, res: Response) {
     try {
       const { email, password }: LoginCredentials = req.body;
-      
+
       const user = await userService.findUserByEmail(email);
       if (!user) {
         return res.status(401).json({ success: false, message: 'Invalid email or password' });
