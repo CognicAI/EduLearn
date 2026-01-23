@@ -72,6 +72,9 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
   const [debugRole, setDebugRole] = useState<string>('');
   const [debugStyle, setDebugStyle] = useState<string>('');
 
+  // Webhook State (Admin only)
+  const [useWebhook, setUseWebhook] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatWidgetRef = useRef<HTMLDivElement>(null);
   const chatButtonRef = useRef<HTMLButtonElement>(null);
@@ -106,7 +109,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
   // Client-side check and load markdown plugin
   useEffect(() => {
     setIsClient(true);
-    
+
     // Lazy load remarkGfm plugin only when needed
     import('remark-gfm').then((module) => {
       setRemarkGfmPlugin(() => module.default);
@@ -161,7 +164,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
       if (typeof window !== 'undefined') {
         const STORAGE_KEY = 'edulearn_chat_session';
         const stored = localStorage.getItem(STORAGE_KEY);
-        
+
         if (stored) {
           try {
             const { id, timestamp } = JSON.parse(stored);
@@ -196,8 +199,16 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
           }));
           setSessionId(newId);
         }
+
+        // Restore webhook preference for admin users
+        if (user.role === 'admin') {
+          const webhookPref = localStorage.getItem('edulearn_admin_webhook_enabled');
+          if (webhookPref) {
+            setUseWebhook(webhookPref === 'true');
+          }
+        }
       }
-      
+
       // Initialize debug values
       setDebugRole(user.role);
       setDebugStyle(user.learningStyle || 'General');
@@ -376,6 +387,56 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
         throw new Error('No authentication token available');
       }
 
+      // Check if admin user has webhook enabled
+      if (user.role === 'admin' && useWebhook) {
+        // Route to webhook for SQL execution
+        const webhookPayload = {
+          question: text.trim(),
+          sessionId: sessionId,
+          userProfile: {
+            role: debugRole || user.role,
+            learningStyle: debugStyle || user.learningStyle || 'General'
+          }
+        };
+
+        const response = await fetch('/api/chat/webhook', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(webhookPayload)
+        });
+
+        // Remove typing indicator
+        setMessages(prev => prev.filter(msg => !msg.isTyping));
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+
+          if (response.status === 403) {
+            throw new Error('Access denied. Webhook mode is only available to administrators.');
+          } else if (response.status === 504) {
+            throw new Error(errorData.error || 'Webhook request timed out. Please try a simpler query.');
+          } else {
+            throw new Error(
+              errorData.error ||
+              `Webhook request failed (Error ${response.status}). Please try again.`
+            );
+          }
+        }
+
+        const result = await response.json();
+
+        // Add bot response with formatted results
+        addMessage({
+          text: result.message || 'Query executed successfully.',
+          sender: 'bot'
+        });
+
+        return; // Exit early after webhook handling
+      }
+
       // Prepare payload for new API
       // We need to send the conversation history + user profile
       const apiMessages = [...messages, newMessage].map(m => ({
@@ -407,17 +468,17 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        
+
         if (response.status === 429) {
           throw new Error(
-            errorData.error || 
+            errorData.error ||
             'Rate limit exceeded. Please wait a moment before sending another message.'
           );
         } else if (response.status === 401) {
           throw new Error('Your session has expired. Please log in again.');
         } else {
           throw new Error(
-            errorData.error || 
+            errorData.error ||
             `Unable to process your request (Error ${response.status}). Please try again.`
           );
         }
@@ -457,13 +518,13 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
       setMessages(prev => prev.filter(msg => !msg.isTyping));
 
       console.error('Chatbot error:', error);
-      
+
       let errorMessage = 'An unexpected error occurred.';
       let showRetry = true;
-      
+
       if (error instanceof Error) {
         errorMessage = error.message;
-        
+
         // Customize error message based on error type
         if (error.message.includes('Rate limit')) {
           showRetry = false; // Don't show retry for rate limits
@@ -657,7 +718,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
         params.append('direction', 'before');
       }
       const url = `/chatbot/sessions/${token}/messages?${params.toString()}`;
-      
+
       const response = await apiClient.get(url);
       if (response.data.success) {
         const loadedMessages: Message[] = response.data.data.map((msg: any) => ({
@@ -667,7 +728,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
           timestamp: new Date(msg.created_at),
           attachments: (typeof msg.attachments === 'string' ? JSON.parse(msg.attachments) : msg.attachments) || undefined
         }));
-        
+
         if (cursor) {
           // Prepend older messages
           setMessages(prev => [...loadedMessages, ...prev]);
@@ -677,7 +738,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
           setSessionId(token);
           setShowHistory(false);
         }
-        
+
         // Show message if there are more messages to load
         if (response.data.pagination?.hasMore && !cursor) {
           addMessage({
@@ -699,7 +760,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
 
   const startNewChat = () => {
     const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // Update localStorage with new session
     if (typeof window !== 'undefined') {
       const STORAGE_KEY = 'edulearn_chat_session';
@@ -708,7 +769,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
         timestamp: Date.now()
       }));
     }
-    
+
     setSessionId(newSessionId);
     setMessages([]);
     setShowHistory(false);
@@ -757,7 +818,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
     // Check file count limit
     const currentFileCount = attachments.length;
     const newFileCount = files.length;
-    
+
     if (currentFileCount + newFileCount > MAX_FILES) {
       addMessage({
         text: `You can only attach up to ${MAX_FILES} files per message. Currently have ${currentFileCount} file(s). Please remove some files before adding more.`,
@@ -830,7 +891,7 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
 
     if (newAttachments.length > 0) {
       setAttachments(prev => [...prev, ...newAttachments]);
-      const successMsg = skippedFiles > 0 
+      const successMsg = skippedFiles > 0
         ? `Added ${newAttachments.length} file(s). ${skippedFiles} file(s) skipped due to validation errors.`
         : `Added ${newAttachments.length} file(s) to your message.`;
       addMessage({
@@ -958,6 +1019,44 @@ export function ChatbotWidget({ className }: ChatbotWidgetProps) {
       {/* Settings Panel */}
       {showSettings && user?.role === 'admin' && (
         <div className="bg-gray-100 p-4 border-b border-gray-200 space-y-3 animate-in slide-in-from-top-2">
+          {/* Webhook Toggle */}
+          <div className="pb-3 border-b border-gray-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">SQL Webhook Mode</label>
+                <p className="text-xs text-gray-500 mt-0.5">Route queries to n8n webhook for SQL execution</p>
+              </div>
+              <button
+                onClick={() => {
+                  const newValue = !useWebhook;
+                  setUseWebhook(newValue);
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('edulearn_admin_webhook_enabled', String(newValue));
+                  }
+                  addMessage({
+                    text: newValue
+                      ? '✅ **Webhook mode enabled.** Your questions will be sent to the SQL webhook for database queries.'
+                      : '✅ **Webhook mode disabled.** Your questions will be sent to Gemini AI.',
+                    sender: 'bot'
+                  });
+                }}
+                className={cn(
+                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+                  useWebhook ? "bg-blue-600" : "bg-gray-300"
+                )}
+                role="switch"
+                aria-checked={useWebhook}
+              >
+                <span
+                  className={cn(
+                    "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                    useWebhook ? "translate-x-6" : "translate-x-1"
+                  )}
+                />
+              </button>
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Role Override</label>
             <select
