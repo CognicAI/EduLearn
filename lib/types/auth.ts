@@ -6,7 +6,7 @@ export interface User {
   firstName: string;
   lastName: string;
   role: UserRole;
-  learningStyle?: 'ADHD' | 'Dyslexia' | 'Anxiety' | 'General';
+  learningStyle?: 'ADHD' | 'Dyslexia' | 'Anxiety' | 'Autism Spectrum' | 'General';
   avatar?: string;
   createdAt: string;
   lastLogin?: string;
@@ -28,6 +28,7 @@ export interface RegisterCredentials {
   firstName: string;
   lastName: string;
   role: UserRole;
+  assessmentAnswers?: number[]; // 15 answers (0-3) for VisionOva ML classification
 }
 
 export interface AuthState {

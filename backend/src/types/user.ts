@@ -5,10 +5,12 @@ export interface User {
   lastName: string;
   role: 'student' | 'teacher' | 'admin';
   passwordHash: string;
+  learningStyle?: 'ADHD' | 'Dyslexia' | 'Anxiety' | 'Autism Spectrum' | 'General';
   avatar?: string;
   createdAt: Date;
   updatedAt: Date;
   lastLogin?: Date;
+  isActive?: boolean;
 }
 
 export interface CreateUserData {
@@ -17,6 +19,8 @@ export interface CreateUserData {
   lastName: string;
   password: string;
   role: 'student' | 'teacher' | 'admin';
+  learningStyle?: 'ADHD' | 'Dyslexia' | 'Anxiety' | 'Autism Spectrum' | 'General';
+  assessmentAnswers?: number[]; // 15 answers (0-3) for VisionOva ML classification
 }
 
 export interface LoginCredentials {
@@ -30,6 +34,7 @@ export interface UserResponse {
   firstName: string;
   lastName: string;
   role: 'student' | 'teacher' | 'admin';
+  learningStyle?: 'ADHD' | 'Dyslexia' | 'Anxiety' | 'Autism Spectrum' | 'General';
   avatar?: string;
   createdAt: string;
   lastLogin?: string;

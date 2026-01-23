@@ -47,7 +47,7 @@ export class UserService {
     `;
 
     const result = await query(selectQuery, [email]);
-    
+
     if (result.rows.length === 0) {
       return null;
     }
@@ -77,7 +77,7 @@ export class UserService {
     `;
 
     const result = await query(selectQuery, [id]);
-    
+
     if (result.rows.length === 0) {
       return null;
     }
@@ -106,6 +106,25 @@ export class UserService {
   // Increment user's login count
   async incrementLoginCount(id: string): Promise<void> {
     await query('UPDATE users SET login_count = COALESCE(login_count,0) + 1 WHERE id = $1', [id]);
+  }
+
+  /**
+   * Updates user's learning style based on VisionOva ML classification
+   * @param id - User ID
+   * @param learningStyle - Learning style classification (ADHD, Dyslexia, Anxiety, Autism Spectrum, General)
+   */
+  async updateLearningStyle(
+    id: string,
+    learningStyle: 'ADHD' | 'Dyslexia' | 'Anxiety' | 'Autism Spectrum' | 'General'
+  ): Promise<void> {
+    const updateQuery = `
+      UPDATE users 
+      SET learning_style = $1, updated_at = NOW() 
+      WHERE id = $2
+    `;
+
+    await query(updateQuery, [learningStyle, id]);
+    console.log(`[UserService] Updated learning style for user ${id}: ${learningStyle}`);
   }
 }
 
